@@ -18,6 +18,7 @@ This is a clean refactored version of the Floor Management System, built increme
 - **Database:** PostgreSQL
 - **API:** Django REST Framework
 - **Python:** 3.10+
+- **Dev Environment:** GitHub Codespaces ready ☁️
 
 ## Project Structure
 
@@ -37,6 +38,26 @@ floor_management_system-C/
 ```
 
 ## Setup Instructions
+
+### Quick Start with GitHub Codespaces (Recommended) ☁️
+
+**Easiest way to get started - everything pre-configured!**
+
+1. Push this repository to GitHub
+2. Click **Code** → **Codespaces** → **Create codespace on master**
+3. Wait 2-3 minutes for automatic setup
+4. When ready, run:
+   ```bash
+   python manage.py createsuperuser
+   python manage.py runserver
+   ```
+5. Click the popup to open your app!
+
+PostgreSQL is already running and configured. See `.devcontainer/README.md` for details.
+
+---
+
+### Local Setup (Alternative)
 
 ### 1. Clone and Navigate
 ```bash
