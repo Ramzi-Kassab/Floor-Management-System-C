@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'widget_tweaks',
-    'django_ratelimit',
+    # 'django_ratelimit',  # TODO: Add when Redis cache is configured
 
     # Project apps will be added incrementally here
     # 'apps.inventory',
@@ -144,6 +144,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Cache configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache_table',
+    }
+}
 
 # REST Framework settings
 REST_FRAMEWORK = {
