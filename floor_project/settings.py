@@ -48,6 +48,10 @@ INSTALLED_APPS = [
     # Project apps - Foundation layer (no dependencies)
     'core_foundation',  # Foundation models: CostCenter, Currency, Notification, etc.
 
+    # Project apps - HR & Administration (Phase 2)
+    'hr',  # HR back-office: employees, departments, leave, attendance, training, etc.
+    'hr_portal',  # Employee self-service portal
+
     # Project apps - Dashboard/Aggregator (disabled until dependencies exist)
     # 'core',  # Dashboard views (depends on HR, Inventory, Production, etc.)
 ]
