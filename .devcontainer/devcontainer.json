@@ -1,60 +1,17 @@
 {
   "name": "Floor Management System C",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
+  "image": "mcr.microsoft.com/devcontainers/python:3.10",
   "workspaceFolder": "/workspaces/Floor-Management-System-C",
-
-  // Features to add to the dev container
   "features": {
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.10"
-    },
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-
-  // Configure tool-specific properties
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "ms-python.black-formatter",
-        "batisteo.vscode-django",
-        "mtxr.sqltools",
-        "mtxr.sqltools-driver-pg",
-        "GitHub.copilot"
-      ],
-      "settings": {
-        "python.defaultInterpreterPath": "/workspace/venv/bin/python",
-        "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
-        "python.formatting.provider": "black",
-        "editor.formatOnSave": true,
-        "files.exclude": {
-          "**/__pycache__": true,
-          "**/*.pyc": true
-        }
-      }
-    }
-  },
-
-  // Use 'forwardPorts' to make a list of ports inside the container available locally
   "forwardPorts": [8000, 5432],
   "portsAttributes": {
     "8000": {
       "label": "Django Dev Server",
       "onAutoForward": "notify"
-    },
-    "5432": {
-      "label": "PostgreSQL",
-      "onAutoForward": "silent"
     }
   },
-
-  // Use 'postCreateCommand' to run commands after the container is created
-  "postCreateCommand": "bash .devcontainer/setup.sh",
-
-  // Comment out to connect as root instead
+  "postCreateCommand": "pip install --upgrade pip && [ -f requirements.txt ] && pip install -r requirements.txt || echo 'No requirements.txt found'",
   "remoteUser": "vscode"
 }
