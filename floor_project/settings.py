@@ -45,8 +45,11 @@ INSTALLED_APPS = [
     'widget_tweaks',
     # 'django_ratelimit',  # TODO: Add when Redis cache is configured
 
-    # Project apps (migrated from old repo)
-    'core',  # Foundation: shared utilities, cost centers, notifications
+    # Project apps - Foundation layer (no dependencies)
+    'core_foundation',  # Foundation models: CostCenter, Currency, Notification, etc.
+
+    # Project apps - Dashboard/Aggregator (disabled until dependencies exist)
+    # 'core',  # Dashboard views (depends on HR, Inventory, Production, etc.)
 ]
 
 MIDDLEWARE = [
