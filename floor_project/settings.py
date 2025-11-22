@@ -27,7 +27,26 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-!z+d%t#+nv5^g7i8%837c
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+# ALLOWED_HOSTS - Dynamic configuration for Codespaces and local development
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+
+# Auto-detect and add Codespaces hostname
+CODESPACE_NAME = os.getenv('CODESPACE_NAME')
+if CODESPACE_NAME:
+    # GitHub Codespaces hostname pattern
+    codespace_host = f'{CODESPACE_NAME}-8000.app.github.dev'
+    if codespace_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(codespace_host)
+    # Also add wildcard for preview domains
+    ALLOWED_HOSTS.extend(['*.preview.app.github.dev', '*.app.github.dev'])
+
+# CSRF trusted origins for Codespaces
+CSRF_TRUSTED_ORIGINS = []
+if CODESPACE_NAME:
+    CSRF_TRUSTED_ORIGINS.extend([
+        f'https://{CODESPACE_NAME}-8000.app.github.dev',
+        f'https://*.app.github.dev',
+    ])
 
 
 # Application definition

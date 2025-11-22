@@ -65,14 +65,35 @@ python manage.py check
 echo "🔄 Running migrations..."
 python manage.py migrate
 
+# Create cache table
+echo "📊 Creating cache table..."
+python manage.py createcachetable 2>/dev/null || echo "⚠️  Cache table already exists or not needed"
+
+# Collect static files (quietly, for Codespaces)
+echo "📦 Collecting static files..."
+python manage.py collectstatic --noinput --clear --quiet 2>/dev/null || echo "⚠️  Static files collection skipped"
+
+# Create necessary directories
+echo "📁 Creating media directories..."
+mkdir -p media/uploads media/qrcodes media/reports 2>/dev/null || true
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✨ Setup complete!"
+echo "✨ Setup complete! System is ready to use."
 echo ""
-echo "Next steps:"
-echo "  1. Create admin user: python manage.py createsuperuser"
-echo "  2. Start server:      python manage.py runserver"
+echo "🎯 Quick Start:"
+echo "  1. Create admin user:  python manage.py createsuperuser"
+echo "  2. Start server:       ./start.sh"
+echo "     OR manually:        python manage.py runserver 0.0.0.0:8000"
 echo ""
-echo "📝 Activate venv if needed: source venv/bin/activate"
+echo "🌐 Access URLs (when server is running):"
+echo "  - Home:    Click the 'Open in Browser' popup"
+echo "  - Admin:   Add /admin/ to the URL"
+echo ""
+echo "📝 Useful commands:"
+echo "  - Activate venv:       source venv/bin/activate"
+echo "  - Django shell:        python manage.py shell"
+echo "  - Check status:        python manage.py check"
+echo "  - View migrations:     python manage.py showmigrations"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
