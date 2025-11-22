@@ -2,7 +2,7 @@
   "name": "Floor Management System C",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces/Floor-Management-System-C",
 
   // Features to add to the dev container
   "features": {
