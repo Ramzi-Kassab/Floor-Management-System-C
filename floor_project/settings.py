@@ -45,10 +45,8 @@ INSTALLED_APPS = [
     'widget_tweaks',
     # 'django_ratelimit',  # TODO: Add when Redis cache is configured
 
-    # Project apps will be added incrementally here
-    # 'apps.inventory',
-    # 'apps.operations',
-    # 'apps.hr',
+    # Project apps (migrated from old repo)
+    'core',  # Foundation: shared utilities, cost centers, notifications
 ]
 
 MIDDLEWARE = [
