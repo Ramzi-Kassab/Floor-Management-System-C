@@ -19,6 +19,11 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # HR & Administration URLs
+    path('hr/', include('hr.urls', namespace='hr')),
+    path('portal/', include('hr_portal.urls', namespace='hr_portal')),
+
     # Core URLs temporarily disabled due to dependencies on other apps
     # path('', include('core.urls', namespace='core')),
 ]
