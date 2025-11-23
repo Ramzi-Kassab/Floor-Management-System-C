@@ -30,7 +30,7 @@ class KPIService:
     def get_hr_kpis(cls):
         """HR Module KPIs"""
         try:
-            from floor_app.operations.hr.models import (
+            from hr.models import (
                 HREmployee, LeaveRequest, AttendanceRecord
             )
 
@@ -268,7 +268,7 @@ class KPIService:
 
         # HR alerts - expiring documents
         try:
-            from floor_app.operations.hr.models import EmployeeDocument
+            from hr.models import EmployeeDocument
             today = timezone.now().date()
             expiring = EmployeeDocument.objects.filter(
                 expiry_date__lte=today + timedelta(days=30),

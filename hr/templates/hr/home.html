@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}HR - Floor Management System{% endblock %}
+
+{% block content %}
+<!-- HR Module Header -->
+<div class="dashboard-header text-center">
+    <h1><i class="fas fa-users"></i> Human Resources Module</h1>
+    <p class="lead">Employee Management, Leave, Attendance & More</p>
+</div>
+
+<!-- HR Statistics -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-users"></i> Employees
+            </div>
+            <div class="card-body text-center">
+                <div class="kpi-value">{{ total_employees }}</div>
+                <div class="kpi-label">Total Employees</div>
+                <hr>
+                <div class="h4 text-success mb-0">{{ active_employees }}</div>
+                <small class="text-muted">Active</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-sitemap"></i> Departments
+            </div>
+            <div class="card-body text-center">
+                <div class="kpi-value">{{ total_departments }}</div>
+                <div class="kpi-label">Active Departments</div>
+                <hr>
+                <a href="{% url 'hr:department_list' %}" class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-list"></i> View All
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-clipboard-list"></i> Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'hr:employee_list' %}" class="btn btn-primary">
+                        <i class="fas fa-users"></i> Employee Directory
+                    </a>
+                    <a href="{% url 'hr:department_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-sitemap"></i> Departments
+                    </a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'hr:employee_portal' %}" class="btn btn-outline-success">
+                        <i class="fas fa-user-circle"></i> My Portal
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'admin:hr_hremployee_changelist' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-cog"></i> Admin Panel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HR Modules -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-th-large"></i> HR Modules
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                                <h5>Employee Management</h5>
+                                <p class="small text-muted">Manage employee records, personal info, and employment details</p>
+                                <a href="{% url 'hr:employee_list' %}" class="btn btn-sm btn-outline-primary">View</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-calendar-check fa-3x text-success mb-3"></i>
+                                <h5>Leave Management</h5>
+                                <p class="small text-muted">Track leave requests, approvals, and leave balances</p>
+                                {% if user.is_authenticated %}
+                                <a href="{% url 'hr:my_leave' %}" class="btn btn-sm btn-outline-success">My Leave</a>
+                                {% else %}
+                                <span class="badge bg-secondary">Login Required</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                                <h5>Attendance</h5>
+                                <p class="small text-muted">Track daily attendance, overtime, and work hours</p>
+                                {% if user.is_authenticated %}
+                                <a href="{% url 'hr:my_attendance' %}" class="btn btn-sm btn-outline-warning">My Attendance</a>
+                                {% else %}
+                                <span class="badge bg-secondary">Login Required</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-graduation-cap fa-3x text-info mb-3"></i>
+                                <h5>Qualifications</h5>
+                                <p class="small text-muted">Manage employee qualifications, certifications, and documents</p>
+                                <a href="{% url 'admin:index' %}" class="btn btn-sm btn-outline-info">Admin</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feature List -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-check-circle"></i> Available Features
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><i class="fas fa-check text-success"></i> Employee Records Management</li>
+                    <li class="list-group-item"><i class="fas fa-check text-success"></i> Department & Position Hierarchy</li>
+                    <li class="list-group-item"><i class="fas fa-check text-success"></i> Leave Request System</li>
+                    <li class="list-group-item"><i class="fas fa-check text-success"></i> Attendance Tracking</li>
+                    <li class="list-group-item"><i class="fas fa-check text-success"></i> Document Management</li>
+                    <li class="list-group-item"><i class="fas fa-check text-success"></i> Qualification Tracking</li>
+                    <li class="list-group-item"><i class="fas fa-check text-success"></i> Employee Self-Service Portal</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Getting Started
+            </div>
+            <div class="card-body">
+                <h6><i class="fas fa-1"></i> Create Departments</h6>
+                <p class="small text-muted">Start by creating departments in the admin panel or through the department list.</p>
+
+                <h6><i class="fas fa-2"></i> Add Positions</h6>
+                <p class="small text-muted">Define job positions within each department.</p>
+
+                <h6><i class="fas fa-3"></i> Register Employees</h6>
+                <p class="small text-muted">Add employee personal information and assign them to departments and positions.</p>
+
+                <h6><i class="fas fa-4"></i> Configure Leave Policies</h6>
+                <p class="small text-muted">Set up leave types and policies for your organization.</p>
+
+                <hr>
+                <a href="{% url 'admin:index' %}" class="btn btn-primary btn-block">
+                    <i class="fas fa-cog"></i> Go to Admin Panel
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

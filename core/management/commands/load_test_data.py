@@ -50,9 +50,9 @@ class Command(BaseCommand):
         self.stdout.write('Clearing existing test data...')
 
         # Clear in reverse dependency order
-        from floor_app.operations.hr.models import Department
+        from hr.models import Department
         from floor_app.operations.inventory.models import Location
-        from core.models import CostCenter
+        from core_foundation.models import CostCenter
 
         # Keep superuser, delete test users
         User.objects.filter(is_superuser=False, username__startswith='test').delete()
@@ -123,7 +123,7 @@ class Command(BaseCommand):
         """Create test departments."""
         self.stdout.write('Creating departments...')
 
-        from floor_app.operations.hr.models import Department
+        from hr.models import Department
 
         departments = []
 

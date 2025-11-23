@@ -67,8 +67,11 @@ INSTALLED_APPS = [
     # Project apps - Foundation layer (no dependencies)
     'core_foundation',  # Foundation models: CostCenter, Currency, Notification, etc.
 
-    # Project apps - Dashboard/Aggregator (disabled until dependencies exist)
-    # 'core',  # Dashboard views (depends on HR, Inventory, Production, etc.)
+    # Project apps - HR (Human Resources)
+    'hr',  # HR models: Employee, Department, Leave, Attendance, etc.
+
+    # Project apps - Dashboard/Aggregator (can now be enabled with HR available)
+    'core',  # Dashboard views (depends on HR, Inventory, Production, etc.)
 ]
 
 MIDDLEWARE = [

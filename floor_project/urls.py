@@ -25,8 +25,11 @@ urlpatterns = [
     # Core Foundation - Home page and basic views (no dependencies)
     path('', include('core_foundation.urls', namespace='core_foundation')),
 
-    # Core Dashboard URLs temporarily disabled due to dependencies on other apps
-    # path('dashboard/', include('core.urls', namespace='core')),
+    # HR - Human Resources Module
+    path('hr/', include('hr.urls', namespace='hr')),
+
+    # Core Dashboard - Now enabled with HR available
+    path('dashboard/', include('core.urls', namespace='core')),
 ]
 
 # Serve media and static files in development

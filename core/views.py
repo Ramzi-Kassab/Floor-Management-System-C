@@ -24,7 +24,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.admin.models import LogEntry
 from django.contrib.sessions.models import Session
 from django.urls import reverse_lazy
-from floor_app.operations.hr.models import HREmployee, Department
+from hr.models import HREmployee, Department
 import json
 
 from .models import (

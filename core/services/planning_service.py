@@ -89,7 +89,7 @@ class PlanningService:
         """
         try:
             from floor_app.operations.production.models import JobCard
-            from floor_app.operations.hr.models import HREmployee
+            from hr.models import HREmployee
 
             today = timezone.now().date()
 
@@ -192,7 +192,7 @@ class PlanningService:
         Workforce planning and availability.
         """
         try:
-            from floor_app.operations.hr.models import (
+            from hr.models import (
                 HREmployee, LeaveRequest, AttendanceRecord
             )
 
