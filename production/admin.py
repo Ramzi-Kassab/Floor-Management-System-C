@@ -934,3 +934,195 @@ class ProcessCorrectionRequestAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Don't allow deletion of correction requests (audit trail)
         return request.user.is_superuser
+
+
+# ============================================================================
+# BOM & REPAIR HISTORY
+# ============================================================================
+
+class BOMItemInline(admin.TabularInline):
+    """Inline BOM items for design revisions"""
+    model = models.BOMItem
+    extra = 1
+    fields = ['item_type', 'part_number', 'description', 'quantity', 'unit', 'is_critical']
+
+
+@admin.register(models.BOMItem)
+class BOMItemAdmin(admin.ModelAdmin):
+    """Admin for Bill of Materials items"""
+    list_display = [
+        'part_number', 'design_revision', 'item_type', 'quantity',
+        'unit', 'manufacturer', 'is_critical'
+    ]
+    list_filter = ['item_type', 'is_critical', 'created_at']
+    search_fields = [
+        'part_number', 'description', 'manufacturer',
+        'design_revision__mat_number'
+    ]
+    autocomplete_fields = ['design_revision']
+    date_hierarchy = 'created_at'
+
+    fieldsets = (
+        ('BOM Item', {
+            'fields': (
+                'design_revision', 'item_type', 'part_number', 'description'
+            )
+        }),
+        ('Quantity', {
+            'fields': ('quantity', 'unit')
+        }),
+        ('Supplier Information', {
+            'fields': ('manufacturer', 'grade')
+        }),
+        ('Tracking', {
+            'fields': ('is_critical',)
+        }),
+        ('Notes', {
+            'fields': ('notes',)
+        }),
+    )
+
+
+@admin.register(models.ActualBOM)
+class ActualBOMAdmin(admin.ModelAdmin):
+    """Admin for actual BOM usage tracking"""
+    list_display = [
+        'work_order', 'bom_item', 'planned_quantity',
+        'actual_quantity', 'get_variance_display', 'lot_number'
+    ]
+    list_filter = ['recorded_at', 'bom_item__item_type']
+    search_fields = [
+        'work_order__wo_number', 'bom_item__part_number',
+        'lot_number', 'serial_numbers'
+    ]
+    autocomplete_fields = ['work_order', 'bom_item', 'recorded_by']
+    date_hierarchy = 'recorded_at'
+    readonly_fields = ['recorded_at']
+
+    def get_variance_display(self, obj):
+        variance = obj.get_variance()
+        if variance is not None:
+            return f"{variance:+.2f}"
+        return "—"
+    get_variance_display.short_description = 'Variance'
+
+    fieldsets = (
+        ('Work Order', {
+            'fields': ('work_order', 'bom_item')
+        }),
+        ('Quantities', {
+            'fields': ('planned_quantity', 'actual_quantity')
+        }),
+        ('Traceability', {
+            'fields': ('lot_number', 'serial_numbers')
+        }),
+        ('Variance', {
+            'fields': ('variance_notes',)
+        }),
+        ('Recorded By', {
+            'fields': ('recorded_by', 'recorded_at')
+        }),
+    )
+
+
+@admin.register(models.RepairHistory)
+class RepairHistoryAdmin(admin.ModelAdmin):
+    """Admin for repair history tracking"""
+    list_display = [
+        'get_repair_display', 'bit_instance', 'work_order',
+        'repair_index', 'cutters_replaced', 'nozzles_replaced',
+        'repair_completed_date'
+    ]
+    list_filter = [
+        'repair_index', 'hardfacing_applied', 'threads_repaired',
+        'gauge_repaired', 'repair_completed_date'
+    ]
+    search_fields = [
+        'bit_instance__serial_number', 'work_order__wo_number',
+        'damage_description', 'repair_notes'
+    ]
+    autocomplete_fields = [
+        'bit_instance', 'work_order', 'evaluation_summary',
+        'route_template_used', 'previous_repair'
+    ]
+    date_hierarchy = 'repair_completed_date'
+    readonly_fields = ['created_at', 'updated_at']
+
+    def get_repair_display(self, obj):
+        return f"{obj.bit_instance.serial_number}-R{obj.repair_index}"
+    get_repair_display.short_description = 'Repair ID'
+
+    fieldsets = (
+        ('Repair Information', {
+            'fields': (
+                'bit_instance', 'work_order', 'repair_index',
+                'evaluation_summary'
+            )
+        }),
+        ('Usage Before Repair', {
+            'fields': ('hours_on_bit', 'footage_drilled', 'damage_description')
+        }),
+        ('Work Performed', {
+            'fields': (
+                'cutters_replaced', 'nozzles_replaced', 'hardfacing_applied',
+                'threads_repaired', 'gauge_repaired', 'balance_check'
+            )
+        }),
+        ('Routing', {
+            'fields': ('route_template_used',)
+        }),
+        ('Chain', {
+            'fields': ('previous_repair',)
+        }),
+        ('Completion', {
+            'fields': ('repair_completed_date', 'repair_notes')
+        }),
+    )
+
+
+@admin.register(models.RepairDecision)
+class RepairDecisionAdmin(admin.ModelAdmin):
+    """Admin for repair routing decisions"""
+    list_display = [
+        'evaluation_summary', 'recommended_route',
+        'needs_cutter_replacement', 'needs_hardfacing',
+        'estimated_hours', 'estimated_cutter_count'
+    ]
+    list_filter = [
+        'needs_cutter_replacement', 'needs_nozzle_replacement',
+        'needs_hardfacing', 'needs_thread_repair',
+        'needs_gauge_repair', 'needs_ndt', 'created_at'
+    ]
+    search_fields = [
+        'evaluation_summary__job_card__jobcard_code',
+        'decision_notes'
+    ]
+    autocomplete_fields = ['evaluation_summary', 'recommended_route', 'created_by']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'created_at'
+
+    fieldsets = (
+        ('Decision Based On', {
+            'fields': ('evaluation_summary', 'recommended_route')
+        }),
+        ('Required Processes', {
+            'fields': (
+                'needs_cutter_replacement', 'needs_nozzle_replacement',
+                'needs_hardfacing', 'needs_thread_repair',
+                'needs_gauge_repair', 'needs_balance', 'needs_ndt'
+            )
+        }),
+        ('Resource Estimates', {
+            'fields': ('estimated_hours', 'estimated_cutter_count')
+        }),
+        ('Notes', {
+            'fields': ('decision_notes',)
+        }),
+        ('Created By', {
+            'fields': ('created_by', 'created_at', 'updated_at')
+        }),
+    )
+
+
+# Add BOM inline to BitDesignRevisionAdmin
+BitDesignRevisionAdmin.inlines = [BOMItemInline]

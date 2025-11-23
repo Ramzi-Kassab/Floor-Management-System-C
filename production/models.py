@@ -345,6 +345,29 @@ class BitInstance(models.Model):
             return f"{self.serial_number}-R{self.current_repair_index}"
         return self.serial_number
 
+    def get_all_work_orders(self):
+        """Get all work orders for this bit (initial build + all repairs)"""
+        return self.work_orders.all().order_by('created_at')
+
+    def get_repair_history_chain(self):
+        """Get complete repair history in chronological order"""
+        return self.repair_history.all().order_by('repair_index')
+
+    def get_last_repair(self):
+        """Get the most recent repair record"""
+        return self.repair_history.filter(
+            repair_index=self.current_repair_index
+        ).first() if self.current_repair_index > 0 else None
+
+    def get_total_repairs_count(self):
+        """Get total number of repairs performed"""
+        return self.current_repair_index
+
+    def can_be_repaired_again(self):
+        """Check if bit can be repaired again (business logic)"""
+        # Example: Maximum 5 repairs allowed
+        return self.current_repair_index < 5 and self.status != 'SCRAPPED'
+
 
 # ============================================================================
 # WORK ORDERS & JOB CARDS
@@ -2731,3 +2754,734 @@ class ProcessCorrectionRequest(models.Model):
         self.corrected_by = performed_by
         self.correction_notes = notes
         self.save()
+
+
+# ============================================================================
+# BILL OF MATERIALS (BOM) & REPAIR HISTORY
+# ============================================================================
+
+class BOMItem(models.Model):
+    """
+    Bill of Materials for bit designs
+    Tracks materials, cutters, and components needed
+    """
+    design_revision = models.ForeignKey(
+        BitDesignRevision,
+        on_delete=models.CASCADE,
+        related_name='bom_items',
+        help_text="Design this BOM applies to"
+    )
+    item_type = models.CharField(
+        max_length=50,
+        choices=[
+            ('CUTTER', 'PDC Cutter'),
+            ('NOZZLE', 'Nozzle'),
+            ('BEARING', 'Bearing'),
+            ('SEAL', 'Seal'),
+            ('HARDFACING', 'Hardfacing Material'),
+            ('POWDER', 'Matrix Powder'),
+            ('BINDER', 'Binder/Infiltrant'),
+            ('THREAD_COMPOUND', 'Thread Compound'),
+            ('OTHER', 'Other Component'),
+        ],
+        db_index=True
+    )
+    part_number = models.CharField(
+        max_length=100,
+        help_text="Manufacturer part number"
+    )
+    description = models.TextField()
+    quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="Quantity required per bit"
+    )
+    unit = models.CharField(
+        max_length=20,
+        default='EA',
+        help_text="Unit of measure (EA, LB, KG, etc.)"
+    )
+    manufacturer = models.CharField(max_length=200, blank=True)
+    grade = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Material grade or specification"
+    )
+    is_critical = models.BooleanField(
+        default=False,
+        help_text="Critical component requiring special tracking"
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['item_type', 'part_number']
+        indexes = [
+            models.Index(fields=['design_revision', 'item_type']),
+            models.Index(fields=['part_number']),
+        ]
+
+    def __str__(self):
+        return f"{self.part_number} - {self.description} ({self.quantity} {self.unit})"
+
+
+class ActualBOM(models.Model):
+    """
+    Actual materials used for a specific work order
+    Tracks what was actually used vs. what was planned
+    """
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name='actual_bom',
+        help_text="Work order this BOM applies to"
+    )
+    bom_item = models.ForeignKey(
+        BOMItem,
+        on_delete=models.PROTECT,
+        related_name='actual_usage',
+        help_text="Reference BOM item"
+    )
+    planned_quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="Planned quantity from BOM"
+    )
+    actual_quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        blank=True,
+        null=True,
+        help_text="Actual quantity used"
+    )
+    lot_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Lot/batch number of material used"
+    )
+    serial_numbers = models.TextField(
+        blank=True,
+        help_text="Serial numbers of critical components (one per line)"
+    )
+    variance_notes = models.TextField(
+        blank=True,
+        help_text="Notes on quantity variance or substitutions"
+    )
+    recorded_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='bom_records'
+    )
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['work_order', 'bom_item']
+        indexes = [
+            models.Index(fields=['work_order', 'bom_item']),
+        ]
+
+    def __str__(self):
+        return f"{self.work_order.wo_number} - {self.bom_item.part_number}"
+
+    def get_variance(self):
+        """Calculate variance between planned and actual"""
+        if self.actual_quantity is not None:
+            return self.actual_quantity - self.planned_quantity
+        return None
+
+
+class RepairHistory(models.Model):
+    """
+    Detailed repair history for each repair cycle
+    Tracks what was done, replaced, and observed
+    """
+    bit_instance = models.ForeignKey(
+        BitInstance,
+        on_delete=models.CASCADE,
+        related_name='repair_history',
+        help_text="Bit that was repaired"
+    )
+    work_order = models.OneToOneField(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name='repair_record',
+        help_text="Repair work order"
+    )
+    repair_index = models.PositiveIntegerField(
+        help_text="Repair number (1=R1, 2=R2, etc.)"
+    )
+    evaluation_summary = models.ForeignKey(
+        EvaluationSummary,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='repair_from_eval',
+        help_text="Evaluation that triggered this repair"
+    )
+
+    # What was observed
+    hours_on_bit = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Hours bit was in use"
+    )
+    footage_drilled = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Footage drilled before return"
+    )
+    damage_description = models.TextField(
+        blank=True,
+        help_text="Description of damage observed"
+    )
+
+    # What was done
+    cutters_replaced = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of PDC cutters replaced"
+    )
+    nozzles_replaced = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of nozzles replaced"
+    )
+    hardfacing_applied = models.BooleanField(
+        default=False,
+        help_text="Was hardfacing reapplied"
+    )
+    threads_repaired = models.BooleanField(
+        default=False,
+        help_text="Were threads repaired/re-cut"
+    )
+    gauge_repaired = models.BooleanField(
+        default=False,
+        help_text="Was gauge repaired/rebuilt"
+    )
+    balance_check = models.BooleanField(
+        default=False,
+        help_text="Was bit re-balanced"
+    )
+
+    # Repair route used
+    route_template_used = models.ForeignKey(
+        RouteTemplate,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='repair_usage',
+        help_text="Route template used for this repair"
+    )
+
+    # Reference to previous repairs
+    previous_repair = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='subsequent_repairs',
+        help_text="Previous repair in the chain"
+    )
+
+    # Completion info
+    repair_completed_date = models.DateField(blank=True, null=True)
+    repair_notes = models.TextField(
+        blank=True,
+        help_text="General notes about this repair cycle"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['bit_instance', 'repair_index']
+        verbose_name_plural = 'Repair histories'
+        indexes = [
+            models.Index(fields=['bit_instance', 'repair_index']),
+            models.Index(fields=['work_order']),
+        ]
+        unique_together = [['bit_instance', 'repair_index']]
+
+    def __str__(self):
+        return f"{self.bit_instance.serial_number}-R{self.repair_index} (WO: {self.work_order.wo_number})"
+
+    def get_total_cost_estimate(self):
+        """Estimate total repair cost based on components replaced"""
+        # This would integrate with costing system
+        pass
+
+
+class RepairDecision(models.Model):
+    """
+    Automated repair route decision based on evaluation
+    Helps determine which processes are needed
+    """
+    evaluation_summary = models.OneToOneField(
+        EvaluationSummary,
+        on_delete=models.CASCADE,
+        related_name='repair_decision',
+        help_text="Evaluation this decision is based on"
+    )
+    recommended_route = models.ForeignKey(
+        RouteTemplate,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='recommended_for',
+        help_text="Recommended route template"
+    )
+
+    # Required processes based on evaluation
+    needs_cutter_replacement = models.BooleanField(default=False)
+    needs_nozzle_replacement = models.BooleanField(default=False)
+    needs_hardfacing = models.BooleanField(default=False)
+    needs_thread_repair = models.BooleanField(default=False)
+    needs_gauge_repair = models.BooleanField(default=False)
+    needs_balance = models.BooleanField(default=False)
+    needs_ndt = models.BooleanField(default=False)
+
+    # Estimated resources
+    estimated_hours = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Estimated repair hours"
+    )
+    estimated_cutter_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Estimated cutters to replace"
+    )
+
+    decision_notes = models.TextField(
+        blank=True,
+        help_text="Reasoning for route selection"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='repair_decisions'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Repair Decision for {self.evaluation_summary.job_card.jobcard_code}"
+
+    def generate_route_recommendation(self):
+        """
+        Intelligently recommend a route template based on required processes
+        """
+        # This would query RouteTemplate and match based on required processes
+        # For now, return a simple recommendation
+        if self.needs_cutter_replacement or self.needs_gauge_repair:
+            # Heavy repair
+            return "REPAIR-HEAVY"
+        elif self.needs_hardfacing or self.needs_thread_repair:
+            # Medium repair
+            return "REPAIR-MEDIUM"
+        else:
+            # Light repair
+            return "REPAIR-LIGHT"
+
+
+# ============================================================================
+# CUTTER LAYOUT MANAGEMENT
+# ============================================================================
+
+class CutterZone(models.TextChoices):
+    """Zones on PDC bit face"""
+    CONE = 'CONE', 'Cone (Center)'
+    SHOULDER = 'SHOULDER', 'Shoulder (Middle)'
+    GAUGE = 'GAUGE', 'Gauge (Outer)'
+    NOSE = 'NOSE', 'Nose (Transition)'
+
+
+class CutterType(models.TextChoices):
+    """PDC cutter types and profiles"""
+    STANDARD_ROUND = 'STANDARD_ROUND', 'Standard Round PDC'
+    CONICAL = 'CONICAL', 'Conical PDC'
+    RIDGE = 'RIDGE', 'Ridge PDC'
+    STINGER = 'STINGER', 'Stinger PDC'
+    AXE = 'AXE', 'Axe PDC'
+    DOME = 'DOME', 'Dome PDC'
+
+
+class CutterLayoutPosition(models.Model):
+    """
+    Defines each cutter position on a bit design
+    Maps the cutter grid: blade number, row number, position
+    """
+    design_revision = models.ForeignKey(
+        BitDesignRevision,
+        on_delete=models.CASCADE,
+        related_name='cutter_positions',
+        help_text="Design this layout applies to"
+    )
+
+    # Position identification
+    blade_number = models.PositiveIntegerField(
+        help_text="Blade number (1-7 typically)"
+    )
+    row_number = models.PositiveIntegerField(
+        help_text="Row number from center (1=center, increasing outward)"
+    )
+    position_in_row = models.PositiveIntegerField(
+        default=1,
+        help_text="Position within the row (for multiple cutters per row)"
+    )
+
+    # Zone classification
+    zone = models.CharField(
+        max_length=20,
+        choices=CutterZone.choices,
+        help_text="Functional zone on bit face"
+    )
+
+    # Cutter specification for this position
+    cutter_size_mm = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="Cutter diameter in mm (e.g., 13.00, 16.00, 19.00)"
+    )
+    cutter_type = models.CharField(
+        max_length=30,
+        choices=CutterType.choices,
+        default=CutterType.STANDARD_ROUND,
+        help_text="Cutter profile type"
+    )
+
+    # Orientation and geometry
+    back_rake_angle = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        help_text="Back rake angle in degrees (0-30°, negative for aggressive)"
+    )
+    side_rake_angle = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Side rake angle in degrees"
+    )
+    exposure_mm = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="Cutter exposure above blade in mm"
+    )
+
+    # Position coordinates (for visualization)
+    radial_position_mm = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Distance from bit center in mm"
+    )
+    angular_position_degrees = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Angular position on blade (0-360°)"
+    )
+
+    # BOM linkage
+    bom_item = models.ForeignKey(
+        BOMItem,
+        on_delete=models.PROTECT,
+        related_name='cutter_positions',
+        help_text="BOM item for this cutter specification"
+    )
+
+    # Design intent notes
+    is_critical_for_performance = models.BooleanField(
+        default=False,
+        help_text="Critical position (cannot substitute)"
+    )
+    substitution_allowed = models.BooleanField(
+        default=True,
+        help_text="Can this cutter be substituted with similar spec?"
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Special notes for this position"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['blade_number', 'row_number', 'position_in_row']
+        indexes = [
+            models.Index(fields=['design_revision', 'blade_number']),
+            models.Index(fields=['zone', 'cutter_size_mm']),
+        ]
+        unique_together = [['design_revision', 'blade_number', 'row_number', 'position_in_row']]
+        verbose_name_plural = 'Cutter layout positions'
+
+    def __str__(self):
+        return f"B{self.blade_number}-R{self.row_number}-P{self.position_in_row}: {self.cutter_size_mm}mm {self.get_cutter_type_display()}"
+
+    def get_position_code(self):
+        """Generate unique position code (e.g., B1-R3-P1)"""
+        return f"B{self.blade_number}-R{self.row_number}-P{self.position_in_row}"
+
+
+class ActualCutterInstallation(models.Model):
+    """
+    Tracks actual cutters installed in each position
+    Records as-built or as-repaired cutter layout
+    """
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name='cutter_installations',
+        help_text="Work order (build or repair) this installation belongs to"
+    )
+    layout_position = models.ForeignKey(
+        CutterLayoutPosition,
+        on_delete=models.PROTECT,
+        related_name='actual_installations',
+        help_text="Design position for this cutter"
+    )
+
+    # Installation details
+    installation_date = models.DateField(
+        blank=True,
+        null=True,
+        help_text="Date cutter was installed"
+    )
+    installed_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='cutter_installations',
+        help_text="Technician who installed this cutter"
+    )
+
+    # Actual cutter installed (may differ from design)
+    actual_cutter_size_mm = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="Actual cutter size installed"
+    )
+    actual_cutter_type = models.CharField(
+        max_length=30,
+        choices=CutterType.choices,
+        help_text="Actual cutter type installed"
+    )
+    actual_bom_item = models.ForeignKey(
+        BOMItem,
+        on_delete=models.PROTECT,
+        related_name='actual_installations',
+        help_text="Actual BOM item used"
+    )
+
+    # Traceability
+    cutter_serial_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Individual cutter serial number (if tracked)"
+    )
+    cutter_lot_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Lot/batch number of cutter"
+    )
+    manufacturer = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Cutter manufacturer"
+    )
+
+    # Deviation tracking
+    is_substitution = models.BooleanField(
+        default=False,
+        help_text="True if this differs from design specification"
+    )
+    substitution_reason = models.TextField(
+        blank=True,
+        help_text="Reason for substitution (material shortage, engineering change, etc.)"
+    )
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='approved_cutter_substitutions',
+        help_text="Engineer who approved substitution"
+    )
+
+    # Installation quality
+    braze_quality_check = models.CharField(
+        max_length=20,
+        choices=[
+            ('PASS', 'Pass'),
+            ('FAIL', 'Fail'),
+            ('REWORK', 'Rework'),
+            ('NOT_CHECKED', 'Not Checked'),
+        ],
+        default='NOT_CHECKED',
+        help_text="Braze quality inspection result"
+    )
+    leak_test_result = models.CharField(
+        max_length=20,
+        choices=[
+            ('PASS', 'Pass'),
+            ('FAIL', 'Fail'),
+            ('NOT_TESTED', 'Not Tested'),
+        ],
+        default='NOT_TESTED',
+        help_text="Leak test result"
+    )
+
+    # Status tracking
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('INSTALLED', 'Installed'),
+            ('DAMAGED', 'Damaged'),
+            ('REPLACED', 'Replaced'),
+            ('REMOVED', 'Removed'),
+        ],
+        default='INSTALLED',
+        help_text="Current status of this cutter"
+    )
+    removal_date = models.DateField(
+        blank=True,
+        null=True,
+        help_text="Date cutter was removed (during repair)"
+    )
+    removal_reason = models.TextField(
+        blank=True,
+        help_text="Reason for removal"
+    )
+
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = [
+            'work_order',
+            'layout_position__blade_number',
+            'layout_position__row_number'
+        ]
+        indexes = [
+            models.Index(fields=['work_order', 'status']),
+            models.Index(fields=['layout_position', 'status']),
+        ]
+
+    def __str__(self):
+        position = self.layout_position.get_position_code()
+        return f"{self.work_order.wo_number} - {position}: {self.actual_cutter_size_mm}mm"
+
+    def is_per_design(self):
+        """Check if installed cutter matches design specification"""
+        return (
+            self.actual_cutter_size_mm == self.layout_position.cutter_size_mm and
+            self.actual_cutter_type == self.layout_position.cutter_type and
+            not self.is_substitution
+        )
+
+    def get_deviation_description(self):
+        """Describe how installation deviates from design"""
+        if self.is_per_design():
+            return "Per design"
+
+        deviations = []
+        if self.actual_cutter_size_mm != self.layout_position.cutter_size_mm:
+            deviations.append(
+                f"Size: {self.layout_position.cutter_size_mm}mm → {self.actual_cutter_size_mm}mm"
+            )
+        if self.actual_cutter_type != self.layout_position.cutter_type:
+            deviations.append(
+                f"Type: {self.layout_position.get_cutter_type_display()} → {self.get_actual_cutter_type_display()}"
+            )
+
+        return "; ".join(deviations)
+
+
+class CutterLayoutRevision(models.Model):
+    """
+    Tracks changes to cutter layouts over time
+    Documents engineering changes and field feedback
+    """
+    design_revision = models.ForeignKey(
+        BitDesignRevision,
+        on_delete=models.CASCADE,
+        related_name='layout_revisions',
+        help_text="Design this layout revision applies to"
+    )
+    revision_number = models.CharField(
+        max_length=20,
+        help_text="Layout revision number (e.g., LAY-001, LAY-002)"
+    )
+    revision_date = models.DateField(
+        help_text="Date of layout revision"
+    )
+
+    # Change description
+    change_description = models.TextField(
+        help_text="Description of what changed in this revision"
+    )
+    reason_for_change = models.TextField(
+        help_text="Why the change was made (field performance, cost reduction, etc.)"
+    )
+
+    # Approval
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='approved_layout_revisions',
+        help_text="Engineer who approved this revision"
+    )
+    approval_date = models.DateField(
+        blank=True,
+        null=True
+    )
+
+    # Effectivity
+    effective_from_wo = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="First work order to use this revision"
+    )
+
+    # Performance tracking
+    field_performance_notes = models.TextField(
+        blank=True,
+        help_text="Field performance feedback for this layout"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-revision_date']
+        unique_together = [['design_revision', 'revision_number']]
+
+    def __str__(self):
+        return f"{self.design_revision.mat_number} - {self.revision_number}"
