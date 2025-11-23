@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     # Project apps - Foundation layer (no dependencies)
     'core_foundation',  # Foundation models: CostCenter, Currency, Notification, etc.
 
+    # Project apps - Domain modules
+    'production',  # Production Department: Bit manufacturing, repair, routing, QC
+
     # Project apps - Dashboard/Aggregator (disabled until dependencies exist)
     # 'core',  # Dashboard views (depends on HR, Inventory, Production, etc.)
 ]
@@ -145,6 +148,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication settings
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'production:dashboard'
+LOGOUT_REDIRECT_URL = 'login'
 
 # Cache configuration
 CACHES = {

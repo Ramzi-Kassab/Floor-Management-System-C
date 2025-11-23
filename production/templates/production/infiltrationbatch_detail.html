@@ -1,0 +1,38 @@
+{% extends 'production/base.html' %}
+{% block title %}Batch {{ batch.batch_code }}{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12"><h1>Infiltration Batch: {{ batch.batch_code }}</h1></div>
+</div>
+<div class="card mb-3">
+    <div class="card-header"><h5>Batch Details</h5></div>
+    <div class="card-body">
+        <p><strong>Batch Code:</strong> {{ batch.batch_code }}</p>
+        <p><strong>Furnace:</strong> {{ batch.furnace_id }}</p>
+        <p><strong>Status:</strong> <span class="badge bg-primary">{{ batch.get_status_display }}</span></p>
+        <p><strong>Operator:</strong> {{ batch.operator_name|default:"—" }}</p>
+        <p><strong>Planned Start:</strong> {{ batch.planned_start|date:"Y-m-d H:i" }}</p>
+        <p><strong>Actual Start:</strong> {{ batch.actual_start|date:"Y-m-d H:i"|default:"—" }}</p>
+    </div>
+</div>
+{% if items %}
+<div class="card">
+    <div class="card-header"><h5>Batch Items ({{ items.count }})</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead><tr><th>Job Card</th><th>Mold ID</th><th>Powder Mix</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><a href="{% url 'production:jobcard-detail' item.job_card.pk %}">{{ item.job_card.jobcard_code }}</a></td>
+                    <td>{{ item.mold_id }}</td>
+                    <td>{{ item.powder_mix_code|default:"—" }}</td>
+                    <td><span class="badge bg-secondary">{{ item.get_status_display }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

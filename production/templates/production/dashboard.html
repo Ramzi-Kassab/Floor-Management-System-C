@@ -1,0 +1,156 @@
+{% extends 'production/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="bi bi-speedometer2"></i> Production Dashboard</h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-clipboard-check"></i> Open Work Orders</h5>
+                <h2 class="mb-0">{{ workorders_open }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Urgent WOs</h5>
+                <h2 class="mb-0">{{ workorders_urgent }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-card-checklist"></i> Active Job Cards</h5>
+                <h2 class="mb-0">{{ jobcards_active }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-pause-circle"></i> QC Hold</h5>
+                <h2 class="mb-0">{{ jobcards_qc_hold }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Infiltration Status -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <i class="bi bi-fire"></i> Infiltration Batches In Progress
+            </div>
+            <div class="card-body">
+                <h2 class="text-center">{{ infiltration_in_progress }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Work Orders -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Work Orders</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_workorders %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>WO Number</th>
+                                <th>Type</th>
+                                <th>Customer</th>
+                                <th>Design</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for wo in recent_workorders %}
+                            <tr>
+                                <td><strong>{{ wo.wo_number }}</strong></td>
+                                <td><span class="badge bg-info">{{ wo.get_order_type_display }}</span></td>
+                                <td>{{ wo.customer_name }}</td>
+                                <td>{{ wo.design_revision.design.design_code }}</td>
+                                <td>
+                                    {% if wo.priority == 'URGENT' %}
+                                    <span class="badge bg-danger">{{ wo.get_priority_display }}</span>
+                                    {% elif wo.priority == 'HIGH' %}
+                                    <span class="badge bg-warning">{{ wo.get_priority_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ wo.get_priority_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if wo.status == 'IN_PROGRESS' %}
+                                    <span class="badge bg-primary">{{ wo.get_status_display }}</span>
+                                    {% elif wo.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">{{ wo.get_status_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ wo.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ wo.created_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    <a href="{% url 'production:workorder-detail' wo.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No recent work orders found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Jobs by Department -->
+{% if jobcards_by_department %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-building"></i> Active Jobs by Department</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for dept in jobcards_by_department %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h6>{{ dept.department|default:"Unassigned" }}</h6>
+                                <h3 class="text-primary">{{ dept.count }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

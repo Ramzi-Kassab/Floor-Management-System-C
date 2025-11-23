@@ -1,0 +1,89 @@
+{% extends 'production/base.html' %}
+
+{% block title %}WO-{{ workorder.wo_number }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-clipboard-check"></i> Work Order: {{ workorder.wo_number }}</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'production:workorder-edit' workorder.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a href="{% url 'production:workorder-list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Work Order Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6"><strong>WO Number:</strong> {{ workorder.wo_number }}</div>
+                    <div class="col-md-6"><strong>Type:</strong> <span class="badge bg-info">{{ workorder.get_order_type_display }}</span></div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6"><strong>Priority:</strong>
+                        {% if workorder.priority == 'URGENT' %}<span class="badge bg-danger">{{ workorder.get_priority_display }}</span>
+                        {% else %}<span class="badge bg-secondary">{{ workorder.get_priority_display }}</span>{% endif %}
+                    </div>
+                    <div class="col-md-6"><strong>Status:</strong> <span class="badge bg-primary">{{ workorder.get_status_display }}</span></div>
+                </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-md-6"><strong>Bit Design:</strong> {{ workorder.design_revision.design.design_code }}</div>
+                    <div class="col-md-6"><strong>MAT:</strong> {{ workorder.design_revision.mat_number }}</div>
+                </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-md-12"><strong>Customer:</strong> {{ workorder.customer_name }}</div>
+                </div>
+                {% if workorder.remarks %}
+                <div class="row">
+                    <div class="col-12"><strong>Remarks:</strong><p>{{ workorder.remarks }}</p></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Job Cards</h5></div>
+            <div class="card-body">
+                {% if job_cards %}
+                <table class="table">
+                    <thead><tr><th>Job Card</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        {% for jc in job_cards %}
+                        <tr>
+                            <td>{{ jc.jobcard_code }}</td>
+                            <td>{{ jc.get_department_display|default:"" }}</td>
+                            <td><span class="badge bg-primary">{{ jc.get_status_display }}</span></td>
+                            <td><a href="{% url 'production:jobcard-detail' jc.pk %}" class="btn btn-sm btn-primary">View</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">No job cards yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h6>Metadata</h6></div>
+            <div class="card-body">
+                <p><strong>Created:</strong><br>{{ workorder.created_at|date:"Y-m-d H:i" }}</p>
+                <p><strong>Updated:</strong><br>{{ workorder.updated_at|date:"Y-m-d H:i" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

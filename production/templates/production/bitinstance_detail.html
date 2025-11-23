@@ -1,0 +1,41 @@
+{% extends 'production/base.html' %}
+{% block title %}{{ instance.get_full_serial }}{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12"><h1>Bit Instance: {{ instance.get_full_serial }}</h1></div>
+</div>
+<div class="card">
+    <div class="card-header"><h5>Instance Details</h5></div>
+    <div class="card-body">
+        <p><strong>Serial Number:</strong> {{ instance.get_full_serial }}</p>
+        <p><strong>Design:</strong> {{ instance.design_revision.design.design_code }}</p>
+        <p><strong>MAT Number:</strong> {{ instance.design_revision.mat_number }}</p>
+        <p><strong>Body Material:</strong> {{ instance.get_body_material_display }}</p>
+        <p><strong>Manufacturing Source:</strong> {{ instance.get_manufacturing_source_display }}</p>
+        <p><strong>Repair Index:</strong> {{ instance.current_repair_index }}</p>
+        <p><strong>Status:</strong> <span class="badge bg-primary">{{ instance.get_status_display }}</span></p>
+    </div>
+</div>
+{% if work_orders %}
+<div class="card mt-3">
+    <div class="card-header"><h5>Work Order History</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead><tr><th>WO Number</th><th>Type</th><th>Status</th><th>Customer</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for wo in work_orders %}
+                <tr>
+                    <td>{{ wo.wo_number }}</td>
+                    <td>{{ wo.get_order_type_display }}</td>
+                    <td><span class="badge bg-primary">{{ wo.get_status_display }}</span></td>
+                    <td>{{ wo.customer_name }}</td>
+                    <td>{{ wo.created_at|date:"Y-m-d" }}</td>
+                    <td><a href="{% url 'production:workorder-detail' wo.pk %}" class="btn btn-sm btn-primary">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

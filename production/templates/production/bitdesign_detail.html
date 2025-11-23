@@ -1,0 +1,40 @@
+{% extends 'production/base.html' %}
+{% block title %}{{ design.design_code }}{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6"><h1>Bit Design: {{ design.design_code }}</h1></div>
+    <div class="col-md-6 text-end"><a href="{% url 'production:bitdesign-edit' design.pk %}" class="btn btn-warning">Edit</a></div>
+</div>
+<div class="card">
+    <div class="card-body">
+        <p><strong>Design Code:</strong> {{ design.design_code }}</p>
+        <p><strong>Type:</strong> {{ design.get_bit_type_display }}</p>
+        <p><strong>Material:</strong> {{ design.get_body_material_display|default:"—" }}</p>
+        <p><strong>Size:</strong> {{ design.size_inch }}"</p>
+        <p><strong>Blade Count:</strong> {{ design.blade_count|default:"—" }}</p>
+        <p><strong>Nozzle Count:</strong> {{ design.nozzle_count|default:"—" }}</p>
+        <p><strong>Active:</strong> {% if design.active %}Yes{% else %}No{% endif %}</p>
+        {% if design.description %}<p><strong>Description:</strong> {{ design.description }}</p>{% endif %}
+    </div>
+</div>
+{% if revisions %}
+<div class="card mt-3">
+    <div class="card-header"><h5>Design Revisions</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead><tr><th>MAT Number</th><th>Level</th><th>Effective From</th><th>Active</th></tr></thead>
+            <tbody>
+                {% for rev in revisions %}
+                <tr>
+                    <td>{{ rev.mat_number }}</td>
+                    <td>{{ rev.level }}</td>
+                    <td>{{ rev.effective_from|date:"Y-m-d" }}</td>
+                    <td>{% if rev.active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

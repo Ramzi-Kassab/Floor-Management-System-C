@@ -1,0 +1,28 @@
+{% extends 'production/base.html' %}
+{% block title %}Route Templates{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12"><h1><i class="bi bi-diagram-3"></i> Route Templates</h1></div>
+</div>
+<div class="card">
+    <div class="card-body">
+        {% if routes %}
+        <table class="table table-striped">
+            <thead><tr><th>Name</th><th>Bit Type</th><th>Material</th><th>For Order Type</th><th>Active</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for route in routes %}
+                <tr>
+                    <td><strong>{{ route.name }}</strong></td>
+                    <td>{{ route.get_bit_type_display }}</td>
+                    <td>{{ route.get_body_material_display|default:"Any" }}</td>
+                    <td>{{ route.get_for_order_type_display }}</td>
+                    <td>{% if route.active %}<span class="badge bg-success">Yes</span>{% endif %}</td>
+                    <td><a href="{% url 'production:routetemplate-detail' route.pk %}" class="btn btn-sm btn-primary">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="text-muted">No route templates found.</p>{% endif %}
+    </div>
+</div>
+{% endblock %}

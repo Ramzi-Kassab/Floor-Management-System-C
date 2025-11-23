@@ -1,0 +1,39 @@
+{% extends 'production/base.html' %}
+{% block title %}{{ route.name }}{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12"><h1>Route Template: {{ route.name }}</h1></div>
+</div>
+<div class="card mb-3">
+    <div class="card-header"><h5>Route Details</h5></div>
+    <div class="card-body">
+        <p><strong>Name:</strong> {{ route.name }}</p>
+        <p><strong>Bit Type:</strong> {{ route.get_bit_type_display }}</p>
+        <p><strong>Body Material:</strong> {{ route.get_body_material_display|default:"Any" }}</p>
+        <p><strong>For Order Type:</strong> {{ route.get_for_order_type_display }}</p>
+        <p><strong>Department Focus:</strong> {{ route.get_department_focus_display|default:"—" }}</p>
+        <p><strong>Active:</strong> {% if route.active %}Yes{% else %}No{% endif %}</p>
+    </div>
+</div>
+{% if steps %}
+<div class="card">
+    <div class="card-header"><h5>Route Steps ({{ steps.count }})</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead><tr><th>Seq</th><th>Process Code</th><th>Department</th><th>Est. Duration</th><th>Mandatory</th></tr></thead>
+            <tbody>
+                {% for step in steps %}
+                <tr>
+                    <td>{{ step.sequence }}</td>
+                    <td><strong>{{ step.process_code }}</strong></td>
+                    <td>{{ step.get_default_department_display|default:"—" }}</td>
+                    <td>{{ step.estimated_duration_minutes }} min</td>
+                    <td>{% if step.is_mandatory %}<span class="badge bg-success">Yes</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
