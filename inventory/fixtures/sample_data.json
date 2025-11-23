@@ -1,0 +1,62 @@
+[
+  {
+    "model": "inventory.supplier",
+    "pk": 1,
+    "fields": {
+      "code": "SUP-USA-001",
+      "name": "Baker Hughes USA",
+      "country": "US",
+      "city": "Houston",
+      "email": "sup-usa-001@supplier.com",
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 1,
+    "fields": {
+      "code": "CUTTER",
+      "name": "Cutters & Inserts",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 1,
+    "fields": {
+      "code": "EA",
+      "name": "Each",
+      "is_base_unit": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "inventory.warehouse",
+    "pk": 1,
+    "fields": {
+      "code": "WH-MAIN",
+      "name": "Main Warehouse - Dammam",
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "inventory.conditiontype",
+    "pk": 1,
+    "fields": {
+      "code": "NEW",
+      "name": "New",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "inventory.ownershiptype",
+    "pk": 1,
+    "fields": {
+      "code": "OWN",
+      "name": "Own Stock",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  }
+]
