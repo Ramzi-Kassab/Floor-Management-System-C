@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}GRN {{ grn.grn_number }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col"><h1><i class="bi bi-inbox"></i> GRN {{ grn.grn_number }}</h1></div>
+    <div class="col-auto">
+        <a href="{% url 'purchasing:grn_update' grn.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Edit</a>
+        <a href="{% url 'purchasing:grn_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header"><h5>GRN Details</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <tr><th>GRN Number:</th><td>{{ grn.grn_number }}</td></tr>
+            <tr><th>Purchase Order:</th><td><a href="{% url 'purchasing:po_detail' grn.purchase_order.pk %}">{{ grn.purchase_order.po_number }}</a></td></tr>
+            <tr><th>Receipt Date:</th><td>{{ grn.receipt_date }}</td></tr>
+            <tr><th>Received By:</th><td>{{ grn.received_by.username }}</td></tr>
+            <tr><th>Notes:</th><td>{{ grn.notes }}</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h5>Received Items</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Item</th><th>Received Qty</th><th>Location</th><th>Condition</th><th>Ownership</th></tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr>
+                        <td>{{ line.purchase_order_line.item.item_code }} - {{ line.purchase_order_line.item.name }}</td>
+                        <td>{{ line.received_quantity }}</td>
+                        <td>{{ line.location }}</td>
+                        <td><span class="badge bg-info">{{ line.condition_type.code }}</span></td>
+                        <td><span class="badge bg-primary">{{ line.ownership_type.code }}</span></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="text-muted">No line items</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

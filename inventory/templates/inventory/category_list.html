@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Item Categories{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col"><h1><i class="bi bi-tags"></i> Item Categories</h1></div>
+    <div class="col-auto">
+        <a href="{% url 'inventory:category_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Category</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>Code</th><th>Name</th><th>Parent</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                    <tr>
+                        <td><strong>{{ category.code }}</strong></td>
+                        <td>{{ category.name }}</td>
+                        <td>{% if category.parent %}{{ category.parent.name }}{% endif %}</td>
+                        <td>{{ category.description|truncatewords:10 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted">No categories found</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

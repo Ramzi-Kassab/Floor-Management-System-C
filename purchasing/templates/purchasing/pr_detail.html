@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}PR {{ pr.pr_number }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col"><h1><i class="bi bi-file-text"></i> PR {{ pr.pr_number }}</h1></div>
+    <div class="col-auto">
+        <a href="{% url 'purchasing:pr_update' pr.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Edit</a>
+        <a href="{% url 'purchasing:pr_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header"><h5>PR Details</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <tr><th>PR Number:</th><td>{{ pr.pr_number }}</td></tr>
+            <tr><th>Requested By:</th><td>{{ pr.requested_by.username }}</td></tr>
+            <tr><th>Request Date:</th><td>{{ pr.request_date }}</td></tr>
+            <tr><th>Status:</th><td><span class="badge bg-primary">{{ pr.get_status_display }}</span></td></tr>
+            <tr><th>Remarks:</th><td>{{ pr.remarks }}</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h5>Line Items</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Item</th><th>Quantity</th><th>Required Date</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr>
+                        <td>{{ line.item.item_code }} - {{ line.item.name }}</td>
+                        <td>{{ line.quantity }} {{ line.item.unit_of_measure.code }}</td>
+                        <td>{{ line.required_date|date:"Y-m-d"|default:"-" }}</td>
+                        <td>{{ line.notes }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-muted">No line items</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

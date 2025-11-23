@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Goods Receipts{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col"><h1><i class="bi bi-inbox"></i> Goods Receipts</h1></div>
+    <div class="col-auto">
+        <a href="{% url 'purchasing:grn_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Create GRN</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>GRN Number</th><th>Purchase Order</th><th>Receipt Date</th><th>Received By</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for grn in goods_receipts %}
+                    <tr>
+                        <td><strong>{{ grn.grn_number }}</strong></td>
+                        <td>{{ grn.purchase_order.po_number }}</td>
+                        <td>{{ grn.receipt_date|date:"Y-m-d" }}</td>
+                        <td>{{ grn.received_by.username }}</td>
+                        <td>
+                            <a href="{% url 'purchasing:grn_detail' grn.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{% url 'purchasing:grn_update' grn.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted">No goods receipts found</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

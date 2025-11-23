@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Items{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-boxes"></i> Items</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'inventory:item_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Item</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Search by code or name..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="item_type" class="form-select">
+                    <option value="">All Types</option>
+                    {% for code, label in item_types %}
+                        <option value="{{ code }}" {% if request.GET.item_type == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if request.GET.category|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-secondary w-100"><i class="bi bi-search"></i> Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Item Code</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>UOM</th>
+                        <th>Reorder Level</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td><strong>{{ item.item_code }}</strong></td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.category.name }}</td>
+                            <td><span class="badge bg-info">{{ item.get_item_type_display }}</span></td>
+                            <td>{{ item.unit_of_measure.code }}</td>
+                            <td>{{ item.reorder_level }}</td>
+                            <td>
+                                {% if item.active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'inventory:item_detail' item.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                <a href="{% url 'inventory:item_update' item.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No items found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page=1">First</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

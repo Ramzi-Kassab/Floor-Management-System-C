@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Purchase Requests{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col"><h1><i class="bi bi-file-text"></i> Purchase Requests</h1></div>
+    <div class="col-auto">
+        <a href="{% url 'purchasing:pr_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Create PR</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>PR Number</th><th>Requested By</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for pr in purchase_requests %}
+                    <tr>
+                        <td><strong>{{ pr.pr_number }}</strong></td>
+                        <td>{{ pr.requested_by.username }}</td>
+                        <td>{{ pr.request_date|date:"Y-m-d" }}</td>
+                        <td><span class="badge bg-primary">{{ pr.get_status_display }}</span></td>
+                        <td>
+                            <a href="{% url 'purchasing:pr_detail' pr.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{% url 'purchasing:pr_update' pr.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted">No purchase requests found</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

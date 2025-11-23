@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Purchasing Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col"><h1><i class="bi bi-cart"></i> Purchasing Dashboard</h1></div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-file-text"></i> Purchase Requests</h5>
+                <h2>{{ total_prs }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-cart-check"></i> Purchase Orders</h5>
+                <h2>{{ total_pos }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-inbox"></i> Goods Receipts</h5>
+                <h2>{{ total_grns }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-hourglass"></i> Pending PRs</h5>
+                <h2>{{ pending_prs }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h5><i class="bi bi-clock-history"></i> Recent Purchase Orders</h5></div>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>PO Number</th><th>Supplier</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for po in recent_pos %}
+                    <tr>
+                        <td><strong>{{ po.po_number }}</strong></td>
+                        <td>{{ po.supplier.name }}</td>
+                        <td>{{ po.order_date|date:"Y-m-d" }}</td>
+                        <td><span class="badge bg-info">{{ po.get_status_display }}</span></td>
+                        <td>
+                            <a href="{% url 'purchasing:po_detail' po.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="text-muted">No recent POs</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Suppliers{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-truck"></i> Suppliers</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'inventory:supplier_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Supplier</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Country</th>
+                        <th>Contact Person</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supplier in suppliers %}
+                        <tr>
+                            <td><strong>{{ supplier.code }}</strong></td>
+                            <td>{{ supplier.name }}</td>
+                            <td>{{ supplier.country }}</td>
+                            <td>{{ supplier.contact_person }}</td>
+                            <td>{{ supplier.email }}</td>
+                            <td>
+                                {% if supplier.active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'inventory:supplier_detail' supplier.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                <a href="{% url 'inventory:supplier_update' supplier.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No suppliers found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Transactions{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col"><h1><i class="bi bi-arrow-left-right"></i> Stock Transactions</h1></div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Type</th>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Reference</th>
+                    <th>Performed By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trans in transactions %}
+                    <tr>
+                        <td>{{ trans.performed_at|date:"Y-m-d H:i" }}</td>
+                        <td><span class="badge bg-secondary">{{ trans.get_transaction_type_display }}</span></td>
+                        <td>{{ trans.item.item_code }}</td>
+                        <td><strong>{{ trans.quantity }}</strong></td>
+                        <td>{% if trans.from_location %}{{ trans.from_location.code }}{% else %}-{% endif %}</td>
+                        <td>{% if trans.to_location %}{{ trans.to_location.code }}{% else %}-{% endif %}</td>
+                        <td>{{ trans.reference }}</td>
+                        <td>{{ trans.performed_by.username }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="8" class="text-center text-muted">No transactions found</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

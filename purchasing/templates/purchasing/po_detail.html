@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}PO {{ po.po_number }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col"><h1><i class="bi bi-cart-check"></i> PO {{ po.po_number }}</h1></div>
+    <div class="col-auto">
+        <a href="{% url 'purchasing:po_update' po.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Edit</a>
+        <a href="{% url 'purchasing:po_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header"><h5>PO Details</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <tr><th>PO Number:</th><td>{{ po.po_number }}</td></tr>
+            <tr><th>Supplier:</th><td>{{ po.supplier.name }}</td></tr>
+            <tr><th>Order Date:</th><td>{{ po.order_date }}</td></tr>
+            <tr><th>Status:</th><td><span class="badge bg-success">{{ po.get_status_display }}</span></td></tr>
+            <tr><th>Currency:</th><td>{{ po.currency }}</td></tr>
+            <tr><th>Payment Terms:</th><td>{{ po.payment_terms }}</td></tr>
+            <tr><th>Created By:</th><td>{{ po.created_by.username }}</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header"><h5>Line Items</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Item</th><th>Ordered Qty</th><th>Unit Price</th><th>Total</th><th>Expected Delivery</th></tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr>
+                        <td>{{ line.item.item_code }} - {{ line.item.name }}</td>
+                        <td>{{ line.ordered_quantity }}</td>
+                        <td>{{ line.unit_price }}</td>
+                        <td>{{ line.line_total }}</td>
+                        <td>{{ line.expected_delivery_date|date:"Y-m-d"|default:"-" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="text-muted">No line items</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h5>Goods Receipts</h5></div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>GRN Number</th><th>Receipt Date</th><th>Received By</th></tr>
+            </thead>
+            <tbody>
+                {% for grn in goods_receipts %}
+                    <tr>
+                        <td><a href="{% url 'purchasing:grn_detail' grn.pk %}">{{ grn.grn_number }}</a></td>
+                        <td>{{ grn.receipt_date|date:"Y-m-d" }}</td>
+                        <td>{{ grn.received_by.username }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3" class="text-muted">No goods receipts</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

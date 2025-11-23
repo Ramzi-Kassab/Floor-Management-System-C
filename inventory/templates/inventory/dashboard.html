@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-box-seam"></i> Inventory Dashboard</h1>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-boxes"></i> Total Items</h5>
+                <h2>{{ total_items }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-building"></i> Warehouses</h5>
+                <h2>{{ total_warehouses }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-truck"></i> Suppliers</h5>
+                <h2>{{ total_suppliers }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Low Stock</h5>
+                <h2>{{ low_stock_items|length }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-exclamation-circle"></i> Low Stock Items</h5>
+            </div>
+            <div class="card-body">
+                {% if low_stock_items %}
+                    <div class="list-group">
+                        {% for item in low_stock_items %}
+                            <a href="{% url 'inventory:item_detail' item.pk %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ item.item_code }} - {{ item.name }}</h6>
+                                    <small class="text-danger">Reorder: {{ item.reorder_level }}</small>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No low stock items</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-link-45deg"></i> Quick Links</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'inventory:item_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add New Item</a>
+                    <a href="{% url 'inventory:supplier_create' %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Add New Supplier</a>
+                    <a href="{% url 'inventory:warehouse_create' %}" class="btn btn-info"><i class="bi bi-plus-circle"></i> Add New Warehouse</a>
+                    <a href="{% url 'inventory:stock_list' %}" class="btn btn-secondary"><i class="bi bi-list"></i> View Stock Overview</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

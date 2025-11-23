@@ -48,6 +48,10 @@ INSTALLED_APPS = [
     # Project apps - Foundation layer (no dependencies)
     'core_foundation',  # Foundation models: CostCenter, Currency, Notification, etc.
 
+    # Project apps - Logistics
+    'inventory',  # Inventory management: items, warehouses, stock
+    'purchasing',  # Purchasing: PRs, POs, GRNs
+
     # Project apps - Dashboard/Aggregator (disabled until dependencies exist)
     # 'core',  # Dashboard views (depends on HR, Inventory, Production, etc.)
 ]
