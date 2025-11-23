@@ -1,0 +1,262 @@
+{% extends 'production/base.html' %}
+{% block title %}Process Execution Logs{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-journal-text"></i> Process Execution Logs</h1>
+        <p class="text-muted">Complete audit trail of all QR code scans and process executions</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'production:correction-request-list' %}" class="btn btn-warning">
+            <i class="bi bi-arrow-counterclockwise"></i> Correction Requests
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ logs|length }}</h3>
+                <small>Total Executions</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ logs|selectattr:'was_valid_sequence', 'equalto', True|length }}</h3>
+                <small>Valid Sequences</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ logs|selectattr:'was_valid_sequence', 'equalto', False|length }}</h3>
+                <small>Invalid Scans</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ logs|selectattr:'was_corrected', 'equalto', True|length }}</h3>
+                <small>Corrected</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Validity</label>
+                <select name="validity" class="form-select">
+                    <option value="">All</option>
+                    <option value="valid" {% if request.GET.validity == 'valid' %}selected{% endif %}>Valid Only</option>
+                    <option value="invalid" {% if request.GET.validity == 'invalid' %}selected{% endif %}>Invalid Only</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Corrected</label>
+                <select name="corrected" class="form-select">
+                    <option value="">All</option>
+                    <option value="yes" {% if request.GET.corrected == 'yes' %}selected{% endif %}>Yes</option>
+                    <option value="no" {% if request.GET.corrected == 'no' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Job Card ID</label>
+                <input type="number" name="job_card" class="form-control" placeholder="Job Card ID" value="{{ request.GET.job_card }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Operator ID</label>
+                <input type="number" name="operator" class="form-control" placeholder="Operator ID" value="{{ request.GET.operator }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+    <div class="card-header">
+        <strong>Execution Logs</strong>
+        <span class="badge bg-secondary float-end">{{ logs|length }} records</span>
+    </div>
+    <div class="card-body">
+        {% if logs %}
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>Log #</th>
+                        <th>Scanned At</th>
+                        <th>Job Card</th>
+                        <th>Process</th>
+                        <th>Operator</th>
+                        <th>Department</th>
+                        <th>Valid?</th>
+                        <th>Corrected?</th>
+                        <th>Validation Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr {% if not log.was_valid_sequence %}class="table-danger"{% endif %}>
+                        <td>
+                            <small><code>{{ log.log_number }}</code></small>
+                        </td>
+                        <td>
+                            <small>{{ log.scanned_at|date:"m/d H:i" }}</small>
+                        </td>
+                        <td>
+                            <a href="{% url 'production:jobcard-detail' log.job_card.pk %}">
+                                {{ log.job_card.jobcard_code }}
+                            </a>
+                        </td>
+                        <td>
+                            <code>{{ log.process_code }}</code>
+                        </td>
+                        <td>
+                            {{ log.operator_name|default:"—" }}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ log.get_department_display|default:"—" }}</span>
+                        </td>
+                        <td>
+                            {% if log.was_valid_sequence %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> Yes
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger">
+                                <i class="bi bi-x-circle"></i> No
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.was_corrected %}
+                            <span class="badge bg-warning">
+                                <i class="bi bi-arrow-counterclockwise"></i> Yes
+                            </span>
+                            {% if log.correction_request %}
+                            <br>
+                            <small>
+                                <a href="{% url 'production:correction-request-detail' log.correction_request.pk %}">
+                                    {{ log.correction_request.request_number }}
+                                </a>
+                            </small>
+                            {% endif %}
+                            {% else %}
+                            <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ log.validation_message }}</small>
+                            {% if not log.was_valid_sequence and log.expected_process_code %}
+                            <br>
+                            <small class="text-muted">Expected: <code>{{ log.expected_process_code }}</code></small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav class="mt-3">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.validity %}&validity={{ request.GET.validity }}{% endif %}{% if request.GET.corrected %}&corrected={{ request.GET.corrected }}{% endif %}">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.validity %}&validity={{ request.GET.validity }}{% endif %}{% if request.GET.corrected %}&corrected={{ request.GET.corrected }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.validity %}&validity={{ request.GET.validity }}{% endif %}{% if request.GET.corrected %}&corrected={{ request.GET.corrected }}{% endif %}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.validity %}&validity={{ request.GET.validity }}{% endif %}{% if request.GET.corrected %}&corrected={{ request.GET.corrected }}{% endif %}">Last</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No execution logs found matching your filters.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legend</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Validation Status:</h6>
+                <ul>
+                    <li><span class="badge bg-success"><i class="bi bi-check-circle"></i> Valid</span> - Operator scanned the correct next process in sequence</li>
+                    <li><span class="badge bg-danger"><i class="bi bi-x-circle"></i> Invalid</span> - Operator scanned wrong process (highlighted in red)</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Correction Status:</h6>
+                <ul>
+                    <li><span class="badge bg-warning"><i class="bi bi-arrow-counterclockwise"></i> Corrected</span> - This execution was later corrected by supervisor approval</li>
+                    <li><span class="badge bg-secondary">Not Corrected</span> - No correction applied</li>
+                </ul>
+            </div>
+        </div>
+
+        <hr>
+
+        <h6>About This Log:</h6>
+        <p class="mb-0">
+            This log captures every QR code scan in the system. It provides a complete audit trail showing:
+        </p>
+        <ul class="mb-0">
+            <li>What process was scanned and when</li>
+            <li>Who scanned it (operator)</li>
+            <li>Whether it was the correct process in the workflow sequence</li>
+            <li>If any corrections were applied later</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-danger td {
+        background-color: #f8d7da !important;
+    }
+</style>
+{% endblock %}

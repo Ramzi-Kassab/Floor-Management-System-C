@@ -1,0 +1,202 @@
+{% extends 'production/base.html' %}
+{% block title %}Submit Correction Request{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-arrow-counterclockwise"></i> Submit Correction Request</h1>
+        <p class="text-muted">Request to correct or reverse a wrongly executed process step</p>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if route_step %}
+        <a href="{% url 'production:jobcard-detail' route_step.job_card.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Job Card
+        </a>
+        {% else %}
+        <a href="{% url 'production:correction-request-list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Validation Error Info -->
+{% if execution_log and not execution_log.was_valid_sequence %}
+<div class="alert alert-danger">
+    <h5><i class="bi bi-exclamation-triangle"></i> Wrong Process Detected!</h5>
+    <p class="mb-2">
+        <strong>Scanned Process:</strong> <code>{{ execution_log.process_code }}</code><br>
+        <strong>Expected Process:</strong> <code>{{ execution_log.expected_process_code }}</code>
+    </p>
+    <p class="mb-0"><strong>Validation Message:</strong> {{ execution_log.validation_message }}</p>
+</div>
+{% endif %}
+
+<!-- Step Info -->
+{% if route_step %}
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Process Step Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Job Card:</strong>
+                    <a href="{% url 'production:jobcard-detail' route_step.job_card.pk %}">
+                        {{ route_step.job_card.jobcard_code }}
+                    </a>
+                </p>
+                <p><strong>Process Code:</strong> <code>{{ route_step.process_code }}</code></p>
+                <p><strong>Description:</strong> {{ route_step.description }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Sequence:</strong> #{{ route_step.sequence }}</p>
+                <p><strong>Department:</strong> {{ route_step.get_department_display|default:"—" }}</p>
+                <p><strong>Current Status:</strong>
+                    <span class="badge bg-secondary">{{ route_step.get_status_display }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Correction Request Form -->
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-pencil"></i> Correction Request Form</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">Job Route Step <span class="text-danger">*</span></label>
+                {{ form.job_route_step }}
+                {% if form.job_route_step.errors %}
+                <div class="text-danger small">{{ form.job_route_step.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    The process step that needs correction
+                </small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Correction Type <span class="text-danger">*</span></label>
+                {{ form.correction_type }}
+                {% if form.correction_type.errors %}
+                <div class="text-danger small">{{ form.correction_type.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    <strong>Reverse Step:</strong> Mark the step back to PENDING (most common)<br>
+                    <strong>Change Operator:</strong> Change who performed the step<br>
+                    <strong>Adjust Times:</strong> Correct recorded start/end times<br>
+                    <strong>Cancel Execution:</strong> Cancel the wrong execution completely
+                </small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Reason for Correction <span class="text-danger">*</span></label>
+                {{ form.reason }}
+                {% if form.reason.errors %}
+                <div class="text-danger small">{{ form.reason.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    Explain why this correction is needed (be specific)
+                </small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Impact Description</label>
+                {{ form.impact_description }}
+                {% if form.impact_description.errors %}
+                <div class="text-danger small">{{ form.impact_description.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    Describe what impact this mistake has (e.g., "No work started yet", "Wrong bit processed", etc.)
+                </small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Priority <span class="text-danger">*</span></label>
+                {{ form.priority }}
+                {% if form.priority.errors %}
+                <div class="text-danger small">{{ form.priority.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    How urgent is this correction?
+                </small>
+            </div>
+
+            <hr>
+
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> <strong>What happens next?</strong>
+                <ol class="mb-0 mt-2">
+                    <li>Your request will be submitted to a supervisor for review</li>
+                    <li>Supervisor will approve or reject your request with notes</li>
+                    <li>If approved, the correction will be executed (step reset to PENDING)</li>
+                    <li>You'll be able to track the status of your request</li>
+                </ol>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                {% if route_step %}
+                <a href="{% url 'production:jobcard-detail' route_step.job_card.pk %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                {% else %}
+                <a href="{% url 'production:correction-request-list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Submit Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Help Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-question-circle"></i> Help & Guidelines</h6>
+    </div>
+    <div class="card-body">
+        <h6>When to submit a correction request:</h6>
+        <ul>
+            <li>You scanned the wrong process QR code by mistake</li>
+            <li>You started a process that wasn't ready to begin</li>
+            <li>The wrong operator was assigned to the step</li>
+            <li>Timing information was recorded incorrectly</li>
+        </ul>
+
+        <h6 class="mt-3">What to include in your reason:</h6>
+        <ul>
+            <li>What happened (e.g., "Scanned WELDING instead of GRINDING")</li>
+            <li>Why it happened (e.g., "Two QR codes were next to each other")</li>
+            <li>Current status (e.g., "No work has been started yet")</li>
+        </ul>
+
+        <h6 class="mt-3">Priority levels:</h6>
+        <ul>
+            <li><strong>URGENT:</strong> Production is blocked, immediate action needed</li>
+            <li><strong>HIGH:</strong> Affects critical path, need quick resolution</li>
+            <li><strong>NORMAL:</strong> Standard correction request</li>
+            <li><strong>LOW:</strong> Minor correction, no production impact</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    select, textarea, input[type="text"] {
+        width: 100%;
+    }
+    textarea {
+        min-height: 100px;
+    }
+</style>
+{% endblock %}

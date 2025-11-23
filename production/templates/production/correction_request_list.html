@@ -1,0 +1,205 @@
+{% extends 'production/base.html' %}
+{% block title %}Correction Requests{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-arrow-counterclockwise"></i> Process Correction Requests</h1>
+        <p class="text-muted">Operator-initiated requests to correct wrongly executed processes</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'production:execution-log-list' %}" class="btn btn-secondary">
+            <i class="bi bi-journal-text"></i> View Execution Logs
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ requests|length }}</h3>
+                <small>Total Requests</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ requests|selectattr:'status', 'equalto', 'PENDING'|length }}</h3>
+                <small>Pending Review</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ requests|selectattr:'status', 'equalto', 'APPROVED'|length }}</h3>
+                <small>Approved</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ requests|selectattr:'status', 'equalto', 'COMPLETED'|length }}</h3>
+                <small>Completed</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                    <option value="APPROVED" {% if request.GET.status == 'APPROVED' %}selected{% endif %}>Approved</option>
+                    <option value="REJECTED" {% if request.GET.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                    <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Priority</label>
+                <select name="priority" class="form-select">
+                    <option value="">All Priorities</option>
+                    <option value="LOW" {% if request.GET.priority == 'LOW' %}selected{% endif %}>Low</option>
+                    <option value="NORMAL" {% if request.GET.priority == 'NORMAL' %}selected{% endif %}>Normal</option>
+                    <option value="HIGH" {% if request.GET.priority == 'HIGH' %}selected{% endif %}>High</option>
+                    <option value="URGENT" {% if request.GET.priority == 'URGENT' %}selected{% endif %}>Urgent</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <a href="{% url 'production:correction-request-list' %}" class="btn btn-secondary w-100">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Requests Table -->
+<div class="card">
+    <div class="card-header">
+        <strong>Correction Requests</strong>
+    </div>
+    <div class="card-body">
+        {% if requests %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Request #</th>
+                        <th>Job Card</th>
+                        <th>Process Step</th>
+                        <th>Type</th>
+                        <th>Requested By</th>
+                        <th>Requested At</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'production:correction-request-detail' req.pk %}">
+                                <strong>{{ req.request_number }}</strong>
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'production:jobcard-detail' req.job_card.pk %}">
+                                {{ req.job_card.jobcard_code }}
+                            </a>
+                        </td>
+                        <td>
+                            <code>{{ req.job_route_step.process_code }}</code>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ req.get_correction_type_display }}</span>
+                        </td>
+                        <td>{{ req.requested_by_name }}</td>
+                        <td>{{ req.requested_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            {% if req.priority == 'URGENT' %}
+                            <span class="badge bg-danger">{{ req.get_priority_display }}</span>
+                            {% elif req.priority == 'HIGH' %}
+                            <span class="badge bg-warning">{{ req.get_priority_display }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ req.get_priority_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.status == 'PENDING' %}
+                            <span class="badge bg-warning">{{ req.get_status_display }}</span>
+                            {% elif req.status == 'APPROVED' %}
+                            <span class="badge bg-success">{{ req.get_status_display }}</span>
+                            {% elif req.status == 'REJECTED' %}
+                            <span class="badge bg-danger">{{ req.get_status_display }}</span>
+                            {% elif req.status == 'COMPLETED' %}
+                            <span class="badge bg-secondary">{{ req.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'production:correction-request-detail' req.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No correction requests found.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
