@@ -1,0 +1,102 @@
+[
+  {
+    "model": "inventory.itemcategory",
+    "pk": 1,
+    "fields": {
+      "code": "CUTTER",
+      "name": "Cutters",
+      "description": "PDC cutters and cutting elements",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 2,
+    "fields": {
+      "code": "MATRIX",
+      "name": "Matrix Materials",
+      "description": "Matrix powders and binders for infiltration",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 3,
+    "fields": {
+      "code": "STEEL",
+      "name": "Steel Components",
+      "description": "Steel bodies and forgings",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 4,
+    "fields": {
+      "code": "JV_BODY",
+      "name": "JV Bodies",
+      "description": "Semi-finished bodies from JV partners",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 5,
+    "fields": {
+      "code": "UPPER",
+      "name": "Upper Sections",
+      "description": "API connection upper sections",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 6,
+    "fields": {
+      "code": "HARDFACING",
+      "name": "Hardfacing Materials",
+      "description": "Hardfacing powders, flux, brazing alloys",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 7,
+    "fields": {
+      "code": "CONSUMABLE",
+      "name": "Consumables",
+      "description": "General consumable materials",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 8,
+    "fields": {
+      "code": "TOOL",
+      "name": "Tools",
+      "description": "Manufacturing tools and equipment",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 9,
+    "fields": {
+      "code": "SPARE",
+      "name": "Spare Parts",
+      "description": "Machine and equipment spare parts",
+      "parent": null
+    }
+  },
+  {
+    "model": "inventory.itemcategory",
+    "pk": 10,
+    "fields": {
+      "code": "GAS",
+      "name": "Gases",
+      "description": "Industrial gases",
+      "parent": null
+    }
+  }
+]

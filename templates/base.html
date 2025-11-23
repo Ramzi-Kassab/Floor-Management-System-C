@@ -32,6 +32,9 @@
                             <li><a class="dropdown-item" href="{% url 'inventory:location_list' %}">Locations</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'inventory:stock_list' %}">Stock Overview</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:low_stock' %}"><i class="bi bi-exclamation-triangle text-warning"></i> Low Stock Items</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:stock_adjustment' %}">Stock Adjustment</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:stock_transfer' %}">Stock Transfer</a></li>
                             <li><a class="dropdown-item" href="{% url 'inventory:transaction_list' %}">Transactions</a></li>
                         </ul>
                     </li>

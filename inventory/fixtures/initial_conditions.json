@@ -1,0 +1,47 @@
+[
+  {
+    "model": "inventory.conditiontype",
+    "pk": 1,
+    "fields": {
+      "code": "NEW",
+      "name": "New",
+      "description": "Brand new items in original packaging"
+    }
+  },
+  {
+    "model": "inventory.conditiontype",
+    "pk": 2,
+    "fields": {
+      "code": "USED",
+      "name": "Used",
+      "description": "Items that have been used but are still functional"
+    }
+  },
+  {
+    "model": "inventory.conditiontype",
+    "pk": 3,
+    "fields": {
+      "code": "REPAIRABLE",
+      "name": "Repairable",
+      "description": "Items that need repair before use"
+    }
+  },
+  {
+    "model": "inventory.conditiontype",
+    "pk": 4,
+    "fields": {
+      "code": "SCRAP",
+      "name": "Scrap",
+      "description": "Items marked for disposal or recycling"
+    }
+  },
+  {
+    "model": "inventory.conditiontype",
+    "pk": 5,
+    "fields": {
+      "code": "REWORK",
+      "name": "Rework",
+      "description": "Items requiring rework or refurbishment"
+    }
+  }
+]

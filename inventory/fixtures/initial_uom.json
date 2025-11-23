@@ -1,0 +1,92 @@
+[
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 1,
+    "fields": {
+      "code": "EA",
+      "name": "Each",
+      "is_base_unit": true
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 2,
+    "fields": {
+      "code": "KG",
+      "name": "Kilogram",
+      "is_base_unit": true
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 3,
+    "fields": {
+      "code": "L",
+      "name": "Liter",
+      "is_base_unit": true
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 4,
+    "fields": {
+      "code": "M",
+      "name": "Meter",
+      "is_base_unit": true
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 5,
+    "fields": {
+      "code": "M3",
+      "name": "Cubic Meter",
+      "is_base_unit": false
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 6,
+    "fields": {
+      "code": "G",
+      "name": "Gram",
+      "is_base_unit": false
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 7,
+    "fields": {
+      "code": "TON",
+      "name": "Metric Ton",
+      "is_base_unit": false
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 8,
+    "fields": {
+      "code": "SET",
+      "name": "Set",
+      "is_base_unit": false
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 9,
+    "fields": {
+      "code": "BOX",
+      "name": "Box",
+      "is_base_unit": false
+    }
+  },
+  {
+    "model": "inventory.unitofmeasure",
+    "pk": 10,
+    "fields": {
+      "code": "PACK",
+      "name": "Package",
+      "is_base_unit": false
+    }
+  }
+]

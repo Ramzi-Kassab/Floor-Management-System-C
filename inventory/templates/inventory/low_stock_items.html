@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Low Stock Items{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-exclamation-triangle"></i> Low Stock Items</h1>
+        <p class="text-muted">Items below reorder level requiring attention</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Item Code</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Current Stock</th>
+                        <th>Reorder Level</th>
+                        <th>Stock %</th>
+                        <th>Urgency</th>
+                        <th>Preferred Supplier</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in low_stock_items %}
+                        <tr>
+                            <td><strong>{{ item.item_code }}</strong></td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.category.name }}</td>
+                            <td>
+                                <strong>{{ item.total_stock|default:"0" }}</strong> {{ item.unit_of_measure.code }}
+                            </td>
+                            <td>{{ item.reorder_level }} {{ item.unit_of_measure.code }}</td>
+                            <td>
+                                <div class="progress" style="min-width: 100px;">
+                                    <div class="progress-bar {% if item.urgency == 'critical' %}bg-danger{% elif item.urgency == 'warning' %}bg-warning{% else %}bg-info{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ item.stock_percentage|floatformat:0 }}%">
+                                        {{ item.stock_percentage|floatformat:0 }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.urgency == 'critical' %}
+                                    <span class="badge bg-danger"><i class="bi bi-exclamation-circle"></i> Critical</span>
+                                {% elif item.urgency == 'warning' %}
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> Warning</span>
+                                {% else %}
+                                    <span class="badge bg-info"><i class="bi bi-info-circle"></i> Low</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.preferred_supplier %}
+                                    {{ item.preferred_supplier.name }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'inventory:item_detail' item.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-success">
+                                <i class="bi bi-check-circle"></i> No low stock items - all stock levels are healthy!
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page=1">First</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

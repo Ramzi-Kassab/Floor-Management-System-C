@@ -281,3 +281,156 @@ class StockTransactionListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['transaction_types'] = StockTransaction.TRANSACTION_TYPE_CHOICES
         return context
+
+
+# Stock Adjustment View
+class StockAdjustmentView(LoginRequiredMixin, CreateView):
+    """Create stock adjustment transactions."""
+    model = StockTransaction
+    template_name = 'inventory/stock_adjustment.html'
+    fields = ['item', 'to_location', 'condition_type', 'ownership_type', 'quantity', 'reference', 'notes']
+    success_url = reverse_lazy('inventory:transaction_list')
+
+    def form_valid(self, form):
+        form.instance.transaction_type = 'ADJUSTMENT'
+        form.instance.performed_by = self.request.user
+        form.instance.from_location = None
+
+        # Save transaction
+        response = super().form_valid(form)
+
+        # Update stock level
+        stock_level, created = StockLevel.objects.get_or_create(
+            item=form.instance.item,
+            location=form.instance.to_location,
+            condition_type=form.instance.condition_type,
+            ownership_type=form.instance.ownership_type,
+            defaults={'quantity': 0}
+        )
+        stock_level.quantity += form.instance.quantity
+        stock_level.save()
+
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Stock Adjustment'
+        return context
+
+
+# Stock Transfer View
+class StockTransferView(LoginRequiredMixin, CreateView):
+    """Transfer stock between locations."""
+    model = StockTransaction
+    template_name = 'inventory/stock_transfer.html'
+    fields = ['item', 'from_location', 'to_location', 'condition_type', 'ownership_type', 'quantity', 'reference', 'notes']
+    success_url = reverse_lazy('inventory:transaction_list')
+
+    def form_valid(self, form):
+        form.instance.transaction_type = 'TRANSFER'
+        form.instance.performed_by = self.request.user
+
+        # Check if sufficient stock exists at from_location
+        try:
+            stock_level = StockLevel.objects.get(
+                item=form.instance.item,
+                location=form.instance.from_location,
+                condition_type=form.instance.condition_type,
+                ownership_type=form.instance.ownership_type
+            )
+
+            if stock_level.quantity < form.instance.quantity:
+                form.add_error('quantity', f'Insufficient stock. Available: {stock_level.quantity}')
+                return self.form_invalid(form)
+        except StockLevel.DoesNotExist:
+            form.add_error('from_location', 'No stock available at this location')
+            return self.form_invalid(form)
+
+        # Save transaction
+        response = super().form_valid(form)
+
+        # Decrease stock at from_location
+        stock_level.quantity -= form.instance.quantity
+        stock_level.save()
+
+        # Increase stock at to_location
+        to_stock, created = StockLevel.objects.get_or_create(
+            item=form.instance.item,
+            location=form.instance.to_location,
+            condition_type=form.instance.condition_type,
+            ownership_type=form.instance.ownership_type,
+            defaults={'quantity': 0}
+        )
+        to_stock.quantity += form.instance.quantity
+        to_stock.save()
+
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Stock Transfer'
+        return context
+
+
+# Low Stock Items View
+class LowStockItemsView(LoginRequiredMixin, ListView):
+    """View items with stock below reorder level."""
+    model = Item
+    template_name = 'inventory/low_stock_items.html'
+    context_object_name = 'low_stock_items'
+    paginate_by = 50
+
+    def get_queryset(self):
+        from django.db.models import Sum, F
+
+        # Get items where total stock is below reorder level
+        queryset = Item.objects.filter(active=True).annotate(
+            total_stock=Sum('stock_levels__quantity')
+        ).filter(
+            total_stock__lt=F('reorder_level')
+        ).select_related('category', 'unit_of_measure', 'preferred_supplier')
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Calculate urgency for each item
+        for item in context['low_stock_items']:
+            if item.total_stock is None:
+                item.total_stock = 0
+            item.stock_percentage = (item.total_stock / item.reorder_level * 100) if item.reorder_level > 0 else 0
+            item.urgency = 'critical' if item.stock_percentage < 25 else 'warning' if item.stock_percentage < 50 else 'low'
+        return context
+
+
+# QR Code Views
+class ItemQRCodeView(LoginRequiredMixin, DetailView):
+    """Display QR code for an item."""
+    model = Item
+    template_name = 'inventory/item_qrcode.html'
+    context_object_name = 'item'
+
+    def get_context_data(self, **kwargs):
+        from .utils import generate_qr_code, generate_item_qr_data
+
+        context = super().get_context_data(**kwargs)
+        qr_data = generate_item_qr_data(self.object)
+        context['qr_code'] = generate_qr_code(qr_data)
+        context['qr_data'] = qr_data
+        return context
+
+
+class LocationQRCodeView(LoginRequiredMixin, DetailView):
+    """Display QR code for a location."""
+    model = Location
+    template_name = 'inventory/location_qrcode.html'
+    context_object_name = 'location'
+
+    def get_context_data(self, **kwargs):
+        from .utils import generate_qr_code, generate_location_qr_data
+
+        context = super().get_context_data(**kwargs)
+        qr_data = generate_location_qr_data(self.object)
+        context['qr_code'] = generate_qr_code(qr_data)
+        context['qr_data'] = qr_data
+        return context

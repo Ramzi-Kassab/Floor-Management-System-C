@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}QR Code - {{ item.item_code }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-qr-code"></i> QR Code - {{ item.item_code }}</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'inventory:item_detail' item.pk %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back to Item</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Item Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr><th>Item Code:</th><td><strong>{{ item.item_code }}</strong></td></tr>
+                    <tr><th>Name:</th><td>{{ item.name }}</td></tr>
+                    <tr><th>Category:</th><td>{{ item.category.name }}</td></tr>
+                    <tr><th>Type:</th><td>{{ item.get_item_type_display }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card text-center">
+            <div class="card-header">
+                <h5>QR Code</h5>
+            </div>
+            <div class="card-body">
+                <img src="{{ qr_code }}" alt="QR Code for {{ item.item_code }}" class="img-fluid mb-3" style="max-width: 300px;">
+                <p class="text-muted small">Data: {{ qr_data }}</p>
+                <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print QR Code</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .navbar, .btn, footer, .card-header { display: none; }
+    .card { border: none; }
+}
+</style>
+{% endblock %}

@@ -22,6 +22,7 @@ urlpatterns = [
     path('items/<int:pk>/', views.ItemDetailView.as_view(), name='item_detail'),
     path('items/create/', views.ItemCreateView.as_view(), name='item_create'),
     path('items/<int:pk>/edit/', views.ItemUpdateView.as_view(), name='item_update'),
+    path('items/<int:pk>/qrcode/', views.ItemQRCodeView.as_view(), name='item_qrcode'),
 
     # Warehouses
     path('warehouses/', views.WarehouseListView.as_view(), name='warehouse_list'),
@@ -33,8 +34,12 @@ urlpatterns = [
     path('locations/', views.LocationListView.as_view(), name='location_list'),
     path('locations/create/', views.LocationCreateView.as_view(), name='location_create'),
     path('locations/<int:pk>/edit/', views.LocationUpdateView.as_view(), name='location_update'),
+    path('locations/<int:pk>/qrcode/', views.LocationQRCodeView.as_view(), name='location_qrcode'),
 
     # Stock
     path('stock/', views.StockLevelListView.as_view(), name='stock_list'),
+    path('stock/adjustment/', views.StockAdjustmentView.as_view(), name='stock_adjustment'),
+    path('stock/transfer/', views.StockTransferView.as_view(), name='stock_transfer'),
+    path('stock/low-stock/', views.LowStockItemsView.as_view(), name='low_stock'),
     path('transactions/', views.StockTransactionListView.as_view(), name='transaction_list'),
 ]

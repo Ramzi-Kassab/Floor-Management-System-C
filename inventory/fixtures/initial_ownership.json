@@ -1,0 +1,47 @@
+[
+  {
+    "model": "inventory.ownershiptype",
+    "pk": 1,
+    "fields": {
+      "code": "OWN",
+      "name": "Own Stock",
+      "description": "Company owned inventory"
+    }
+  },
+  {
+    "model": "inventory.ownershiptype",
+    "pk": 2,
+    "fields": {
+      "code": "CUSTOMER",
+      "name": "Customer Owned",
+      "description": "Stock owned by customer, held on their behalf"
+    }
+  },
+  {
+    "model": "inventory.ownershiptype",
+    "pk": 3,
+    "fields": {
+      "code": "CONSIGNMENT",
+      "name": "Consignment",
+      "description": "Stock held on consignment from supplier"
+    }
+  },
+  {
+    "model": "inventory.ownershiptype",
+    "pk": 4,
+    "fields": {
+      "code": "JV_OWNED",
+      "name": "Joint Venture Owned",
+      "description": "Stock owned by JV partner"
+    }
+  },
+  {
+    "model": "inventory.ownershiptype",
+    "pk": 5,
+    "fields": {
+      "code": "RENTAL",
+      "name": "Rental/Leased",
+      "description": "Rented or leased items"
+    }
+  }
+]

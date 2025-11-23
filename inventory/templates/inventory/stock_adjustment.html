@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Stock Adjustment{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-plus-minus"></i> {{ title }}</h1>
+        <p class="text-muted">Adjust stock levels for corrections or initial stock entry</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Item *</label>
+                    {% render_field form.item class="form-control" %}
+                    {% if form.item.errors %}
+                        <div class="invalid-feedback d-block">{{ form.item.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Location *</label>
+                    {% render_field form.to_location class="form-control" %}
+                    {% if form.to_location.errors %}
+                        <div class="invalid-feedback d-block">{{ form.to_location.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Condition *</label>
+                    {% render_field form.condition_type class="form-control" %}
+                    {% if form.condition_type.errors %}
+                        <div class="invalid-feedback d-block">{{ form.condition_type.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Ownership *</label>
+                    {% render_field form.ownership_type class="form-control" %}
+                    {% if form.ownership_type.errors %}
+                        <div class="invalid-feedback d-block">{{ form.ownership_type.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Quantity *</label>
+                    {% render_field form.quantity class="form-control" placeholder="Can be positive or negative" %}
+                    {% if form.quantity.errors %}
+                        <div class="invalid-feedback d-block">{{ form.quantity.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Use negative value to decrease stock</small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Reference</label>
+                    {% render_field form.reference class="form-control" placeholder="e.g., ADJ-2025-001" %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Notes</label>
+                    {% render_field form.notes class="form-control" placeholder="Reason for adjustment" %}
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Create Adjustment</button>
+                <a href="{% url 'inventory:stock_list' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="alert alert-info mt-3">
+    <i class="bi bi-info-circle"></i> <strong>Note:</strong> Stock adjustments create a transaction record and update the stock level at the selected location.
+    Use positive quantities to add stock and negative quantities to remove stock.
+</div>
+{% endblock %}
