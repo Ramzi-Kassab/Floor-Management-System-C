@@ -1,0 +1,183 @@
+{% extends 'production/base.html' %}
+{% load i18n %}
+
+{% block title %}Repair History{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-clock-history"></i> Repair History</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if bit_instance %}
+        <a href="{% url 'production:bitinstance-detail' bit_instance.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Bit Instance
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if bit_instance %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-gear-wide-connected"></i> Bit Instance: {{ bit_instance.get_full_serial }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Design:</strong> {{ bit_instance.design_revision.design.design_code }}
+            </div>
+            <div class="col-md-3">
+                <strong>Current Repair Index:</strong> <span class="badge bg-info">R{{ bit_instance.current_repair_index }}</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Status:</strong>
+                {% if bit_instance.status == 'IN_SERVICE' %}
+                <span class="badge bg-success">{{ bit_instance.get_status_display }}</span>
+                {% elif bit_instance.status == 'SCRAPPED' %}
+                <span class="badge bg-danger">{{ bit_instance.get_status_display }}</span>
+                {% else %}
+                <span class="badge bg-primary">{{ bit_instance.get_status_display }}</span>
+                {% endif %}
+            </div>
+            <div class="col-md-3">
+                <strong>Total Repairs:</strong> {{ repairs.count }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if repairs %}
+<div class="card">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="bi bi-arrow-repeat"></i> Repair Chain</h5>
+    </div>
+    <div class="card-body">
+        <!-- Repair Chain Timeline -->
+        <div class="mb-4">
+            <div class="d-flex align-items-center overflow-auto pb-3">
+                {% for repair in repairs %}
+                <div class="text-center mx-2">
+                    <div class="position-relative">
+                        <a href="{% url 'production:repair-history-detail' repair.pk %}"
+                           class="btn btn-lg {% if forloop.last %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-circle"
+                           style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <strong>R{{ repair.repair_index }}</strong>
+                        </a>
+                    </div>
+                    <small class="text-muted d-block mt-1">{{ repair.work_order.wo_number }}</small>
+                </div>
+                {% if not forloop.last %}
+                <div style="flex-grow: 1; height: 2px; background: #dee2e6; min-width: 30px;"></div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Repair Details Table -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Repair</th>
+                        <th>Work Order</th>
+                        <th>Usage Before Repair</th>
+                        <th>Cutters</th>
+                        <th>Nozzles</th>
+                        <th>Other Work</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for repair in repairs %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-info fs-6">R{{ repair.repair_index }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ repair.work_order.wo_number }}</strong>
+                            <br>
+                            <small class="text-muted">{{ repair.work_order.created_at|date:"Y-m-d" }}</small>
+                        </td>
+                        <td>
+                            {% if repair.hours_on_bit %}
+                            <i class="bi bi-clock"></i> {{ repair.hours_on_bit }} hrs
+                            <br>
+                            {% endif %}
+                            {% if repair.footage_drilled %}
+                            <i class="bi bi-rulers"></i> {{ repair.footage_drilled }} ft
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if repair.cutters_replaced > 0 %}
+                            <span class="badge bg-warning">{{ repair.cutters_replaced }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if repair.nozzles_replaced > 0 %}
+                            <span class="badge bg-warning">{{ repair.nozzles_replaced }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                {% if repair.hardfacing_applied %}
+                                <span class="badge bg-secondary" title="Hardfacing">HF</span>
+                                {% endif %}
+                                {% if repair.threads_repaired %}
+                                <span class="badge bg-secondary" title="Threads">THD</span>
+                                {% endif %}
+                                {% if repair.gauge_repaired %}
+                                <span class="badge bg-secondary" title="Gauge">GAU</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{% url 'production:repair-history-detail' repair.pk %}"
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i> View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if bit_instance %}&bit_instance={{ bit_instance.pk }}{% endif %}">Previous</a>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if bit_instance %}&bit_instance={{ bit_instance.pk }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if bit_instance %}&bit_instance={{ bit_instance.pk }}{% endif %}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No repair history found.
+</div>
+{% endif %}
+{% endblock %}

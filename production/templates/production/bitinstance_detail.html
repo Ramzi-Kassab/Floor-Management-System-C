@@ -1,40 +1,235 @@
 {% extends 'production/base.html' %}
+{% load i18n %}
 {% block title %}{{ instance.get_full_serial }}{% endblock %}
 {% block content %}
 <div class="row mb-4">
-    <div class="col-12"><h1>Bit Instance: {{ instance.get_full_serial }}</h1></div>
-</div>
-<div class="card">
-    <div class="card-header"><h5>Instance Details</h5></div>
-    <div class="card-body">
-        <p><strong>Serial Number:</strong> {{ instance.get_full_serial }}</p>
-        <p><strong>Design:</strong> {{ instance.design_revision.design.design_code }}</p>
-        <p><strong>MAT Number:</strong> {{ instance.design_revision.mat_number }}</p>
-        <p><strong>Body Material:</strong> {{ instance.get_body_material_display }}</p>
-        <p><strong>Manufacturing Source:</strong> {{ instance.get_manufacturing_source_display }}</p>
-        <p><strong>Repair Index:</strong> {{ instance.current_repair_index }}</p>
-        <p><strong>Status:</strong> <span class="badge bg-primary">{{ instance.get_status_display }}</span></p>
+    <div class="col-md-8">
+        <h1><i class="bi bi-gear-wide-connected"></i> Bit Instance: {{ instance.get_full_serial }}</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if can_repair_again %}
+        <span class="badge bg-success fs-6"><i class="bi bi-check-circle"></i> Can Be Repaired</span>
+        {% else %}
+        <span class="badge bg-warning fs-6"><i class="bi bi-exclamation-triangle"></i> Max Repairs Reached</span>
+        {% endif %}
     </div>
 </div>
-{% if work_orders %}
-<div class="card mt-3">
-    <div class="card-header"><h5>Work Order History</h5></div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instance Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-6"><strong>Serial Number:</strong></div>
+                    <div class="col-6">{{ instance.get_full_serial }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6"><strong>Design:</strong></div>
+                    <div class="col-6">{{ instance.design_revision.design.design_code }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6"><strong>MAT Number:</strong></div>
+                    <div class="col-6">{{ instance.design_revision.mat_number }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6"><strong>Body Material:</strong></div>
+                    <div class="col-6">{{ instance.get_body_material_display }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6"><strong>Manufacturing Source:</strong></div>
+                    <div class="col-6">{{ instance.get_manufacturing_source_display }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6"><strong>Repair Index:</strong></div>
+                    <div class="col-6">
+                        <span class="badge bg-info">R{{ instance.current_repair_index }}</span>
+                        {% if instance.current_repair_index == 0 %}
+                        (New)
+                        {% else %}
+                        ({{ instance.current_repair_index }} repair{{ instance.current_repair_index|pluralize }})
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6"><strong>Status:</strong></div>
+                    <div class="col-6">
+                        {% if instance.status == 'IN_SERVICE' %}
+                        <span class="badge bg-success">{{ instance.get_status_display }}</span>
+                        {% elif instance.status == 'SCRAPPED' %}
+                        <span class="badge bg-danger">{{ instance.get_status_display }}</span>
+                        {% else %}
+                        <span class="badge bg-primary">{{ instance.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Repair Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if last_repair %}
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-wrench"></i> Last Repair (R{{ last_repair.repair_index }})</h6>
+                    <p class="mb-1"><strong>Work Order:</strong> {{ last_repair.work_order.wo_number }}</p>
+                    {% if last_repair.hours_on_bit %}
+                    <p class="mb-1"><strong>Hours on Bit:</strong> {{ last_repair.hours_on_bit }} hrs</p>
+                    {% endif %}
+                    {% if last_repair.footage_drilled %}
+                    <p class="mb-1"><strong>Footage Drilled:</strong> {{ last_repair.footage_drilled }} ft</p>
+                    {% endif %}
+                    <p class="mb-0">
+                        <strong>Work Done:</strong>
+                        {% if last_repair.cutters_replaced > 0 %}{{ last_repair.cutters_replaced }} cutters, {% endif %}
+                        {% if last_repair.nozzles_replaced > 0 %}{{ last_repair.nozzles_replaced }} nozzles, {% endif %}
+                        {% if last_repair.hardfacing_applied %}hardfacing, {% endif %}
+                        {% if last_repair.gauge_repaired %}gauge repair{% endif %}
+                    </p>
+                </div>
+                {% else %}
+                <div class="alert alert-secondary">
+                    <i class="bi bi-info-circle"></i> No repair history yet. This is a new bit.
+                </div>
+                {% endif %}
+
+                <div class="d-grid gap-2">
+                    <a href="{% url 'production:repair-history-list' %}?bit_instance={{ instance.pk }}"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-list-ul"></i> View Complete Repair History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if repair_history %}
+<div class="card mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="bi bi-arrow-repeat"></i> Repair History Chain</h5>
+    </div>
     <div class="card-body">
-        <table class="table">
-            <thead><tr><th>WO Number</th><th>Type</th><th>Status</th><th>Customer</th><th>Created</th><th>Actions</th></tr></thead>
-            <tbody>
-                {% for wo in work_orders %}
-                <tr>
-                    <td>{{ wo.wo_number }}</td>
-                    <td>{{ wo.get_order_type_display }}</td>
-                    <td><span class="badge bg-primary">{{ wo.get_status_display }}</span></td>
-                    <td>{{ wo.customer_name }}</td>
-                    <td>{{ wo.created_at|date:"Y-m-d" }}</td>
-                    <td><a href="{% url 'production:workorder-detail' wo.pk %}" class="btn btn-sm btn-primary">View</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Repair</th>
+                        <th>Work Order</th>
+                        <th>Cutters</th>
+                        <th>Nozzles</th>
+                        <th>Hardfacing</th>
+                        <th>Threads</th>
+                        <th>Gauge</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for repair in repair_history %}
+                    <tr>
+                        <td><span class="badge bg-info">R{{ repair.repair_index }}</span></td>
+                        <td>{{ repair.work_order.wo_number }}</td>
+                        <td>
+                            {% if repair.cutters_replaced > 0 %}
+                            <span class="badge bg-warning">{{ repair.cutters_replaced }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if repair.nozzles_replaced > 0 %}
+                            <span class="badge bg-warning">{{ repair.nozzles_replaced }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if repair.hardfacing_applied %}
+                            <i class="bi bi-check-circle text-success"></i>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if repair.threads_repaired %}
+                            <i class="bi bi-check-circle text-success"></i>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if repair.gauge_repaired %}
+                            <i class="bi bi-check-circle text-success"></i>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'production:repair-history-detail' repair.pk %}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if work_orders %}
+<div class="card mt-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Work Order History</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>WO Number</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Customer</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wo in work_orders %}
+                    <tr>
+                        <td><strong>{{ wo.wo_number }}</strong></td>
+                        <td>
+                            {% if wo.order_type == 'NEW' %}
+                            <span class="badge bg-success">{{ wo.get_order_type_display }}</span>
+                            {% elif wo.order_type == 'REPAIR' %}
+                            <span class="badge bg-warning">{{ wo.get_order_type_display }}</span>
+                            {% else %}
+                            <span class="badge bg-info">{{ wo.get_order_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-primary">{{ wo.get_status_display }}</span></td>
+                        <td>{{ wo.customer_name|default:"-" }}</td>
+                        <td>{{ wo.created_at|date:"Y-m-d" }}</td>
+                        <td>
+                            <a href="{% url 'production:workorder-detail' wo.pk %}"
+                               class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endif %}

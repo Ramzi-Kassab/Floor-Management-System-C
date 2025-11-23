@@ -74,6 +74,148 @@
                 {% endif %}
             </div>
         </div>
+
+        {% if repair_record %}
+        <div class="card mt-3">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-wrench"></i> Repair Record (R{{ repair_record.repair_index }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Usage Before Repair</h6>
+                        {% if repair_record.hours_on_bit %}
+                        <p><strong>Hours on Bit:</strong> {{ repair_record.hours_on_bit }} hrs</p>
+                        {% endif %}
+                        {% if repair_record.footage_drilled %}
+                        <p><strong>Footage Drilled:</strong> {{ repair_record.footage_drilled }} ft</p>
+                        {% endif %}
+                        {% if repair_record.damage_description %}
+                        <p><strong>Damage:</strong><br>{{ repair_record.damage_description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Work Performed</h6>
+                        <ul class="list-unstyled">
+                            {% if repair_record.cutters_replaced > 0 %}
+                            <li><i class="bi bi-check-circle text-success"></i> {{ repair_record.cutters_replaced }} Cutters Replaced</li>
+                            {% endif %}
+                            {% if repair_record.nozzles_replaced > 0 %}
+                            <li><i class="bi bi-check-circle text-success"></i> {{ repair_record.nozzles_replaced }} Nozzles Replaced</li>
+                            {% endif %}
+                            {% if repair_record.hardfacing_applied %}
+                            <li><i class="bi bi-check-circle text-success"></i> Hardfacing Applied</li>
+                            {% endif %}
+                            {% if repair_record.threads_repaired %}
+                            <li><i class="bi bi-check-circle text-success"></i> Threads Repaired</li>
+                            {% endif %}
+                            {% if repair_record.gauge_repaired %}
+                            <li><i class="bi bi-check-circle text-success"></i> Gauge Repaired</li>
+                            {% endif %}
+                        </ul>
+                        <a href="{% url 'production:repair-history-detail' repair_record.pk %}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View Full Repair Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if actual_bom %}
+        <div class="card mt-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> BOM Tracking</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Part Number</th>
+                                <th>Description</th>
+                                <th>Planned</th>
+                                <th>Actual</th>
+                                <th>Variance</th>
+                                <th>Lot Number</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bom in actual_bom %}
+                            <tr>
+                                <td><strong>{{ bom.bom_item.part_number }}</strong></td>
+                                <td>{{ bom.bom_item.description|truncatewords:5 }}</td>
+                                <td>{{ bom.planned_quantity }} {{ bom.bom_item.unit }}</td>
+                                <td>
+                                    {% if bom.actual_quantity %}
+                                    {{ bom.actual_quantity }} {{ bom.bom_item.unit }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% with variance=bom.get_variance %}
+                                    {% if variance %}
+                                        {% if variance > 0 %}
+                                        <span class="badge bg-warning">+{{ variance }}</span>
+                                        {% elif variance < 0 %}
+                                        <span class="badge bg-danger">{{ variance }}</span>
+                                        {% else %}
+                                        <span class="badge bg-success">0</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>{{ bom.lot_number|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{% url 'production:actual-bom-list' %}?work_order={{ workorder.pk }}"
+                   class="btn btn-sm btn-outline-primary mt-2">
+                    <i class="bi bi-list-ul"></i> View Complete BOM
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if cutter_installations %}
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-grid-3x3"></i> Cutter Installation Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ cutter_installations.count }}</h3>
+                            <p class="text-muted mb-0 small">Cutters Installed</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <a href="{% url 'production:cutter-installation-list' %}?work_order={{ workorder.pk }}"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-eye"></i> View Layout
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <a href="{% url 'production:cutter-installation-record' work_order_id=workorder.pk %}"
+                               class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle"></i> Record Installation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <div class="col-md-4">

@@ -1,0 +1,325 @@
+{% extends 'production/base.html' %}
+{% load i18n %}
+
+{% block title %}Repair R{{ repair.repair_index }} - {{ repair.bit_instance.get_full_serial }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-wrench"></i> Repair R{{ repair.repair_index }} Details</h1>
+        <p class="text-muted">Bit Instance: <strong>{{ repair.bit_instance.get_full_serial }}</strong></p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'production:repair-history-list' %}?bit_instance={{ repair.bit_instance.pk }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Repair History
+        </a>
+    </div>
+</div>
+
+<!-- Repair Chain Navigation -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                {% if previous_repair %}
+                <a href="{% url 'production:repair-history-detail' previous_repair.pk %}"
+                   class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Previous (R{{ previous_repair.repair_index }})
+                </a>
+                {% else %}
+                <span class="text-muted">First Repair</span>
+                {% endif %}
+            </div>
+            <div class="text-center">
+                <span class="badge bg-info fs-5">Repair R{{ repair.repair_index }}</span>
+            </div>
+            <div>
+                {% if next_repair %}
+                <a href="{% url 'production:repair-history-detail' next_repair.pk %}"
+                   class="btn btn-outline-primary">
+                    Next (R{{ next_repair.repair_index }}) <i class="bi bi-arrow-right"></i>
+                </a>
+                {% else %}
+                <span class="text-muted">Latest Repair</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column -->
+    <div class="col-md-6">
+        <!-- Work Order Information -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Work Order</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>WO Number:</strong>
+                    <a href="{% url 'production:workorder-detail' repair.work_order.pk %}">
+                        {{ repair.work_order.wo_number }}
+                    </a>
+                </p>
+                <p><strong>Customer:</strong> {{ repair.work_order.customer_name|default:"-" }}</p>
+                <p><strong>Created:</strong> {{ repair.work_order.created_at|date:"Y-m-d H:i" }}</p>
+                <p class="mb-0"><strong>Status:</strong> <span class="badge bg-primary">{{ repair.work_order.get_status_display }}</span></p>
+            </div>
+        </div>
+
+        <!-- Usage Before Repair -->
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-speedometer"></i> Usage Before Repair</h5>
+            </div>
+            <div class="card-body">
+                {% if repair.hours_on_bit or repair.footage_drilled or repair.damage_description %}
+                <div class="row mb-2">
+                    <div class="col-6"><strong>Hours on Bit:</strong></div>
+                    <div class="col-6">{{ repair.hours_on_bit|default:"-" }} {% if repair.hours_on_bit %}hrs{% endif %}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6"><strong>Footage Drilled:</strong></div>
+                    <div class="col-6">{{ repair.footage_drilled|default:"-" }} {% if repair.footage_drilled %}ft{% endif %}</div>
+                </div>
+                {% if repair.damage_description %}
+                <hr>
+                <strong>Damage Description:</strong>
+                <p class="mt-2">{{ repair.damage_description }}</p>
+                {% endif %}
+                {% else %}
+                <p class="text-muted mb-0">No usage data recorded.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Evaluation -->
+        {% if repair.evaluation_summary %}
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Evaluation</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Overall Condition:</strong>
+                    <span class="badge {% if repair.evaluation_summary.overall_condition == 'EXCELLENT' %}bg-success{% elif repair.evaluation_summary.overall_condition == 'GOOD' %}bg-primary{% elif repair.evaluation_summary.overall_condition == 'FAIR' %}bg-warning{% else %}bg-danger{% endif %}">
+                        {{ repair.evaluation_summary.get_overall_condition_display }}
+                    </span>
+                </p>
+                <p><strong>Recommended Action:</strong> {{ repair.evaluation_summary.get_recommended_action_display }}</p>
+                {% if repair.evaluation_summary.remarks %}
+                <strong>Remarks:</strong>
+                <p>{{ repair.evaluation_summary.remarks }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-md-6">
+        <!-- Work Performed -->
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-tools"></i> Work Performed</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-8"><strong>Cutters Replaced:</strong></div>
+                    <div class="col-4">
+                        {% if repair.cutters_replaced > 0 %}
+                        <span class="badge bg-warning">{{ repair.cutters_replaced }}</span>
+                        {% else %}
+                        <span class="text-muted">None</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-8"><strong>Nozzles Replaced:</strong></div>
+                    <div class="col-4">
+                        {% if repair.nozzles_replaced > 0 %}
+                        <span class="badge bg-warning">{{ repair.nozzles_replaced }}</span>
+                        {% else %}
+                        <span class="text-muted">None</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-8"><strong>Hardfacing Applied:</strong></div>
+                    <div class="col-4">
+                        {% if repair.hardfacing_applied %}
+                        <i class="bi bi-check-circle text-success fs-5"></i>
+                        {% else %}
+                        <span class="text-muted">No</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-8"><strong>Threads Repaired:</strong></div>
+                    <div class="col-4">
+                        {% if repair.threads_repaired %}
+                        <i class="bi bi-check-circle text-success fs-5"></i>
+                        {% else %}
+                        <span class="text-muted">No</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-8"><strong>Gauge Repaired:</strong></div>
+                    <div class="col-4">
+                        {% if repair.gauge_repaired %}
+                        <i class="bi bi-check-circle text-success fs-5"></i>
+                        {% else %}
+                        <span class="text-muted">No</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remarks -->
+        {% if repair.remarks %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-chat-left-text"></i> Remarks</h6>
+            </div>
+            <div class="card-body">
+                {{ repair.remarks }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Metadata -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Metadata</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Created:</strong> {{ repair.created_at|date:"Y-m-d H:i" }}</p>
+                <p class="mb-0"><strong>Updated:</strong> {{ repair.updated_at|date:"Y-m-d H:i" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actual BOM Used -->
+{% if actual_bom %}
+<div class="card mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="bi bi-box-seam"></i> Materials Used (BOM)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Part Number</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Planned</th>
+                        <th>Actual</th>
+                        <th>Variance</th>
+                        <th>Lot Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bom in actual_bom %}
+                    <tr>
+                        <td><strong>{{ bom.bom_item.part_number }}</strong></td>
+                        <td>{{ bom.bom_item.description|truncatewords:5 }}</td>
+                        <td><span class="badge bg-secondary">{{ bom.bom_item.get_item_type_display }}</span></td>
+                        <td>{{ bom.planned_quantity }} {{ bom.bom_item.unit }}</td>
+                        <td>
+                            {% if bom.actual_quantity %}
+                            {{ bom.actual_quantity }} {{ bom.bom_item.unit }}
+                            {% else %}
+                            <span class="text-muted">Not recorded</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% with variance=bom.get_variance %}
+                            {% if variance %}
+                                {% if variance > 0 %}
+                                <span class="badge bg-warning">+{{ variance }}</span>
+                                {% elif variance < 0 %}
+                                <span class="badge bg-danger">{{ variance }}</span>
+                                {% else %}
+                                <span class="badge bg-success">0</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>{{ bom.lot_number|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Cutter Installations -->
+{% if cutter_installations %}
+<div class="card mt-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-grid-3x3"></i> Cutter Installations ({{ cutter_installations.count }} cutters)</h5>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <a href="{% url 'production:cutter-installation-list' %}?work_order={{ repair.work_order.pk }}"
+               class="btn btn-primary">
+                <i class="bi bi-eye"></i> View Complete Cutter Layout
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Position</th>
+                        <th>Zone</th>
+                        <th>Design Cutter</th>
+                        <th>Actual Cutter</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inst in cutter_installations|slice:":20" %}
+                    <tr {% if inst.is_substitution %}class="table-warning"{% endif %}>
+                        <td><strong>{{ inst.layout_position.get_position_code }}</strong></td>
+                        <td><span class="badge bg-secondary">{{ inst.layout_position.get_zone_display }}</span></td>
+                        <td>{{ inst.layout_position.cutter_size_mm }}mm {{ inst.layout_position.get_cutter_type_display }}</td>
+                        <td>
+                            {{ inst.actual_cutter_size_mm }}mm {{ inst.get_actual_cutter_type_display }}
+                            {% if inst.is_substitution %}
+                            <span class="badge bg-warning">SUBSTITUTION</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if inst.status == 'INSTALLED' %}
+                            <span class="badge bg-success">{{ inst.get_status_display }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ inst.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if cutter_installations.count > 20 %}
+        <div class="alert alert-info mt-2">
+            Showing first 20 of {{ cutter_installations.count }} cutters.
+            <a href="{% url 'production:cutter-installation-list' %}?work_order={{ repair.work_order.pk %}">
+                View all
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -170,6 +170,26 @@
                             </a></li>
                         </ul>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-arrow-repeat"></i> Repair Workflow
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'production:repair-history-list' %}">
+                                <i class="bi bi-clock-history"></i> Repair History
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'production:repair-decision-create' %}">
+                                <i class="bi bi-diagram-3"></i> Create Repair Decision
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'production:actual-bom-list' %}">
+                                <i class="bi bi-box-seam"></i> BOM Tracking
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'production:cutter-installation-list' %}">
+                                <i class="bi bi-grid-3x3"></i> Cutter Installations
+                            </a></li>
+                        </ul>
+                    </li>
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">

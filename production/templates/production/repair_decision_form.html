@@ -1,0 +1,225 @@
+{% extends 'production/base.html' %}
+{% load i18n %}
+
+{% block title %}Create Repair Decision{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1><i class="bi bi-diagram-3"></i> Create Repair Decision</h1>
+        <p class="text-muted">Recommend repair route based on evaluation results</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Repair Decision Form</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- Evaluation Summary -->
+                    <div class="mb-3">
+                        <label for="{{ form.evaluation_summary.id_for_label }}" class="form-label">
+                            <strong>Evaluation Summary *</strong>
+                        </label>
+                        {{ form.evaluation_summary }}
+                        {% if form.evaluation_summary.errors %}
+                        <div class="text-danger">{{ form.evaluation_summary.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Select the evaluation that this decision is based on</small>
+                    </div>
+
+                    <!-- Recommended Route -->
+                    <div class="mb-3">
+                        <label for="{{ form.recommended_route.id_for_label }}" class="form-label">
+                            <strong>Recommended Route</strong>
+                        </label>
+                        {{ form.recommended_route }}
+                        {% if form.recommended_route.errors %}
+                        <div class="text-danger">{{ form.recommended_route.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Route template to use for this repair</small>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="mb-3">Required Processes</h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                {{ form.needs_cutter_replacement }}
+                                <label class="form-check-label" for="{{ form.needs_cutter_replacement.id_for_label }}">
+                                    <i class="bi bi-tools"></i> Cutter Replacement
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-2">
+                                {{ form.needs_nozzle_replacement }}
+                                <label class="form-check-label" for="{{ form.needs_nozzle_replacement.id_for_label }}">
+                                    <i class="bi bi-funnel"></i> Nozzle Replacement
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-2">
+                                {{ form.needs_hardfacing }}
+                                <label class="form-check-label" for="{{ form.needs_hardfacing.id_for_label }}">
+                                    <i class="bi bi-shield-fill-check"></i> Hardfacing
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-2">
+                                {{ form.needs_thread_repair }}
+                                <label class="form-check-label" for="{{ form.needs_thread_repair.id_for_label }}">
+                                    <i class="bi bi-gear"></i> Thread Repair
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                {{ form.needs_gauge_repair }}
+                                <label class="form-check-label" for="{{ form.needs_gauge_repair.id_for_label }}">
+                                    <i class="bi bi-rulers"></i> Gauge Repair
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-2">
+                                {{ form.needs_balance }}
+                                <label class="form-check-label" for="{{ form.needs_balance.id_for_label }}">
+                                    <i class="bi bi-balance"></i> Balancing
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-2">
+                                {{ form.needs_ndt }}
+                                <label class="form-check-label" for="{{ form.needs_ndt.id_for_label }}">
+                                    <i class="bi bi-search"></i> NDT Inspection
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="mb-3">Estimates</h6>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.estimated_hours.id_for_label }}" class="form-label">
+                                    <strong>Estimated Hours</strong>
+                                </label>
+                                {{ form.estimated_hours }}
+                                {% if form.estimated_hours.errors %}
+                                <div class="text-danger">{{ form.estimated_hours.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.estimated_cutter_count.id_for_label }}" class="form-label">
+                                    <strong>Estimated Cutter Count</strong>
+                                </label>
+                                {{ form.estimated_cutter_count }}
+                                {% if form.estimated_cutter_count.errors %}
+                                <div class="text-danger">{{ form.estimated_cutter_count.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.estimated_cost.id_for_label }}" class="form-label">
+                                    <strong>Estimated Cost</strong>
+                                </label>
+                                {{ form.estimated_cost }}
+                                {% if form.estimated_cost.errors %}
+                                <div class="text-danger">{{ form.estimated_cost.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.decision_notes.id_for_label }}" class="form-label">
+                            <strong>Decision Notes</strong>
+                        </label>
+                        {{ form.decision_notes }}
+                        {% if form.decision_notes.errors %}
+                        <div class="text-danger">{{ form.decision_notes.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Engineering rationale for this decision</small>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'production:dashboard' %}" class="btn btn-secondary">
+                            <i class="bi bi-x"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Create Repair Decision
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Help</h6>
+            </div>
+            <div class="card-body">
+                <h6>Repair Decision Guidelines</h6>
+                <ul class="small">
+                    <li><strong>HEAVY:</strong> Major damage requiring extensive work (cutters + hardfacing + threads)</li>
+                    <li><strong>MEDIUM:</strong> Moderate damage requiring cutter replacement</li>
+                    <li><strong>LIGHT:</strong> Minor repairs (threads, gauge, balance only)</li>
+                </ul>
+
+                <hr>
+
+                <h6 class="mt-3">Process Requirements</h6>
+                <p class="small">Select all processes that will be needed based on the evaluation results:</p>
+                <ul class="small">
+                    <li><strong>Cutter Replacement:</strong> Damaged or worn cutters</li>
+                    <li><strong>Hardfacing:</strong> Blade protection worn</li>
+                    <li><strong>NDT:</strong> Required for critical repairs</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Tip</h6>
+            </div>
+            <div class="card-body">
+                <p class="small mb-0">The system will automatically recommend a route category (HEAVY/MEDIUM/LIGHT) based on your selections.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    select, input[type="number"], input[type="text"], textarea {
+        width: 100%;
+        padding: 0.375rem 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+    }
+    textarea {
+        min-height: 100px;
+    }
+    .form-check-input {
+        width: 1.25em;
+        height: 1.25em;
+        margin-top: 0.125em;
+    }
+</style>
+{% endblock %}
