@@ -583,7 +583,9 @@ def qr_scan_view(request, code):
                 # Valid sequence - START the process
                 scanned_step.status = models.RouteStepStatus.IN_PROGRESS
                 scanned_step.actual_start = timezone.now()
-                scanned_step.actual_operator = operator
+                scanned_step.operator = operator
+                if operator:
+                    scanned_step.operator_name = operator.name
                 scanned_step.save()
 
                 # Create execution log for start
@@ -613,11 +615,11 @@ def qr_scan_view(request, code):
                 # SECOND SCAN: End the process
 
                 # Check if same operator (if operator is known)
-                if operator and scanned_step.actual_operator and scanned_step.actual_operator != operator:
+                if operator and scanned_step.operator and scanned_step.operator != operator:
                     messages.error(
                         request,
                         f'⚠️ OPERATOR MISMATCH!\n\n'
-                        f'This process was started by: {scanned_step.actual_operator.name}\n'
+                        f'This process was started by: {scanned_step.operator.name}\n'
                         f'You are: {operator.name}\n\n'
                         f'Only the operator who started can complete it, or submit a correction request.'
                     )
@@ -645,18 +647,30 @@ def qr_scan_view(request, code):
                     execution_log.validation_message = "Process completed"
                     execution_log.save()
 
-                # Create time metric for analytics
-                if duration and scanned_step.actual_operator:
-                    models.ProcessTimeMetric.objects.create(
-                        process_code=scanned_step.process_code,
-                        department=scanned_step.department,
-                        operator=scanned_step.actual_operator,
-                        job_card=job_card,
-                        time_minutes=duration.total_seconds() / 60,
-                        recorded_at=timezone.now()
+                # Update or create time metric for analytics
+                if duration and scanned_step.operator:
+                    # Get bit information for metrics
+                    bit_instance = job_card.work_order.bit_instance if hasattr(job_card.work_order, 'bit_instance') and job_card.work_order.bit_instance else None
+
+                    models.ProcessTimeMetric.objects.update_or_create(
+                        job_route_step=scanned_step,
+                        defaults={
+                            'job_card': job_card,
+                            'process_code': scanned_step.process_code,
+                            'department': scanned_step.department,
+                            'workstation': scanned_step.workstation,
+                            'operator': scanned_step.operator,
+                            'bit_type': bit_instance.bit_type if bit_instance else '',
+                            'body_material': bit_instance.body_material if bit_instance else '',
+                            'bit_size_inch': bit_instance.bit_size_inch if bit_instance else 0,
+                            'blade_count': bit_instance.blade_count if bit_instance else 0,
+                            'processing_time_minutes': duration.total_seconds() / 60,
+                            'total_time_minutes': duration.total_seconds() / 60,
+                            'completed_at': timezone.now()
+                        }
                     )
 
-                operator_name = scanned_step.actual_operator.name if scanned_step.actual_operator else 'Unknown'
+                operator_name = scanned_step.operator.name if scanned_step.operator else 'Unknown'
                 duration_str = f'{int(duration.total_seconds() / 60)} minutes' if duration else 'N/A'
                 messages.success(
                     request,
@@ -671,7 +685,7 @@ def qr_scan_view(request, code):
                     request,
                     f'ℹ️ This process is already COMPLETED.\n'
                     f'Process: {scanned_step.process_code}\n'
-                    f'Completed by: {scanned_step.actual_operator.name if scanned_step.actual_operator else "Unknown"}'
+                    f'Completed by: {scanned_step.operator.name if scanned_step.operator else "Unknown"}'
                 )
 
             return redirect('production:jobcard-detail', pk=job_card.pk)

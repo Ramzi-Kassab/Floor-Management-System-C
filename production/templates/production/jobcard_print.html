@@ -225,8 +225,8 @@
                         <br><small>{{ item.qr_code.code }}</small>
                     </td>
                     <td>
-                        {% if item.step.actual_operator %}
-                        {{ item.step.actual_operator.name }}<br>
+                        {% if item.step.operator %}
+                        {{ item.step.operator.name }}<br>
                         <small>{{ item.step.actual_start|date:"Y-m-d H:i"|default:"—" }}</small>
                         {% endif %}
                     </td>
