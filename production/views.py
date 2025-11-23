@@ -307,6 +307,39 @@ class JobCardDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
+class JobCardPrintView(LoginRequiredMixin, DetailView):
+    """
+    Printable job card view with route sheet and QR codes for each process
+    """
+    model = models.JobCard
+    template_name = 'production/jobcard_print.html'
+    context_object_name = 'jobcard'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        route_steps = self.object.route_steps.all().order_by('sequence')
+
+        # Generate QR codes for each route step
+        steps_with_qr = []
+        for step in route_steps:
+            # Get or create QR code for this route step
+            qr_code, created = models.QRCode.objects.get_or_create(
+                route_step=step,
+                defaults={
+                    'code': f'JC-{self.object.jobcard_code}-STEP-{step.sequence}',
+                    'job_card': self.object,
+                }
+            )
+            steps_with_qr.append({
+                'step': step,
+                'qr_code': qr_code,
+            })
+
+        context['steps_with_qr'] = steps_with_qr
+        context['route_steps'] = route_steps
+        return context
+
+
 class JobCardCreateView(LoginRequiredMixin, CreateView):
     model = models.JobCard
     template_name = 'production/jobcard_form.html'
@@ -411,15 +444,34 @@ class InfiltrationBatchCreateView(LoginRequiredMixin, CreateView):
 
 def generate_qr_code_view(request, pk):
     """
-    Generate QR code for a job card
+    Generate QR code for a job card or specific route step
+    Query parameter: step=<route_step_id> for step-specific QR codes
     """
     jobcard = get_object_or_404(models.JobCard, pk=pk)
 
-    # Create or get QR code
-    qr_code, created = models.QRCode.objects.get_or_create(
-        job_card=jobcard,
-        defaults={'notes': f'Auto-generated for {jobcard.jobcard_code}'}
-    )
+    # Check if this is for a specific route step
+    step_id = request.GET.get('step')
+    if step_id:
+        # Generate QR code for specific route step
+        route_step = get_object_or_404(models.JobRouteStep, pk=step_id, job_card=jobcard)
+        qr_code, created = models.QRCode.objects.get_or_create(
+            route_step=route_step,
+            defaults={
+                'code': f'JC-{jobcard.jobcard_code}-STEP-{route_step.sequence}',
+                'job_card': jobcard,
+                'notes': f'Auto-generated for {jobcard.jobcard_code} - {route_step.process_code}'
+            }
+        )
+    else:
+        # Generate QR code for entire job card
+        qr_code, created = models.QRCode.objects.get_or_create(
+            job_card=jobcard,
+            route_step=None,
+            defaults={
+                'code': f'JC-{jobcard.jobcard_code}',
+                'notes': f'Auto-generated for {jobcard.jobcard_code}'
+            }
+        )
 
     # Generate QR code image
     qr = qrcode.QRCode(
@@ -447,8 +499,10 @@ def generate_qr_code_view(request, pk):
 
 def qr_scan_view(request, code):
     """
-    Handle QR code scanning with process validation
-    Validates that the scanned process is the correct next step in sequence
+    Handle QR code scanning with process validation and dual-scan time tracking
+    - Phone-based operator recognition (from query param, session, or header)
+    - First scan: starts process timing (PENDING → IN_PROGRESS)
+    - Second scan: ends process timing (IN_PROGRESS → DONE)
     """
     try:
         qr_code = get_object_or_404(models.QRCode, code=code)
@@ -458,18 +512,37 @@ def qr_scan_view(request, code):
             messages.warning(request, 'This QR code has expired.')
             return redirect('production:dashboard')
 
-        # If this is a route step QR code, validate the sequence
+        # Detect operator by phone number (query param > session > header)
+        operator_phone = (
+            request.GET.get('phone') or
+            request.session.get('operator_phone') or
+            request.META.get('HTTP_X_OPERATOR_PHONE')
+        )
+
+        operator = None
+        if operator_phone:
+            try:
+                operator = models.Employee.objects.get(phone=operator_phone)
+                # Store in session for future scans
+                request.session['operator_phone'] = operator_phone
+            except models.Employee.DoesNotExist:
+                messages.warning(request, f'Phone number {operator_phone} not registered. Contact admin.')
+
+        # If this is a route step QR code, handle dual-scan timing
         if qr_code.route_step:
             job_card = qr_code.route_step.job_card
             scanned_step = qr_code.route_step
+            current_status = scanned_step.status
 
             # Find the expected next step (first PENDING step in sequence)
             expected_step = job_card.route_steps.filter(
                 status=models.RouteStepStatus.PENDING
             ).order_by('sequence').first()
 
-            # Validate sequence
-            is_valid = (expected_step and scanned_step.pk == expected_step.pk)
+            # Validate sequence (for PENDING steps only)
+            is_valid_sequence = True
+            if current_status == models.RouteStepStatus.PENDING:
+                is_valid_sequence = (expected_step and scanned_step.pk == expected_step.pk)
 
             # Generate unique log number
             from datetime import datetime
@@ -478,42 +551,129 @@ def qr_scan_view(request, code):
             ).count() + 1
             log_number = f'LOG-{datetime.now().year}-{log_count:06d}'
 
-            # Create execution log
-            execution_log = models.ProcessExecutionLog.objects.create(
-                log_number=log_number,
-                job_route_step=scanned_step,
-                job_card=job_card,
-                process_code=scanned_step.process_code,
-                operator_name=request.user.username if request.user.is_authenticated else 'Unknown',
-                was_valid_sequence=is_valid,
-                expected_process_code=expected_step.process_code if expected_step and not is_valid else '',
-                validation_message="Valid sequence" if is_valid else f"Wrong process! Expected: {expected_step.process_code if expected_step else 'None'}",
-                department=scanned_step.department,
-                scanned_at=timezone.now()
-            )
+            # DUAL-SCAN LOGIC
+            if current_status == models.RouteStepStatus.PENDING:
+                # FIRST SCAN: Start the process
+                if not is_valid_sequence:
+                    # Wrong process scanned - create error log
+                    execution_log = models.ProcessExecutionLog.objects.create(
+                        log_number=log_number,
+                        job_route_step=scanned_step,
+                        job_card=job_card,
+                        process_code=scanned_step.process_code,
+                        operator=operator,
+                        operator_name=operator.name if operator else (request.user.username if request.user.is_authenticated else 'Unknown'),
+                        was_valid_sequence=False,
+                        expected_process_code=expected_step.process_code if expected_step else '',
+                        validation_message=f"Wrong process! Expected: {expected_step.process_code if expected_step else 'None'}",
+                        department=scanned_step.department,
+                        scanned_at=timezone.now()
+                    )
+                    messages.error(
+                        request,
+                        f'⚠️ WRONG PROCESS SCANNED!\n\n'
+                        f'You scanned: {scanned_step.process_code}\n'
+                        f'Expected next step: {expected_step.process_code if expected_step else "None (all steps complete)"}\n\n'
+                        f'Please scan the correct QR code or submit a correction request if you already started this process.'
+                    )
+                    return redirect(
+                        f'/production/jobcards/{job_card.pk}/?validation_error=true&log_id={execution_log.pk}'
+                    )
 
-            # If validation failed, show error and offer correction request
-            if not is_valid:
-                messages.error(
+                # Valid sequence - START the process
+                scanned_step.status = models.RouteStepStatus.IN_PROGRESS
+                scanned_step.actual_start = timezone.now()
+                scanned_step.actual_operator = operator
+                scanned_step.save()
+
+                # Create execution log for start
+                execution_log = models.ProcessExecutionLog.objects.create(
+                    log_number=log_number,
+                    job_route_step=scanned_step,
+                    job_card=job_card,
+                    process_code=scanned_step.process_code,
+                    operator=operator,
+                    operator_name=operator.name if operator else (request.user.username if request.user.is_authenticated else 'Unknown'),
+                    was_valid_sequence=True,
+                    validation_message="Process started",
+                    department=scanned_step.department,
+                    scanned_at=timezone.now(),
+                    started_at=timezone.now()
+                )
+
+                operator_name = operator.name if operator else 'Unknown'
+                messages.success(
                     request,
-                    f'⚠️ WRONG PROCESS SCANNED!\n\n'
-                    f'You scanned: {scanned_step.process_code}\n'
-                    f'Expected next step: {expected_step.process_code if expected_step else "None (all steps complete)"}\n\n'
-                    f'Please scan the correct QR code or submit a correction request if you already started this process.'
-                )
-                # Redirect to job card with error context
-                return redirect(
-                    f'/production/jobcards/{job_card.pk}/?validation_error=true&log_id={execution_log.pk}'
+                    f'✓ Process STARTED by {operator_name}\n'
+                    f'Process: {scanned_step.process_code}\n'
+                    f'Scan again when finished to complete.'
                 )
 
-            # Validation succeeded - log it
-            execution_log.started_at = timezone.now()
-            execution_log.save()
+            elif current_status == models.RouteStepStatus.IN_PROGRESS:
+                # SECOND SCAN: End the process
 
-            messages.success(
-                request,
-                f'✓ Correct process! You may now start: {scanned_step.process_code}'
-            )
+                # Check if same operator (if operator is known)
+                if operator and scanned_step.actual_operator and scanned_step.actual_operator != operator:
+                    messages.error(
+                        request,
+                        f'⚠️ OPERATOR MISMATCH!\n\n'
+                        f'This process was started by: {scanned_step.actual_operator.name}\n'
+                        f'You are: {operator.name}\n\n'
+                        f'Only the operator who started can complete it, or submit a correction request.'
+                    )
+                    return redirect('production:jobcard-detail', pk=job_card.pk)
+
+                # Complete the process
+                scanned_step.status = models.RouteStepStatus.DONE
+                scanned_step.actual_end = timezone.now()
+                scanned_step.save()
+
+                # Calculate duration
+                duration = None
+                if scanned_step.actual_start and scanned_step.actual_end:
+                    duration = scanned_step.actual_end - scanned_step.actual_start
+
+                # Find and update the execution log
+                execution_log = models.ProcessExecutionLog.objects.filter(
+                    job_route_step=scanned_step,
+                    started_at__isnull=False,
+                    completed_at__isnull=True
+                ).order_by('-started_at').first()
+
+                if execution_log:
+                    execution_log.completed_at = timezone.now()
+                    execution_log.validation_message = "Process completed"
+                    execution_log.save()
+
+                # Create time metric for analytics
+                if duration and scanned_step.actual_operator:
+                    models.ProcessTimeMetric.objects.create(
+                        process_code=scanned_step.process_code,
+                        department=scanned_step.department,
+                        operator=scanned_step.actual_operator,
+                        job_card=job_card,
+                        time_minutes=duration.total_seconds() / 60,
+                        recorded_at=timezone.now()
+                    )
+
+                operator_name = scanned_step.actual_operator.name if scanned_step.actual_operator else 'Unknown'
+                duration_str = f'{int(duration.total_seconds() / 60)} minutes' if duration else 'N/A'
+                messages.success(
+                    request,
+                    f'✓ Process COMPLETED by {operator_name}\n'
+                    f'Process: {scanned_step.process_code}\n'
+                    f'Duration: {duration_str}'
+                )
+
+            elif current_status == models.RouteStepStatus.DONE:
+                # Already completed
+                messages.info(
+                    request,
+                    f'ℹ️ This process is already COMPLETED.\n'
+                    f'Process: {scanned_step.process_code}\n'
+                    f'Completed by: {scanned_step.actual_operator.name if scanned_step.actual_operator else "Unknown"}'
+                )
+
             return redirect('production:jobcard-detail', pk=job_card.pk)
 
         # For job card QR codes (not step-specific), just redirect

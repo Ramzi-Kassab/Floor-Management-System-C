@@ -31,6 +31,7 @@ urlpatterns = [
     # Job Cards
     path('jobcards/', views.JobCardListView.as_view(), name='jobcard-list'),
     path('jobcards/<int:pk>/', views.JobCardDetailView.as_view(), name='jobcard-detail'),
+    path('jobcards/<int:pk>/print/', views.JobCardPrintView.as_view(), name='jobcard-print'),
     path('jobcards/create/', views.JobCardCreateView.as_view(), name='jobcard-create'),
     path('jobcards/<int:pk>/edit/', views.JobCardUpdateView.as_view(), name='jobcard-edit'),
 

@@ -24,6 +24,7 @@
                 </a></li>
             </ul>
         </div>
+        <a href="{% url 'production:jobcard-print' jobcard.pk %}" class="btn btn-info" target="_blank"><i class="bi bi-printer"></i> Print Route Sheet</a>
         <a href="{% url 'production:jobcard-qr' jobcard.pk %}" class="btn btn-success" target="_blank"><i class="bi bi-qr-code"></i> QR Code</a>
         <a href="{% url 'production:jobcard-edit' jobcard.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> Edit</a>
         <a href="{% url 'production:jobcard-list' %}" class="btn btn-secondary">Back</a>

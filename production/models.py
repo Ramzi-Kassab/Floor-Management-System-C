@@ -1532,7 +1532,13 @@ class Employee(models.Model):
         default=EmployeeStatus.ACTIVE,
         db_index=True
     )
-    phone = models.CharField(max_length=20, blank=True)
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        unique=True,
+        db_index=True,
+        help_text="Phone number for operator recognition (unique)"
+    )
     email = models.EmailField(blank=True)
     hire_date = models.DateField(help_text="Employment start date")
     skills = models.TextField(
