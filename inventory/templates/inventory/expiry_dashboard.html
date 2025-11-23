@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Expiry Management Dashboard - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-calendar-x text-warning"></i> Expiry Management Dashboard</h1>
+        <a href="{% url 'inventory:quality_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Quality Dashboard
+        </a>
+    </div>
+
+    <!-- Alert Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Already Expired</h6>
+                    <h2 class="card-title text-danger">{{ expired_batches.count }}</h2>
+                    <p class="card-text">
+                        <i class="bi bi-exclamation-circle"></i> Action required
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Expiring This Week</h6>
+                    <h2 class="card-title text-warning">{{ expiring_this_week.count }}</h2>
+                    <p class="card-text">
+                        <i class="bi bi-clock-history"></i> Next 7 days
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Expiring Soon</h6>
+                    <h2 class="card-title text-info">{{ expiring_soon.count }}</h2>
+                    <p class="card-text">
+                        <i class="bi bi-calendar-event"></i> Next 30 days
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-secondary">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Pending Actions</h6>
+                    <h2 class="card-title">{{ pending_actions }}</h2>
+                    <p class="card-text">
+                        <i class="bi bi-clipboard-check"></i> Awaiting approval
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expired Batches - Critical -->
+    {% if expired_batches %}
+    <div class="card border-danger mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Expired Batches (Action Required)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Batch #</th>
+                            <th>Item</th>
+                            <th>Supplier</th>
+                            <th>Expiry Date</th>
+                            <th>Days Expired</th>
+                            <th>Quantity</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in expired_batches %}
+                        <tr>
+                            <td data-label="Batch #">{{ batch.batch_number }}</td>
+                            <td data-label="Item">
+                                <strong>{{ batch.item.item_code }}</strong><br>
+                                <small>{{ batch.item.name }}</small>
+                            </td>
+                            <td data-label="Supplier">{{ batch.supplier.name }}</td>
+                            <td data-label="Expiry Date" class="text-danger">{{ batch.expiry_date|date:"Y-m-d" }}</td>
+                            <td data-label="Days Expired">
+                                <span class="badge bg-danger">{{ batch.days_since_expiry }} days</span>
+                            </td>
+                            <td data-label="Quantity">{{ batch.quantity }}</td>
+                            <td data-label="Action">
+                                <a href="{% url 'inventory:expired_item_action_create' batch.pk %}" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-clipboard-plus"></i> Create Action
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Expiring This Week -->
+    {% if expiring_this_week %}
+    <div class="card border-warning mb-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0"><i class="bi bi-exclamation-circle"></i> Expiring This Week (Next 7 Days)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Batch #</th>
+                            <th>Item</th>
+                            <th>Expiry Date</th>
+                            <th>Days Until Expiry</th>
+                            <th>Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in expiring_this_week %}
+                        <tr>
+                            <td data-label="Batch #">{{ batch.batch_number }}</td>
+                            <td data-label="Item">
+                                <strong>{{ batch.item.item_code }}</strong><br>
+                                <small>{{ batch.item.name }}</small>
+                            </td>
+                            <td data-label="Expiry Date">{{ batch.expiry_date|date:"Y-m-d" }}</td>
+                            <td data-label="Days Until">
+                                <span class="badge bg-warning">{{ batch.days_until_expiry }} days</span>
+                            </td>
+                            <td data-label="Quantity">{{ batch.quantity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- FEFO Recommendations -->
+    {% if fefo_recommendations %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-arrow-down-up"></i> FEFO Recommendations (First Expired First Out)</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Use these batches first to minimize waste:</p>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Recommended Batch Order</th>
+                            <th>Oldest Expiry</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in fefo_recommendations %}
+                        <tr>
+                            <td data-label="Item">
+                                <strong>{{ rec.item.item_code }}</strong><br>
+                                <small>{{ rec.item.name }}</small>
+                            </td>
+                            <td data-label="Batches">
+                                {% for batch in rec.batches %}
+                                    <span class="badge bg-secondary">{{ batch.batch_number }} ({{ batch.expiry_date|date:"Y-m-d" }})</span>
+                                {% endfor %}
+                            </td>
+                            <td data-label="Oldest Expiry">{{ rec.oldest_expiry|date:"Y-m-d" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Warnings -->
+    {% if missing_expiry > 0 %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>Warning:</strong> {{ missing_expiry }} batch(es) are missing expiry dates for items that typically expire.
+        Please review and update.
+    </div>
+    {% endif %}
+
+    {% if not expired_batches and not expiring_this_week and not expiring_soon %}
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle"></i>
+        <strong>Good news!</strong> No expiring or expired items found. All items are within acceptable shelf life.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

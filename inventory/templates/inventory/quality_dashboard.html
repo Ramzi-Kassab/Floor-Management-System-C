@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Quality Dashboard - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-shield-check"></i> Quality Control Dashboard</h1>
+        <a href="{% url 'inventory:quality_quick_actions' %}" class="btn btn-primary">
+            <i class="bi bi-lightning"></i> Quick Actions
+        </a>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Pending GRN Inspections</h6>
+                    <h2 class="card-title">{{ pending_grn_inspections }}</h2>
+                    <p class="card-text text-warning">
+                        <i class="bi bi-hourglass-split"></i> Awaiting inspection
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Pass Rate (30 days)</h6>
+                    <h2 class="card-title">{{ pass_rate|floatformat:1 }}%</h2>
+                    <p class="card-text text-muted">
+                        <i class="bi bi-check-circle"></i> {{ inspection_stats.passed }} / {{ inspection_stats.total }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Quarantined Batches</h6>
+                    <h2 class="card-title">{{ quarantined_batches }}</h2>
+                    <p class="card-text text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Under review
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Pending Dispositions</h6>
+                    <h2 class="card-title">{{ pending_dispositions }}</h2>
+                    <p class="card-text text-info">
+                        <i class="bi bi-clipboard-check"></i> Action required
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inspection Statistics (Last 30 Days) -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Inspection Results (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td><i class="bi bi-check-circle text-success"></i> Passed</td>
+                                <td class="text-end"><strong>{{ inspection_stats.passed }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td><i class="bi bi-x-circle text-danger"></i> Rejected</td>
+                                <td class="text-end"><strong>{{ inspection_stats.rejected }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td><i class="bi bi-arrow-repeat text-warning"></i> Rework</td>
+                                <td class="text-end"><strong>{{ inspection_stats.rework }}</strong></td>
+                            </tr>
+                            <tr class="table-active">
+                                <td><strong>Total Inspections</strong></td>
+                                <td class="text-end"><strong>{{ inspection_stats.total }}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{% url 'inventory:quality_inspection_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-list-ul"></i> View All Inspections
+                        </a>
+                        <a href="{% url 'inventory:defective_items_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-exclamation-octagon text-danger"></i> Defective Items
+                        </a>
+                        <a href="{% url 'inventory:defect_report' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-graph-up"></i> Defect Analysis Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Inspections -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Inspections</h5>
+            <a href="{% url 'inventory:quality_inspection_list' %}" class="btn btn-sm btn-outline-primary">
+                View All
+            </a>
+        </div>
+        <div class="card-body">
+            {% if recent_inspections %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Item</th>
+                                <th>Type</th>
+                                <th>Result</th>
+                                <th>Inspector</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inspection in recent_inspections %}
+                            <tr>
+                                <td data-label="Date">{{ inspection.inspection_date|date:"Y-m-d" }}</td>
+                                <td data-label="Item">{{ inspection.item.item_code }} - {{ inspection.item.name }}</td>
+                                <td data-label="Type">{{ inspection.get_inspection_type_display }}</td>
+                                <td data-label="Result">
+                                    {% if inspection.inspection_result == 'PASS' %}
+                                        <span class="badge bg-success">PASS</span>
+                                    {% elif inspection.inspection_result == 'REJECT' %}
+                                        <span class="badge bg-danger">REJECT</span>
+                                    {% elif inspection.inspection_result == 'REWORK' %}
+                                        <span class="badge bg-warning">REWORK</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ inspection.inspection_result }}</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Inspector">{{ inspection.inspected_by.username }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No recent inspections found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

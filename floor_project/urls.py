@@ -16,8 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 urlpatterns = [
+    # Root URL - redirect to inventory dashboard
+    path('', RedirectView.as_view(url='/inventory/', permanent=False), name='home'),
+
     path('admin/', admin.site.urls),
 
     # Logistics apps

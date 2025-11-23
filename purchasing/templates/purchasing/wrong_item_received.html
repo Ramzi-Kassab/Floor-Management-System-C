@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Wrong Item Received - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-exclamation-triangle text-danger"></i> Wrong Item Received</h1>
+        <a href="{% url 'purchasing:quick_actions' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Quick Actions
+        </a>
+    </div>
+
+    <!-- Problem Description -->
+    <div class="alert alert-danger">
+        <h5 class="alert-heading"><i class="bi bi-x-circle"></i> Problem Identified</h5>
+        <p>The wrong item was received against the GRN. This needs to be corrected immediately to maintain accurate inventory records.</p>
+    </div>
+
+    <!-- GRN Line Details -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">What Was Ordered</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">GRN #:</dt>
+                        <dd class="col-sm-8">
+                            <a href="{% url 'purchasing:grn_detail' grn_line.goods_receipt.pk %}">
+                                {{ grn_line.goods_receipt.grn_number }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-4">PO #:</dt>
+                        <dd class="col-sm-8">
+                            <a href="{% url 'purchasing:po_detail' grn_line.goods_receipt.purchase_order.pk %}">
+                                {{ grn_line.goods_receipt.purchase_order.po_number }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-4">Expected Item:</dt>
+                        <dd class="col-sm-8">
+                            <strong>{{ grn_line.purchase_order_line.item.item_code }}</strong><br>
+                            {{ grn_line.purchase_order_line.item.name }}
+                        </dd>
+
+                        <dt class="col-sm-4">Ordered Qty:</dt>
+                        <dd class="col-sm-8">{{ grn_line.purchase_order_line.quantity }} {{ grn_line.purchase_order_line.item.uom }}</dd>
+
+                        <dt class="col-sm-4">Received Qty:</dt>
+                        <dd class="col-sm-8 text-danger"><strong>{{ grn_line.received_quantity }} {{ grn_line.purchase_order_line.item.uom }}</strong></dd>
+
+                        <dt class="col-sm-4">Supplier:</dt>
+                        <dd class="col-sm-8">{{ grn_line.goods_receipt.purchase_order.supplier.name }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">What Actually Arrived</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-danger"><strong>A different item was received!</strong></p>
+                    <p>This discrepancy needs to be resolved by either:</p>
+                    <ul>
+                        <li>Returning the wrong item to the supplier (Goods Return)</li>
+                        <li>Recording a correction if the item is acceptable</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resolution Options -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">How would you like to resolve this?</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title"><i class="bi bi-arrow-return-left text-danger"></i> Return to Vendor</h6>
+                                <p class="card-text">The wrong item should be returned to the supplier for replacement or credit.</p>
+                                <ul class="small">
+                                    <li>Creates a formal Return to Vendor (RTV) document</li>
+                                    <li>Initiates return process with supplier</li>
+                                    <li>Tracks returned items and credit</li>
+                                </ul>
+                                <button type="submit" name="action" value="return" class="btn btn-danger w-100">
+                                    <i class="bi bi-arrow-return-left"></i> Create Goods Return
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title"><i class="bi bi-pencil-square text-warning"></i> Record Correction</h6>
+                                <p class="card-text">Keep the item but record what was actually received vs. what was ordered.</p>
+                                <ul class="small">
+                                    <li>Creates a GRN correction record</li>
+                                    <li>Documents the discrepancy</li>
+                                    <li>Requires supervisor approval</li>
+                                </ul>
+                                <button type="submit" name="action" value="correction" class="btn btn-warning w-100">
+                                    <i class="bi bi-pencil-square"></i> Create Correction
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Helpful Tips -->
+    <div class="card mt-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h6 class="mb-0"><i class="bi bi-info-circle"></i> Helpful Tips</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>When to Return:</h6>
+                    <ul class="small">
+                        <li>Item is completely wrong and not usable</li>
+                        <li>Supplier needs to send the correct item</li>
+                        <li>Item doesn't meet specifications</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>When to Correct:</h6>
+                    <ul class="small">
+                        <li>Item is similar and can be used</li>
+                        <li>Minor catalog number difference</li>
+                        <li>Agreed with supplier to keep the item</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

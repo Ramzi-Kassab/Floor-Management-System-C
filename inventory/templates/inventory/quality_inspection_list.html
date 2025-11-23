@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Quality Inspections - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-clipboard-check"></i> Quality Inspections</h1>
+        <a href="{% url 'inventory:quality_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="result" class="form-label">Result</label>
+                    <select name="result" id="result" class="form-select">
+                        <option value="">All Results</option>
+                        <option value="PASS" {% if request.GET.result == 'PASS' %}selected{% endif %}>Pass</option>
+                        <option value="REJECT" {% if request.GET.result == 'REJECT' %}selected{% endif %}>Reject</option>
+                        <option value="REWORK" {% if request.GET.result == 'REWORK' %}selected{% endif %}>Rework</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="type" class="form-label">Type</label>
+                    <select name="type" id="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="RECEIVING" {% if request.GET.type == 'RECEIVING' %}selected{% endif %}>Receiving</option>
+                        <option value="IN_PROCESS" {% if request.GET.type == 'IN_PROCESS' %}selected{% endif %}>In-Process</option>
+                        <option value="FINAL" {% if request.GET.type == 'FINAL' %}selected{% endif %}>Final</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    <a href="{% url 'inventory:quality_inspection_list' %}" class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inspections Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if inspections %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Item</th>
+                                <th>Type</th>
+                                <th>Result</th>
+                                <th>Inspector</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inspection in inspections %}
+                            <tr>
+                                <td data-label="ID">#{{ inspection.id }}</td>
+                                <td data-label="Date">{{ inspection.inspection_date|date:"Y-m-d H:i" }}</td>
+                                <td data-label="Item">
+                                    <strong>{{ inspection.item.item_code }}</strong><br>
+                                    <small class="text-muted">{{ inspection.item.name }}</small>
+                                </td>
+                                <td data-label="Type">{{ inspection.get_inspection_type_display }}</td>
+                                <td data-label="Result">
+                                    {% if inspection.inspection_result == 'PASS' %}
+                                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> PASS</span>
+                                    {% elif inspection.inspection_result == 'REJECT' %}
+                                        <span class="badge bg-danger"><i class="bi bi-x-circle"></i> REJECT</span>
+                                    {% elif inspection.inspection_result == 'REWORK' %}
+                                        <span class="badge bg-warning"><i class="bi bi-arrow-repeat"></i> REWORK</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ inspection.inspection_result }}</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Inspector">{{ inspection.inspected_by.username }}</td>
+                                <td data-label="Notes">{{ inspection.notes|truncatewords:10|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Inspection pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.result %}&result={{ request.GET.result }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.result %}&result={{ request.GET.result }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.result %}&result={{ request.GET.result }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.result %}&result={{ request.GET.result }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i> No inspections found matching your criteria.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

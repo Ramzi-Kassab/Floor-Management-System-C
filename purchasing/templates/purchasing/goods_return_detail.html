@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Goods Return {{ goods_return.rtn_number }} - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-arrow-return-left text-danger"></i> Goods Return: {{ goods_return.rtn_number }}</h1>
+        <div>
+            <a href="{% url 'purchasing:goods_return_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-list"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="alert {% if goods_return.status == 'DRAFT' %}alert-secondary{% elif goods_return.status == 'SUBMITTED' %}alert-warning{% elif goods_return.status == 'APPROVED' %}alert-success{% elif goods_return.status == 'COMPLETED' %}alert-info{% else %}alert-danger{% endif %}">
+                <strong>Status:</strong>
+                {% if goods_return.status == 'DRAFT' %}
+                    <span class="badge bg-secondary">DRAFT</span>
+                {% elif goods_return.status == 'SUBMITTED' %}
+                    <span class="badge bg-warning">SUBMITTED - Awaiting Approval</span>
+                {% elif goods_return.status == 'APPROVED' %}
+                    <span class="badge bg-success">APPROVED</span>
+                {% elif goods_return.status == 'COMPLETED' %}
+                    <span class="badge bg-info">COMPLETED</span>
+                {% elif goods_return.status == 'REJECTED' %}
+                    <span class="badge bg-danger">REJECTED</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Return Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Return Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">RTN Number:</dt>
+                        <dd class="col-sm-8"><strong>{{ goods_return.rtn_number }}</strong></dd>
+
+                        <dt class="col-sm-4">Return Date:</dt>
+                        <dd class="col-sm-8">{{ goods_return.return_date|date:"Y-m-d" }}</dd>
+
+                        <dt class="col-sm-4">GRN Reference:</dt>
+                        <dd class="col-sm-8">
+                            <a href="{% url 'purchasing:grn_detail' goods_return.goods_receipt.pk %}">
+                                {{ goods_return.goods_receipt.grn_number }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-4">Supplier:</dt>
+                        <dd class="col-sm-8">{{ goods_return.goods_receipt.purchase_order.supplier.name }}</dd>
+
+                        <dt class="col-sm-4">Return Reason:</dt>
+                        <dd class="col-sm-8">{{ goods_return.get_return_reason_display }}</dd>
+
+                        <dt class="col-sm-4">Created By:</dt>
+                        <dd class="col-sm-8">{{ goods_return.created_by.username }}</dd>
+
+                        <dt class="col-sm-4">Created At:</dt>
+                        <dd class="col-sm-8">{{ goods_return.created_at|date:"Y-m-d H:i" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Supplier Contact Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Supplier Contact</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Contact Person:</dt>
+                        <dd class="col-sm-8">{{ goods_return.supplier_contact_person|default:"-" }}</dd>
+
+                        <dt class="col-sm-4">Notes:</dt>
+                        <dd class="col-sm-8">{{ goods_return.notes|default:"-" }}</dd>
+                    </dl>
+
+                    {% if goods_return.submitted_at %}
+                    <hr>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Submitted:</dt>
+                        <dd class="col-sm-8">{{ goods_return.submitted_at|date:"Y-m-d H:i" }}</dd>
+
+                        {% if goods_return.approved_by %}
+                        <dt class="col-sm-4">Approved By:</dt>
+                        <dd class="col-sm-8">{{ goods_return.approved_by.username }}</dd>
+
+                        <dt class="col-sm-4">Approved At:</dt>
+                        <dd class="col-sm-8">{{ goods_return.approved_at|date:"Y-m-d H:i" }}</dd>
+                        {% endif %}
+                    </dl>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Lines -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Items Being Returned</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Original Qty</th>
+                            <th>Return Qty</th>
+                            <th>Condition</th>
+                            <th>Location</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in return_lines %}
+                        <tr>
+                            <td data-label="Item">
+                                <strong>{{ line.goods_receipt_line.purchase_order_line.item.item_code }}</strong><br>
+                                <small class="text-muted">{{ line.goods_receipt_line.purchase_order_line.item.name }}</small>
+                            </td>
+                            <td data-label="Original Qty">{{ line.goods_receipt_line.received_quantity }}</td>
+                            <td data-label="Return Qty"><strong class="text-danger">{{ line.return_quantity }}</strong></td>
+                            <td data-label="Condition">{{ line.condition_at_return.name }}</td>
+                            <td data-label="Location">{{ line.location.code }}</td>
+                            <td data-label="Reason">{{ line.reason|truncatewords:10 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No items in this return</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    {% if goods_return.status == 'DRAFT' %}
+    <div class="mt-3">
+        <form method="post" action="{% url 'purchasing:goods_return_submit' goods_return.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-send"></i> Submit for Approval
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

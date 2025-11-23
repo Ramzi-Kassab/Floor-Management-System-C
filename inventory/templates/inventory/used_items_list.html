@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Used Items Tracking - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-recycle"></i> Used Items Tracking</h1>
+        <div>
+            <a href="{% url 'inventory:maintenance_schedule' %}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-tools"></i> Maintenance Schedule
+            </a>
+            <a href="{% url 'inventory:quality_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Used Items</h6>
+                    <h2 class="card-title">{{ used_items.count }}</h2>
+                    <p class="card-text">Being tracked</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Maintenance Due</h6>
+                    <h2 class="card-title text-warning">{{ maintenance_due_count }}</h2>
+                    <p class="card-text">Requires attention</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">In Service</h6>
+                    <h2 class="card-title text-success">{{ in_service_count }}</h2>
+                    <p class="card-text">Active items</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Retired</h6>
+                    <h2 class="card-title">{{ retired_count }}</h2>
+                    <p class="card-text">End of life</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="AVAILABLE" {% if request.GET.status == 'AVAILABLE' %}selected{% endif %}>Available</option>
+                        <option value="IN_USE" {% if request.GET.status == 'IN_USE' %}selected{% endif %}>In Use</option>
+                        <option value="MAINTENANCE" {% if request.GET.status == 'MAINTENANCE' %}selected{% endif %}>Under Maintenance</option>
+                        <option value="RETIRED" {% if request.GET.status == 'RETIRED' %}selected{% endif %}>Retired</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" name="search" id="search" class="form-control" placeholder="Serial number or name..." value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    <a href="{% url 'inventory:used_items_list' %}" class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Used Items Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if used_items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Serial Number</th>
+                                <th>Item</th>
+                                <th>Status</th>
+                                <th>Usage Hours</th>
+                                <th>Last Maintenance</th>
+                                <th>Next Maintenance</th>
+                                <th>Condition</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for used_item in used_items %}
+                            <tr>
+                                <td data-label="Serial">#{{ used_item.serial_number }}</td>
+                                <td data-label="Item">
+                                    <strong>{{ used_item.item.item_code }}</strong><br>
+                                    <small class="text-muted">{{ used_item.item.name }}</small>
+                                </td>
+                                <td data-label="Status">
+                                    {% if used_item.status == 'AVAILABLE' %}
+                                        <span class="badge bg-success">Available</span>
+                                    {% elif used_item.status == 'IN_USE' %}
+                                        <span class="badge bg-primary">In Use</span>
+                                    {% elif used_item.status == 'MAINTENANCE' %}
+                                        <span class="badge bg-warning">Maintenance</span>
+                                    {% elif used_item.status == 'RETIRED' %}
+                                        <span class="badge bg-secondary">Retired</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Usage">{{ used_item.total_usage_hours|default:"0" }} hrs</td>
+                                <td data-label="Last Maint">{{ used_item.last_maintenance_date|date:"Y-m-d"|default:"-" }}</td>
+                                <td data-label="Next Maint">
+                                    {% if used_item.next_maintenance_due %}
+                                        {{ used_item.next_maintenance_due|date:"Y-m-d" }}
+                                        {% if used_item.is_maintenance_overdue %}
+                                            <span class="badge bg-danger ms-1">Overdue</span>
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td data-label="Condition">
+                                    {% if used_item.condition_rating >= 80 %}
+                                        <span class="badge bg-success">Excellent</span>
+                                    {% elif used_item.condition_rating >= 60 %}
+                                        <span class="badge bg-info">Good</span>
+                                    {% elif used_item.condition_rating >= 40 %}
+                                        <span class="badge bg-warning">Fair</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Poor</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Actions">
+                                    <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Used items pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i> No used items found. Start tracking reusable items to manage their lifecycle.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

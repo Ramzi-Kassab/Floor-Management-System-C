@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}GRN Corrections - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-pencil-square text-warning"></i> GRN Corrections</h1>
+        <a href="{% url 'purchasing:quick_actions' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Quick Actions
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="approved" class="form-label">Approval Status</label>
+                    <select name="approved" id="approved" class="form-select">
+                        <option value="">All</option>
+                        <option value="no" {% if request.GET.approved == 'no' %}selected{% endif %}>Pending Approval</option>
+                        <option value="yes" {% if request.GET.approved == 'yes' %}selected{% endif %}>Approved</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    <a href="{% url 'purchasing:grn_correction_list' %}" class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Corrections Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if corrections %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Correction #</th>
+                                <th>GRN #</th>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Corrected By</th>
+                                <th>Approval Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for correction in corrections %}
+                            <tr>
+                                <td data-label="Correction #">
+                                    <a href="{% url 'purchasing:grn_correction_detail' correction.pk %}">
+                                        {{ correction.correction_number }}
+                                    </a>
+                                </td>
+                                <td data-label="GRN #">
+                                    <a href="{% url 'purchasing:grn_detail' correction.goods_receipt_line.goods_receipt.pk %}">
+                                        {{ correction.goods_receipt_line.goods_receipt.grn_number }}
+                                    </a>
+                                </td>
+                                <td data-label="Type">{{ correction.get_correction_type_display }}</td>
+                                <td data-label="Date">{{ correction.correction_date|date:"Y-m-d" }}</td>
+                                <td data-label="Corrected By">{{ correction.corrected_by.username }}</td>
+                                <td data-label="Status">
+                                    {% if correction.approved %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Approved
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-hourglass-split"></i> Pending
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Actions">
+                                    <a href="{% url 'purchasing:grn_correction_detail' correction.pk %}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if not correction.approved and request.user.is_staff %}
+                                        <form method="post"
+                                              action="{% url 'purchasing:grn_correction_approve' correction.pk %}"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Approve this correction?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Corrections pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.approved %}&approved={{ request.GET.approved }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.approved %}&approved={{ request.GET.approved }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.approved %}&approved={{ request.GET.approved }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.approved %}&approved={{ request.GET.approved }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i> No GRN corrections found.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

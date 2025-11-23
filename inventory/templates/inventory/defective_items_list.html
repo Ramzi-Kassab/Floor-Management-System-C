@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Defective Items - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-exclamation-octagon text-danger"></i> Defective Items</h1>
+        <div>
+            <a href="{% url 'inventory:defect_report' %}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-graph-up"></i> View Report
+            </a>
+            <a href="{% url 'inventory:quality_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Defective Items</h6>
+                    <h2 class="card-title text-danger">{{ defective_dispositions.count }}</h2>
+                    <p class="card-text">Pending disposition</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Pending Approval</h6>
+                    <h2 class="card-title text-warning">{{ pending_count }}</h2>
+                    <p class="card-text">Awaiting supervisor</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Quarantined</h6>
+                    <h2 class="card-title text-info">{{ quarantined_count }}</h2>
+                    <p class="card-text">In quarantine area</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                        <option value="APPROVED" {% if request.GET.status == 'APPROVED' %}selected{% endif %}>Approved</option>
+                        <option value="REJECTED" {% if request.GET.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                        <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="defect_type" class="form-label">Defect Type</label>
+                    <select name="defect_type" id="defect_type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="DIMENSIONAL" {% if request.GET.defect_type == 'DIMENSIONAL' %}selected{% endif %}>Dimensional</option>
+                        <option value="VISUAL" {% if request.GET.defect_type == 'VISUAL' %}selected{% endif %}>Visual</option>
+                        <option value="FUNCTIONAL" {% if request.GET.defect_type == 'FUNCTIONAL' %}selected{% endif %}>Functional</option>
+                        <option value="MATERIAL" {% if request.GET.defect_type == 'MATERIAL' %}selected{% endif %}>Material</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    <a href="{% url 'inventory:defective_items_list' %}" class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Defective Items Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if defective_dispositions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Item</th>
+                                <th>Defect Type</th>
+                                <th>Quantity</th>
+                                <th>Disposition</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for disposition in defective_dispositions %}
+                            <tr>
+                                <td data-label="ID">#{{ disposition.id }}</td>
+                                <td data-label="Item">
+                                    <strong>{{ disposition.item.item_code }}</strong><br>
+                                    <small class="text-muted">{{ disposition.item.name }}</small>
+                                </td>
+                                <td data-label="Defect Type">{{ disposition.get_defect_type_display }}</td>
+                                <td data-label="Quantity">{{ disposition.defective_quantity }} {{ disposition.item.uom }}</td>
+                                <td data-label="Disposition">{{ disposition.get_disposition_action_display }}</td>
+                                <td data-label="Status">
+                                    {% if disposition.status == 'PENDING' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif disposition.status == 'APPROVED' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% elif disposition.status == 'REJECTED' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% elif disposition.status == 'COMPLETED' %}
+                                        <span class="badge bg-info">Completed</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Created">{{ disposition.created_at|date:"Y-m-d" }}</td>
+                                <td data-label="Actions">
+                                    <a href="#" class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Defective items pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-success mb-0">
+                    <i class="bi bi-check-circle"></i> No defective items found. All items are in good condition.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

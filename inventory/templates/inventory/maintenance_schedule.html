@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Maintenance Schedule - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-tools"></i> Maintenance Schedule</h1>
+        <div>
+            <a href="{% url 'inventory:used_items_list' %}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-recycle"></i> Used Items
+            </a>
+            <a href="{% url 'inventory:quality_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Overdue</h6>
+                    <h2 class="card-title text-danger">{{ overdue_count }}</h2>
+                    <p class="card-text">Past due date</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">This Week</h6>
+                    <h2 class="card-title text-warning">{{ this_week_count }}</h2>
+                    <p class="card-text">Next 7 days</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">This Month</h6>
+                    <h2 class="card-title text-info">{{ this_month_count }}</h2>
+                    <p class="card-text">Next 30 days</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Completed</h6>
+                    <h2 class="card-title text-success">{{ completed_count }}</h2>
+                    <p class="card-text">This month</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Maintenance (Critical) -->
+    {% if overdue_items %}
+    <div class="card border-danger mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Overdue Maintenance (Immediate Action Required)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Serial #</th>
+                            <th>Item</th>
+                            <th>Due Date</th>
+                            <th>Days Overdue</th>
+                            <th>Maintenance Type</th>
+                            <th>Priority</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in overdue_items %}
+                        <tr>
+                            <td data-label="Serial">#{{ item.serial_number }}</td>
+                            <td data-label="Item">
+                                <strong>{{ item.item.item_code }}</strong><br>
+                                <small>{{ item.item.name }}</small>
+                            </td>
+                            <td data-label="Due Date" class="text-danger">{{ item.next_maintenance_due|date:"Y-m-d" }}</td>
+                            <td data-label="Overdue">
+                                <span class="badge bg-danger">{{ item.days_overdue }} days</span>
+                            </td>
+                            <td data-label="Type">{{ item.get_maintenance_type_display }}</td>
+                            <td data-label="Priority">
+                                <span class="badge bg-danger">Critical</span>
+                            </td>
+                            <td data-label="Actions">
+                                <button class="btn btn-sm btn-danger">
+                                    <i class="bi bi-wrench"></i> Schedule
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Upcoming This Week -->
+    {% if this_week_items %}
+    <div class="card border-warning mb-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Scheduled This Week</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Serial #</th>
+                            <th>Item</th>
+                            <th>Due Date</th>
+                            <th>Days Until</th>
+                            <th>Maintenance Type</th>
+                            <th>Estimated Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in this_week_items %}
+                        <tr>
+                            <td data-label="Serial">#{{ item.serial_number }}</td>
+                            <td data-label="Item">
+                                <strong>{{ item.item.item_code }}</strong><br>
+                                <small>{{ item.item.name }}</small>
+                            </td>
+                            <td data-label="Due Date">{{ item.next_maintenance_due|date:"Y-m-d" }}</td>
+                            <td data-label="Days Until">
+                                <span class="badge bg-warning">{{ item.days_until_maintenance }}</span>
+                            </td>
+                            <td data-label="Type">{{ item.get_maintenance_type_display }}</td>
+                            <td data-label="Duration">{{ item.estimated_duration }} hours</td>
+                            <td data-label="Actions">
+                                <button class="btn btn-sm btn-warning">
+                                    <i class="bi bi-calendar-check"></i> Confirm
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Calendar View -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-calendar3"></i> Monthly Maintenance Calendar</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Scheduled Maintenance</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for date_item in calendar_items %}
+                        <tr>
+                            <td data-label="Date">{{ date_item.date|date:"Y-m-d (D)" }}</td>
+                            <td data-label="Items">
+                                {% for item in date_item.items %}
+                                    <span class="badge bg-secondary me-1">{{ item.item.item_code }}</span>
+                                {% endfor %}
+                            </td>
+                            <td data-label="Count">{{ date_item.items.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">No scheduled maintenance for this period</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance History (Recent Completions) -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Completions</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_completions %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>Serial #</th>
+                                <th>Item</th>
+                                <th>Type</th>
+                                <th>Completed Date</th>
+                                <th>Performed By</th>
+                                <th>Next Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for completion in recent_completions %}
+                            <tr>
+                                <td data-label="Serial">#{{ completion.serial_number }}</td>
+                                <td data-label="Item">{{ completion.item.item_code }}</td>
+                                <td data-label="Type">{{ completion.get_maintenance_type_display }}</td>
+                                <td data-label="Completed">{{ completion.completed_date|date:"Y-m-d" }}</td>
+                                <td data-label="By">{{ completion.performed_by.username }}</td>
+                                <td data-label="Next">{{ completion.next_maintenance_due|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No recent maintenance completions.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

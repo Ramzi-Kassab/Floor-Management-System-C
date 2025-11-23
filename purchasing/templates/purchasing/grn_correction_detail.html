@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}GRN Correction {{ correction.correction_number }} - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-pencil-square text-warning"></i> GRN Correction: {{ correction.correction_number }}</h1>
+        <div>
+            <a href="{% url 'purchasing:grn_correction_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-list"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            {% if correction.approved %}
+                <div class="alert alert-success">
+                    <strong><i class="bi bi-check-circle"></i> Status: APPROVED</strong><br>
+                    Approved by {{ correction.approved_by.username }} on {{ correction.approved_at|date:"Y-m-d H:i" }}
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <strong><i class="bi bi-hourglass-split"></i> Status: PENDING APPROVAL</strong><br>
+                    This correction is awaiting supervisor approval before it can be applied.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Correction Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Correction Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Correction Number:</dt>
+                        <dd class="col-sm-7"><strong>{{ correction.correction_number }}</strong></dd>
+
+                        <dt class="col-sm-5">Correction Type:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-warning">{{ correction.get_correction_type_display }}</span>
+                        </dd>
+
+                        <dt class="col-sm-5">Correction Date:</dt>
+                        <dd class="col-sm-7">{{ correction.correction_date|date:"Y-m-d" }}</dd>
+
+                        <dt class="col-sm-5">Corrected By:</dt>
+                        <dd class="col-sm-7">{{ correction.corrected_by.username }}</dd>
+
+                        <dt class="col-sm-5">GRN Reference:</dt>
+                        <dd class="col-sm-7">
+                            <a href="{% url 'purchasing:grn_detail' correction.goods_receipt_line.goods_receipt.pk %}">
+                                {{ correction.goods_receipt_line.goods_receipt.grn_number }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-5">Item:</dt>
+                        <dd class="col-sm-7">
+                            <strong>{{ correction.goods_receipt_line.purchase_order_line.item.item_code }}</strong><br>
+                            <small>{{ correction.goods_receipt_line.purchase_order_line.item.name }}</small>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Reason for Correction -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Reason for Correction</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ correction.reason }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Changes Made -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Changes Made</h5>
+                </div>
+                <div class="card-body">
+                    {% if correction.correction_type == 'QUANTITY' %}
+                        <h6>Quantity Correction:</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Original Quantity:</th>
+                                <td class="text-end">{{ correction.original_quantity }}</td>
+                            </tr>
+                            <tr class="table-success">
+                                <th>Corrected Quantity:</th>
+                                <td class="text-end"><strong>{{ correction.corrected_quantity }}</strong></td>
+                            </tr>
+                            <tr class="{% if correction.corrected_quantity > correction.original_quantity %}table-success{% else %}table-danger{% endif %}">
+                                <th>Difference:</th>
+                                <td class="text-end">
+                                    {% widthratio correction.corrected_quantity 1 1 as corrected %}
+                                    {% widthratio correction.original_quantity 1 1 as original %}
+                                    <strong>{{ corrected|add:"-"|add:original|default:"0" }}</strong>
+                                </td>
+                            </tr>
+                        </table>
+                    {% endif %}
+
+                    {% if correction.correction_type == 'LOCATION' %}
+                        <h6>Location Correction:</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Original Location:</th>
+                                <td class="text-end">{{ correction.original_location.code }}</td>
+                            </tr>
+                            <tr class="table-success">
+                                <th>Corrected Location:</th>
+                                <td class="text-end"><strong>{{ correction.corrected_location.code }}</strong></td>
+                            </tr>
+                        </table>
+                    {% endif %}
+
+                    {% if correction.correction_type == 'CONDITION' %}
+                        <h6>Condition Correction:</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Original Condition:</th>
+                                <td class="text-end">{{ correction.goods_receipt_line.condition_type.name }}</td>
+                            </tr>
+                            <tr class="table-success">
+                                <th>Corrected Condition:</th>
+                                <td class="text-end"><strong>{{ correction.corrected_condition.name }}</strong></td>
+                            </tr>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Approval Information -->
+            {% if correction.approved %}
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Approval Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Approved By:</dt>
+                        <dd class="col-sm-7">{{ correction.approved_by.username }}</dd>
+
+                        <dt class="col-sm-5">Approved At:</dt>
+                        <dd class="col-sm-7">{{ correction.approved_at|date:"Y-m-d H:i" }}</dd>
+
+                        <dt class="col-sm-5">Applied:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> Correction has been applied to inventory
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Actions -->
+    {% if not correction.approved and request.user.is_staff %}
+    <div class="card border-warning mt-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0">Supervisor Action Required</h5>
+        </div>
+        <div class="card-body">
+            <p>Review the correction details above and approve if correct.</p>
+            <form method="post" action="{% url 'purchasing:grn_correction_approve' correction.pk %}"
+                  onsubmit="return confirm('Are you sure you want to approve this correction? This will update the stock levels.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Approve Correction
+                </button>
+                <a href="{% url 'purchasing:grn_correction_list' %}" class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

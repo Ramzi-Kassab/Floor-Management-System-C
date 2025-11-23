@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static widget_tweaks %}
+
+{% block title %}Create Expired Item Action - Logistics System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-clipboard-plus"></i> Create Action for Expired Item</h1>
+        <a href="{% url 'inventory:expiry_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Expiry Dashboard
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Batch Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Batch Number:</dt>
+                        <dd class="col-sm-9">{{ batch.batch_number }}</dd>
+
+                        <dt class="col-sm-3">Item:</dt>
+                        <dd class="col-sm-9">{{ batch.item.item_code }} - {{ batch.item.name }}</dd>
+
+                        <dt class="col-sm-3">Expiry Date:</dt>
+                        <dd class="col-sm-9 text-danger">{{ batch.expiry_date|date:"Y-m-d" }}</dd>
+
+                        <dt class="col-sm-3">Quantity:</dt>
+                        <dd class="col-sm-9">{{ batch.quantity }} {{ batch.item.uom }}</dd>
+
+                        <dt class="col-sm-3">Supplier:</dt>
+                        <dd class="col-sm-9">{{ batch.supplier.name }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Disposition Action</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="action_type" class="form-label">Action Type *</label>
+                            {% render_field form.action_type class="form-select" %}
+                            {% if form.action_type.errors %}
+                                <div class="invalid-feedback d-block">{{ form.action_type.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity to Dispose *</label>
+                            {% render_field form.quantity class="form-control" %}
+                            <div class="form-text">Maximum: {{ batch.quantity }} {{ batch.item.uom }}</div>
+                            {% if form.quantity.errors %}
+                                <div class="invalid-feedback d-block">{{ form.quantity.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason *</label>
+                            {% render_field form.reason class="form-control" rows="4" placeholder="Explain why this item expired and the action being taken..." %}
+                            {% if form.reason.errors %}
+                                <div class="invalid-feedback d-block">{{ form.reason.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            {% render_field form.notes class="form-control" rows="3" %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'inventory:expiry_dashboard' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-check-circle"></i> Submit for Approval
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="card-title">Action Types</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <strong>Dispose:</strong> Discard the expired item
+                        </li>
+                        <li class="mb-2">
+                            <strong>Return to Vendor:</strong> Send back to supplier
+                        </li>
+                        <li class="mb-2">
+                            <strong>Rework:</strong> Attempt to salvage/reprocess
+                        </li>
+                        <li class="mb-2">
+                            <strong>Donate:</strong> Give to charity (if safe)
+                        </li>
+                    </ul>
+                    <hr>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle"></i> All disposal actions require supervisor approval before execution.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

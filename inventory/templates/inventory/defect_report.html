@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Defect Analysis Report - Logistics System{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-graph-up"></i> Defect Analysis Report</h1>
+        <div>
+            <a href="{% url 'inventory:defective_items_list' %}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-list"></i> View Items
+            </a>
+            <a href="{% url 'inventory:quality_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Total Defects (Period)</h6>
+                    <h2 class="card-title">{{ total_defects }}</h2>
+                    <p class="card-text text-muted">Last 30 days</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Defect Rate</h6>
+                    <h2 class="card-title">{{ defect_rate|floatformat:2 }}%</h2>
+                    <p class="card-text text-muted">Of total inspections</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Cost Impact</h6>
+                    <h2 class="card-title">SAR {{ total_cost|floatformat:2 }}</h2>
+                    <p class="card-text text-muted">Estimated loss</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Top Defect Type</h6>
+                    <h2 class="card-title text-truncate">{{ top_defect_type }}</h2>
+                    <p class="card-text text-muted">Most common</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Defects by Type Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Defects by Type</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="defectTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Defects by Supplier -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Defects by Supplier</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="supplierDefectChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Defective Items -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Top 10 Items with Defects</h5>
+        </div>
+        <div class="card-body">
+            {% if top_defective_items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Item</th>
+                                <th>Defect Count</th>
+                                <th>Most Common Type</th>
+                                <th>Defect Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item_stat in top_defective_items %}
+                            <tr>
+                                <td data-label="Rank">{{ forloop.counter }}</td>
+                                <td data-label="Item">
+                                    <strong>{{ item_stat.item.item_code }}</strong><br>
+                                    <small>{{ item_stat.item.name }}</small>
+                                </td>
+                                <td data-label="Defect Count">{{ item_stat.defect_count }}</td>
+                                <td data-label="Type">{{ item_stat.common_defect_type }}</td>
+                                <td data-label="Rate">
+                                    <span class="badge {% if item_stat.defect_rate > 10 %}bg-danger{% elif item_stat.defect_rate > 5 %}bg-warning{% else %}bg-info{% endif %}">
+                                        {{ item_stat.defect_rate|floatformat:1 }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No defect data available for analysis.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Trend Analysis -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Defect Trend (Last 90 Days)</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="defectTrendChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Defect Type Chart
+    const typeCtx = document.getElementById('defectTypeChart');
+    new Chart(typeCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ defect_type_labels|safe }},
+            datasets: [{
+                data: {{ defect_type_data|safe }},
+                backgroundColor: ['#dc3545', '#ffc107', '#0dcaf0', '#198754', '#6c757d']
+            }]
+        }
+    });
+
+    // Supplier Defect Chart
+    const supplierCtx = document.getElementById('supplierDefectChart');
+    new Chart(supplierCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ supplier_labels|safe }},
+            datasets: [{
+                label: 'Defects',
+                data: {{ supplier_data|safe }},
+                backgroundColor: '#dc3545'
+            }]
+        }
+    });
+
+    // Defect Trend Chart
+    const trendCtx = document.getElementById('defectTrendChart');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: {{ trend_labels|safe }},
+            datasets: [{
+                label: 'Defects',
+                data: {{ trend_data|safe }},
+                borderColor: '#dc3545',
+                tension: 0.1
+            }]
+        }
+    });
+</script>
+{% endblock %}
