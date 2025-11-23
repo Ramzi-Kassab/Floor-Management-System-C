@@ -1,28 +1,39 @@
 #!/bin/bash
-
 echo "🚀 Setting up Floor Management System - Production Department"
 echo "============================================================="
 
-# Install system dependencies
-echo ""
-echo "📦 Installing system dependencies..."
-sudo apt-get update
-sudo apt-get install -y postgresql postgresql-contrib libpq-dev
-
-# Install Python dependencies
+# Install Python dependencies (no sudo needed)
 echo ""
 echo "📦 Installing Python dependencies..."
-pip install --upgrade pip
-pip install -r requirements.txt
+pip install --upgrade pip --break-system-packages
+pip install -r requirements.txt --break-system-packages
 
-# Setup PostgreSQL
+# Setup PostgreSQL (user-level, no sudo)
 echo ""
-echo "🐘 Setting up PostgreSQL..."
-sudo service postgresql start
-sudo -u postgres psql -c "CREATE DATABASE floor_management_c;" 2>/dev/null || echo "Database already exists"
-sudo -u postgres psql -c "CREATE USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || echo "User already exists"
-sudo -u postgres psql -c "ALTER USER postgres WITH SUPERUSER;"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE floor_management_c TO postgres;"
+echo "🐘 Setting up PostgreSQL (user-level)..."
+
+# Create PostgreSQL directories
+mkdir -p ~/postgres/data ~/postgres/socket
+
+# Check if already initialized
+if [ ! -f ~/postgres/data/PG_VERSION ]; then
+    echo "Initializing PostgreSQL database..."
+    initdb -D ~/postgres/data
+    echo "unix_socket_directories = '/home/vscode/postgres/socket'" >> ~/postgres/data/postgresql.conf
+fi
+
+# Start PostgreSQL
+echo "Starting PostgreSQL..."
+pg_ctl -D ~/postgres/data -l ~/postgres/logfile start
+
+# Wait for PostgreSQL to be ready
+echo "Waiting for PostgreSQL to be ready..."
+sleep 3
+
+# Create database and user
+echo "Creating database and user..."
+psql -d postgres -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'postgres';" 2>/dev/null || echo "✓ User already exists"
+psql -d postgres -c "CREATE DATABASE floor_management_c OWNER postgres;" 2>/dev/null || echo "✓ Database already exists"
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
@@ -55,7 +66,7 @@ python manage.py migrate
 # Create cache table
 echo ""
 echo "📊 Creating cache table..."
-python manage.py createcachetable
+python manage.py createcachetable 2>/dev/null || echo "✓ Cache table exists"
 
 # Collect static files
 echo ""
@@ -68,8 +79,8 @@ echo "✅ Setup complete!"
 echo ""
 echo "📋 Next steps:"
 echo "  1. Run: python manage.py createsuperuser"
-echo "  2. Run: python manage.py runserver"
-echo "  3. Open browser to forwarded port 8000"
+echo "  2. Run: python manage.py runserver 0.0.0.0:8000"
+echo "  3. Access via PORTS tab → click 🌐 icon"
 echo ""
 echo "🧪 To run the repair workflow tests:"
 echo "  python test_repair_workflow.py"
