@@ -130,6 +130,40 @@ class Item(models.Model):
     )
     # Future QR code support - don't add QR field now, but design allows it
     external_reference = models.CharField(max_length=100, blank=True, help_text="External ERP reference")
+
+    # KSA Compliance Fields
+    hs_code = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text="10-digit HS code for customs classification (e.g., 8207.13.00.00)"
+    )
+    country_of_origin = models.CharField(
+        max_length=2,
+        blank=True,
+        help_text="ISO 3166-1 alpha-2 country code (e.g., SA, CN, US)"
+    )
+    vat_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('STANDARD', 'Standard Rated - 15%'),
+            ('ZERO_RATED', 'Zero Rated - 0%'),
+            ('EXEMPT', 'Exempt'),
+            ('OUT_OF_SCOPE', 'Out of Scope'),
+        ],
+        default='STANDARD',
+        help_text="VAT treatment type for this item"
+    )
+    customs_duty_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Customs duty percentage (for imports)"
+    )
+    requires_saber_certificate = models.BooleanField(
+        default=False,
+        help_text="Item requires SABER certificate for import"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -531,4 +565,14 @@ from .quality_control import (
     DefectiveItemDisposition,
     UsedItemTracking,
     ExpiredItemAction
+)
+
+# ==================== Import KSA Compliance Models ====================
+# Import KSA (Saudi Arabia) compliance models
+from .ksa_compliance import (
+    CompanyProfile,
+    ItemCertificate,
+    CustomsDeclaration,
+    CustomsDeclarationLine,
+    Shipment
 )
