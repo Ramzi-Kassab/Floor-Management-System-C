@@ -92,6 +92,13 @@
                                 <i class="bi bi-pause-circle"></i> Holds
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'production:correction-request-list' %}">
+                                <i class="bi bi-arrow-counterclockwise"></i> Correction Requests
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'production:execution-log-list' %}">
+                                <i class="bi bi-journal-text"></i> Execution Logs
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'production:evaluation-create' %}">
                                 <i class="bi bi-plus-circle"></i> New Evaluation
                             </a></li>

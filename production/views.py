@@ -447,7 +447,8 @@ def generate_qr_code_view(request, pk):
 
 def qr_scan_view(request, code):
     """
-    Handle QR code scanning - redirect to appropriate page
+    Handle QR code scanning with process validation
+    Validates that the scanned process is the correct next step in sequence
     """
     try:
         qr_code = get_object_or_404(models.QRCode, code=code)
@@ -457,11 +458,67 @@ def qr_scan_view(request, code):
             messages.warning(request, 'This QR code has expired.')
             return redirect('production:dashboard')
 
-        # Redirect to target
-        if qr_code.job_card:
+        # If this is a route step QR code, validate the sequence
+        if qr_code.route_step:
+            job_card = qr_code.route_step.job_card
+            scanned_step = qr_code.route_step
+
+            # Find the expected next step (first PENDING step in sequence)
+            expected_step = job_card.route_steps.filter(
+                status=models.RouteStepStatus.PENDING
+            ).order_by('sequence').first()
+
+            # Validate sequence
+            is_valid = (expected_step and scanned_step.pk == expected_step.pk)
+
+            # Generate unique log number
+            from datetime import datetime
+            log_count = models.ProcessExecutionLog.objects.filter(
+                log_number__startswith=f'LOG-{datetime.now().year}'
+            ).count() + 1
+            log_number = f'LOG-{datetime.now().year}-{log_count:06d}'
+
+            # Create execution log
+            execution_log = models.ProcessExecutionLog.objects.create(
+                log_number=log_number,
+                job_route_step=scanned_step,
+                job_card=job_card,
+                process_code=scanned_step.process_code,
+                operator_name=request.user.username if request.user.is_authenticated else 'Unknown',
+                was_valid_sequence=is_valid,
+                expected_process_code=expected_step.process_code if expected_step and not is_valid else '',
+                validation_message="Valid sequence" if is_valid else f"Wrong process! Expected: {expected_step.process_code if expected_step else 'None'}",
+                department=scanned_step.department,
+                scanned_at=timezone.now()
+            )
+
+            # If validation failed, show error and offer correction request
+            if not is_valid:
+                messages.error(
+                    request,
+                    f'⚠️ WRONG PROCESS SCANNED!\n\n'
+                    f'You scanned: {scanned_step.process_code}\n'
+                    f'Expected next step: {expected_step.process_code if expected_step else "None (all steps complete)"}\n\n'
+                    f'Please scan the correct QR code or submit a correction request if you already started this process.'
+                )
+                # Redirect to job card with error context
+                return redirect(
+                    f'/production/jobcards/{job_card.pk}/?validation_error=true&log_id={execution_log.pk}'
+                )
+
+            # Validation succeeded - log it
+            execution_log.started_at = timezone.now()
+            execution_log.save()
+
+            messages.success(
+                request,
+                f'✓ Correct process! You may now start: {scanned_step.process_code}'
+            )
+            return redirect('production:jobcard-detail', pk=job_card.pk)
+
+        # For job card QR codes (not step-specific), just redirect
+        elif qr_code.job_card:
             return redirect('production:jobcard-detail', pk=qr_code.job_card.pk)
-        elif qr_code.route_step:
-            return redirect('production:jobcard-detail', pk=qr_code.route_step.job_card.pk)
         else:
             messages.error(request, 'QR code has no valid target.')
             return redirect('production:dashboard')
@@ -726,3 +783,346 @@ class ProductionHoldListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(status='ACTIVE')
 
         return queryset.order_by('-hold_placed_at')
+
+
+# ============================================================================
+# PROCESS CORRECTION REQUESTS
+# ============================================================================
+
+class ProcessCorrectionRequestCreateView(LoginRequiredMixin, CreateView):
+    """
+    Create a correction request for a wrongly executed process
+    Operator-initiated workflow requiring supervisor approval
+    """
+    model = models.ProcessCorrectionRequest
+    template_name = 'production/correction_request_form.html'
+    fields = [
+        'job_route_step', 'correction_type', 'reason',
+        'impact_description', 'priority'
+    ]
+
+    def get_initial(self):
+        initial = super().get_initial()
+
+        # Pre-fill from URL parameters
+        step_id = self.request.GET.get('step_id')
+        log_id = self.request.GET.get('log_id')
+
+        if step_id:
+            initial['job_route_step'] = step_id
+
+        # Auto-generate request number
+        from datetime import datetime
+        year = datetime.now().year
+        count = models.ProcessCorrectionRequest.objects.filter(
+            request_number__startswith=f'CORR-{year}'
+        ).count() + 1
+        self.request_number = f'CORR-{year}-{count:04d}'
+
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Add execution log if available
+        log_id = self.request.GET.get('log_id')
+        if log_id:
+            try:
+                context['execution_log'] = models.ProcessExecutionLog.objects.get(pk=log_id)
+            except models.ProcessExecutionLog.DoesNotExist:
+                pass
+
+        # Add step details if available
+        step_id = self.request.GET.get('step_id')
+        if step_id:
+            try:
+                context['route_step'] = models.JobRouteStep.objects.get(pk=step_id)
+            except models.JobRouteStep.DoesNotExist:
+                pass
+
+        return context
+
+    def form_valid(self, form):
+        # Set request number and metadata
+        form.instance.request_number = self.request_number
+        form.instance.requested_by_name = self.request.user.username
+
+        # Try to link employee if exists
+        try:
+            employee = models.Employee.objects.get(user=self.request.user)
+            form.instance.requested_by = employee
+        except models.Employee.DoesNotExist:
+            pass
+
+        # Set job card from route step
+        form.instance.job_card = form.instance.job_route_step.job_card
+
+        # Link execution log if provided
+        log_id = self.request.GET.get('log_id')
+        if log_id:
+            try:
+                form.instance.execution_log = models.ProcessExecutionLog.objects.get(pk=log_id)
+            except models.ProcessExecutionLog.DoesNotExist:
+                pass
+
+        # Save original state
+        form.instance.original_step_status = form.instance.job_route_step.status
+        if form.instance.job_route_step.actual_operator:
+            form.instance.original_operator_name = str(form.instance.job_route_step.actual_operator)
+
+        messages.success(
+            self.request,
+            f'Correction request {form.instance.request_number} submitted. '
+            f'A supervisor will review it shortly.'
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('production:jobcard-detail',
+                          kwargs={'pk': self.object.job_card.pk})
+
+
+class ProcessCorrectionRequestListView(LoginRequiredMixin, ListView):
+    """
+    List all correction requests with filtering
+    """
+    model = models.ProcessCorrectionRequest
+    template_name = 'production/correction_request_list.html'
+    context_object_name = 'requests'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related(
+            'job_card', 'job_route_step', 'requested_by',
+            'supervisor_reviewed_by'
+        )
+
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        else:
+            # Show pending requests by default
+            queryset = queryset.filter(
+                status=models.CorrectionRequestStatus.PENDING
+            )
+
+        # Filter by priority
+        priority = self.request.GET.get('priority')
+        if priority:
+            queryset = queryset.filter(priority=priority)
+
+        return queryset.order_by('-requested_at')
+
+
+class ProcessCorrectionRequestDetailView(LoginRequiredMixin, DetailView):
+    """
+    Correction request details with approval/rejection actions
+    """
+    model = models.ProcessCorrectionRequest
+    template_name = 'production/correction_request_detail.html'
+    context_object_name = 'request'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Check if current user can approve
+        context['can_approve'] = False
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            context['can_approve'] = True
+        else:
+            # Check if user is a supervisor
+            try:
+                employee = models.Employee.objects.get(user=self.request.user)
+                if employee.role in ['SUPERVISOR', 'MANAGER']:
+                    context['can_approve'] = True
+            except models.Employee.DoesNotExist:
+                pass
+
+        return context
+
+
+def approve_correction_request(request, pk):
+    """
+    Approve a correction request (supervisor action)
+    """
+    correction_request = get_object_or_404(models.ProcessCorrectionRequest, pk=pk)
+
+    if request.method == 'POST':
+        # Check permission
+        if not (request.user.is_staff or request.user.is_superuser):
+            try:
+                employee = models.Employee.objects.get(user=request.user)
+                if employee.role not in ['SUPERVISOR', 'MANAGER']:
+                    messages.error(request, 'Only supervisors can approve correction requests.')
+                    return redirect('production:correction-request-detail', pk=pk)
+            except models.Employee.DoesNotExist:
+                messages.error(request, 'Only supervisors can approve correction requests.')
+                return redirect('production:correction-request-detail', pk=pk)
+
+        # Get supervisor employee instance
+        try:
+            supervisor = models.Employee.objects.get(user=request.user)
+        except models.Employee.DoesNotExist:
+            supervisor = None
+
+        # Get notes from form
+        notes = request.POST.get('notes', '')
+
+        # Approve the request
+        correction_request.approve(supervisor=supervisor, notes=notes)
+
+        # Execute the correction if auto-execute is enabled
+        if request.POST.get('auto_execute') == 'true':
+            try:
+                correction_request.execute_correction(
+                    performed_by=supervisor,
+                    notes=f"Auto-executed upon approval. {notes}"
+                )
+                messages.success(
+                    request,
+                    f'Correction request {correction_request.request_number} approved and executed. '
+                    f'Process step has been reversed.'
+                )
+            except Exception as e:
+                messages.error(
+                    request,
+                    f'Correction approved but execution failed: {str(e)}'
+                )
+        else:
+            messages.success(
+                request,
+                f'Correction request {correction_request.request_number} approved. '
+                f'Execute the correction manually or from the detail page.'
+            )
+
+        return redirect('production:correction-request-detail', pk=pk)
+
+    return redirect('production:correction-request-detail', pk=pk)
+
+
+def reject_correction_request(request, pk):
+    """
+    Reject a correction request (supervisor action)
+    """
+    correction_request = get_object_or_404(models.ProcessCorrectionRequest, pk=pk)
+
+    if request.method == 'POST':
+        # Check permission
+        if not (request.user.is_staff or request.user.is_superuser):
+            try:
+                employee = models.Employee.objects.get(user=request.user)
+                if employee.role not in ['SUPERVISOR', 'MANAGER']:
+                    messages.error(request, 'Only supervisors can reject correction requests.')
+                    return redirect('production:correction-request-detail', pk=pk)
+            except models.Employee.DoesNotExist:
+                messages.error(request, 'Only supervisors can reject correction requests.')
+                return redirect('production:correction-request-detail', pk=pk)
+
+        # Get supervisor employee instance
+        try:
+            supervisor = models.Employee.objects.get(user=request.user)
+        except models.Employee.DoesNotExist:
+            supervisor = None
+
+        # Get notes from form
+        notes = request.POST.get('notes', '')
+
+        # Reject the request
+        correction_request.reject(supervisor=supervisor, notes=notes)
+
+        messages.warning(
+            request,
+            f'Correction request {correction_request.request_number} rejected.'
+        )
+
+        return redirect('production:correction-request-detail', pk=pk)
+
+    return redirect('production:correction-request-detail', pk=pk)
+
+
+def execute_correction_request(request, pk):
+    """
+    Execute an approved correction request
+    """
+    correction_request = get_object_or_404(models.ProcessCorrectionRequest, pk=pk)
+
+    if request.method == 'POST':
+        # Check if approved
+        if correction_request.status != models.CorrectionRequestStatus.APPROVED:
+            messages.error(
+                request,
+                'Can only execute approved correction requests.'
+            )
+            return redirect('production:correction-request-detail', pk=pk)
+
+        # Get performer
+        try:
+            performer = models.Employee.objects.get(user=request.user)
+        except models.Employee.DoesNotExist:
+            performer = None
+
+        # Get notes
+        notes = request.POST.get('notes', '')
+
+        # Execute
+        try:
+            correction_request.execute_correction(
+                performed_by=performer,
+                notes=notes
+            )
+            messages.success(
+                request,
+                f'Correction executed successfully. Process step has been reversed to PENDING status.'
+            )
+        except Exception as e:
+            messages.error(request, f'Failed to execute correction: {str(e)}')
+
+        return redirect('production:correction-request-detail', pk=pk)
+
+    return redirect('production:correction-request-detail', pk=pk)
+
+
+# ============================================================================
+# EXECUTION LOGS
+# ============================================================================
+
+class ProcessExecutionLogListView(LoginRequiredMixin, ListView):
+    """
+    Complete audit trail of all process executions
+    """
+    model = models.ProcessExecutionLog
+    template_name = 'production/execution_log_list.html'
+    context_object_name = 'logs'
+    paginate_by = 100
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related(
+            'job_card', 'job_route_step', 'operator', 'correction_request'
+        )
+
+        # Filter by job card
+        job_card_id = self.request.GET.get('job_card')
+        if job_card_id:
+            queryset = queryset.filter(job_card_id=job_card_id)
+
+        # Filter by operator
+        operator_id = self.request.GET.get('operator')
+        if operator_id:
+            queryset = queryset.filter(operator_id=operator_id)
+
+        # Filter by validity
+        validity = self.request.GET.get('validity')
+        if validity == 'valid':
+            queryset = queryset.filter(was_valid_sequence=True)
+        elif validity == 'invalid':
+            queryset = queryset.filter(was_valid_sequence=False)
+
+        # Filter by corrected status
+        corrected = self.request.GET.get('corrected')
+        if corrected == 'yes':
+            queryset = queryset.filter(was_corrected=True)
+        elif corrected == 'no':
+            queryset = queryset.filter(was_corrected=False)
+
+        return queryset.order_by('-scanned_at')

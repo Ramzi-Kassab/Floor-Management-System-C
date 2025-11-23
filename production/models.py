@@ -2438,3 +2438,290 @@ class MaintenanceRequest(models.Model):
             delta = self.downtime_end - self.downtime_start
             return delta.total_seconds() / 3600
         return 0
+
+
+# ============================================================================
+# PROCESS VALIDATION & CORRECTION
+# ============================================================================
+
+class CorrectionRequestStatus(models.TextChoices):
+    """Status of process correction requests"""
+    PENDING = 'PENDING', 'Pending Supervisor Review'
+    APPROVED = 'APPROVED', 'Approved'
+    REJECTED = 'REJECTED', 'Rejected'
+    COMPLETED = 'COMPLETED', 'Correction Completed'
+    CANCELLED = 'CANCELLED', 'Cancelled'
+
+
+class ProcessExecutionLog(models.Model):
+    """
+    Complete audit trail of all process executions
+    Tracks every time an operator scans a QR code and starts/completes a process
+    """
+    log_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique execution log number"
+    )
+
+    # What was scanned
+    job_route_step = models.ForeignKey(
+        JobRouteStep,
+        on_delete=models.CASCADE,
+        related_name='execution_logs'
+    )
+    job_card = models.ForeignKey(
+        JobCard,
+        on_delete=models.CASCADE,
+        related_name='execution_logs'
+    )
+    process_code = models.CharField(max_length=100)
+
+    # Who did it
+    operator = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='process_executions'
+    )
+    operator_name = models.CharField(max_length=100, blank=True)
+
+    # When
+    scanned_at = models.DateTimeField(default=timezone.now)
+    started_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+    # Validation results
+    was_valid_sequence = models.BooleanField(
+        default=True,
+        help_text="Was this the correct next step in sequence?"
+    )
+    expected_process_code = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="What process code was expected (if not valid)"
+    )
+    validation_message = models.TextField(
+        blank=True,
+        help_text="Validation result message"
+    )
+
+    # Execution details
+    workstation = models.CharField(max_length=100, blank=True)
+    department = models.CharField(
+        max_length=30,
+        choices=Department.choices,
+        blank=True
+    )
+    notes = models.TextField(blank=True)
+
+    # Correction tracking
+    was_corrected = models.BooleanField(
+        default=False,
+        help_text="Was this execution later corrected/reversed?"
+    )
+    correction_request = models.ForeignKey(
+        'ProcessCorrectionRequest',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='corrected_executions'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-scanned_at']
+        indexes = [
+            models.Index(fields=['job_card', '-scanned_at']),
+            models.Index(fields=['operator', '-scanned_at']),
+            models.Index(fields=['was_valid_sequence']),
+        ]
+        verbose_name = 'Process Execution Log'
+        verbose_name_plural = 'Process Execution Logs'
+
+    def __str__(self):
+        status = "✓ Valid" if self.was_valid_sequence else "✗ Invalid"
+        return f"{self.log_number} - {self.process_code} ({status})"
+
+
+class ProcessCorrectionRequest(models.Model):
+    """
+    Operator request to correct or reverse a wrongly executed process
+    Requires supervisor approval
+    """
+    request_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique correction request number"
+    )
+
+    # What needs correction
+    job_route_step = models.ForeignKey(
+        JobRouteStep,
+        on_delete=models.CASCADE,
+        related_name='correction_requests'
+    )
+    job_card = models.ForeignKey(
+        JobCard,
+        on_delete=models.CASCADE,
+        related_name='correction_requests'
+    )
+    execution_log = models.ForeignKey(
+        ProcessExecutionLog,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='correction_requests',
+        help_text="The execution log entry being corrected"
+    )
+
+    # Request details
+    requested_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='submitted_correction_requests'
+    )
+    requested_by_name = models.CharField(max_length=100, blank=True)
+    requested_at = models.DateTimeField(default=timezone.now)
+
+    correction_type = models.CharField(
+        max_length=30,
+        choices=[
+            ('REVERSE_STEP', 'Reverse Step - Mark as Not Done'),
+            ('CHANGE_OPERATOR', 'Change Operator Assignment'),
+            ('ADJUST_TIMES', 'Adjust Recorded Times'),
+            ('CANCEL_EXECUTION', 'Cancel Wrong Execution'),
+        ],
+        default='REVERSE_STEP'
+    )
+
+    reason = models.TextField(
+        help_text="Why does this need to be corrected?"
+    )
+    impact_description = models.TextField(
+        blank=True,
+        help_text="What is the impact of this mistake?"
+    )
+
+    # Approval workflow
+    status = models.CharField(
+        max_length=20,
+        choices=CorrectionRequestStatus.choices,
+        default=CorrectionRequestStatus.PENDING,
+        db_index=True
+    )
+
+    supervisor_reviewed_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_correction_requests',
+        help_text="Supervisor who reviewed this request"
+    )
+    supervisor_reviewed_at = models.DateTimeField(blank=True, null=True)
+    supervisor_decision_notes = models.TextField(
+        blank=True,
+        help_text="Supervisor's comments on approval/rejection"
+    )
+
+    # Execution of correction
+    corrected_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="When the correction was actually performed"
+    )
+    corrected_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='performed_corrections',
+        help_text="Who performed the correction"
+    )
+    correction_notes = models.TextField(
+        blank=True,
+        help_text="Notes about what was done to correct"
+    )
+
+    # Original state (for audit trail)
+    original_step_status = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Original status of the route step before correction"
+    )
+    original_operator_name = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    priority = models.CharField(
+        max_length=20,
+        choices=Priority.choices,
+        default=Priority.NORMAL,
+        help_text="How urgent is this correction?"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-requested_at']
+        indexes = [
+            models.Index(fields=['status', '-requested_at']),
+            models.Index(fields=['job_card', 'status']),
+            models.Index(fields=['requested_by', '-requested_at']),
+        ]
+        verbose_name = 'Process Correction Request'
+        verbose_name_plural = 'Process Correction Requests'
+
+    def __str__(self):
+        return f"{self.request_number} - {self.job_card.jobcard_code} ({self.get_status_display()})"
+
+    def approve(self, supervisor, notes=""):
+        """Approve the correction request"""
+        self.status = CorrectionRequestStatus.APPROVED
+        self.supervisor_reviewed_by = supervisor
+        self.supervisor_reviewed_at = timezone.now()
+        self.supervisor_decision_notes = notes
+        self.save()
+
+    def reject(self, supervisor, notes=""):
+        """Reject the correction request"""
+        self.status = CorrectionRequestStatus.REJECTED
+        self.supervisor_reviewed_by = supervisor
+        self.supervisor_reviewed_at = timezone.now()
+        self.supervisor_decision_notes = notes
+        self.save()
+
+    def execute_correction(self, performed_by, notes=""):
+        """Execute the approved correction"""
+        if self.status != CorrectionRequestStatus.APPROVED:
+            raise ValueError("Can only execute approved correction requests")
+
+        # Perform the correction based on type
+        if self.correction_type == 'REVERSE_STEP':
+            # Mark the step back to PENDING
+            self.job_route_step.status = RouteStepStatus.PENDING
+            self.job_route_step.actual_start = None
+            self.job_route_step.actual_end = None
+            self.job_route_step.actual_operator = None
+            self.job_route_step.save()
+
+            # Mark execution log as corrected
+            if self.execution_log:
+                self.execution_log.was_corrected = True
+                self.execution_log.correction_request = self
+                self.execution_log.save()
+
+        # Mark correction as completed
+        self.status = CorrectionRequestStatus.COMPLETED
+        self.corrected_at = timezone.now()
+        self.corrected_by = performed_by
+        self.correction_notes = notes
+        self.save()

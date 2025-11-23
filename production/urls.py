@@ -73,4 +73,15 @@ urlpatterns = [
     path('maintenance/', analytics_views.MaintenanceRequestListView.as_view(), name='maintenance-list'),
     path('maintenance/create/', analytics_views.MaintenanceRequestCreateView.as_view(), name='maintenance-create'),
     path('equipment/', analytics_views.EquipmentListView.as_view(), name='equipment-list'),
+
+    # Process Correction Requests
+    path('corrections/', views.ProcessCorrectionRequestListView.as_view(), name='correction-request-list'),
+    path('corrections/<int:pk>/', views.ProcessCorrectionRequestDetailView.as_view(), name='correction-request-detail'),
+    path('corrections/create/', views.ProcessCorrectionRequestCreateView.as_view(), name='correction-request-create'),
+    path('corrections/<int:pk>/approve/', views.approve_correction_request, name='correction-request-approve'),
+    path('corrections/<int:pk>/reject/', views.reject_correction_request, name='correction-request-reject'),
+    path('corrections/<int:pk>/execute/', views.execute_correction_request, name='correction-request-execute'),
+
+    # Execution Logs
+    path('execution-logs/', views.ProcessExecutionLogListView.as_view(), name='execution-log-list'),
 ]

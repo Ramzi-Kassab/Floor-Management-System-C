@@ -806,3 +806,131 @@ class MaintenanceRequestAdmin(admin.ModelAdmin):
             'fields': ('notes',)
         }),
     )
+
+
+@admin.register(models.ProcessExecutionLog)
+class ProcessExecutionLogAdmin(admin.ModelAdmin):
+    """Admin for process execution logs (audit trail)"""
+    list_display = [
+        'log_number', 'job_card', 'process_code', 'operator_name',
+        'scanned_at', 'was_valid_sequence', 'was_corrected'
+    ]
+    list_filter = [
+        'was_valid_sequence', 'was_corrected', 'department',
+        'scanned_at'
+    ]
+    search_fields = [
+        'log_number', 'job_card__jobcard_code', 'process_code',
+        'operator_name'
+    ]
+    readonly_fields = [
+        'log_number', 'scanned_at', 'created_at', 'was_valid_sequence',
+        'validation_message'
+    ]
+    autocomplete_fields = ['job_card', 'job_route_step', 'operator']
+    date_hierarchy = 'scanned_at'
+
+    fieldsets = (
+        ('Log Information', {
+            'fields': ('log_number', 'scanned_at', 'created_at')
+        }),
+        ('Process Details', {
+            'fields': (
+                'job_card', 'job_route_step', 'process_code',
+                'department', 'workstation'
+            )
+        }),
+        ('Operator', {
+            'fields': ('operator', 'operator_name')
+        }),
+        ('Timing', {
+            'fields': ('started_at', 'completed_at')
+        }),
+        ('Validation', {
+            'fields': (
+                'was_valid_sequence', 'expected_process_code',
+                'validation_message'
+            )
+        }),
+        ('Correction Status', {
+            'fields': ('was_corrected', 'correction_request')
+        }),
+        ('Notes', {
+            'fields': ('notes',)
+        }),
+    )
+
+    def has_add_permission(self, request):
+        # Execution logs should only be created automatically
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Don't allow deletion of audit trail
+        return request.user.is_superuser
+
+
+@admin.register(models.ProcessCorrectionRequest)
+class ProcessCorrectionRequestAdmin(admin.ModelAdmin):
+    """Admin for process correction requests"""
+    list_display = [
+        'request_number', 'job_card', 'correction_type', 'status',
+        'requested_by_name', 'requested_at', 'priority',
+        'supervisor_reviewed_by'
+    ]
+    list_filter = [
+        'status', 'correction_type', 'priority', 'requested_at',
+        'supervisor_reviewed_at'
+    ]
+    search_fields = [
+        'request_number', 'job_card__jobcard_code',
+        'requested_by_name', 'reason'
+    ]
+    readonly_fields = [
+        'request_number', 'requested_at', 'created_at', 'updated_at',
+        'original_step_status', 'original_operator_name'
+    ]
+    autocomplete_fields = [
+        'job_card', 'job_route_step', 'requested_by',
+        'supervisor_reviewed_by', 'corrected_by', 'execution_log'
+    ]
+    date_hierarchy = 'requested_at'
+
+    fieldsets = (
+        ('Request Information', {
+            'fields': (
+                'request_number', 'status', 'priority',
+                'requested_at', 'created_at', 'updated_at'
+            )
+        }),
+        ('What Needs Correction', {
+            'fields': (
+                'job_card', 'job_route_step', 'execution_log',
+                'correction_type'
+            )
+        }),
+        ('Requested By', {
+            'fields': ('requested_by', 'requested_by_name')
+        }),
+        ('Request Details', {
+            'fields': ('reason', 'impact_description')
+        }),
+        ('Supervisor Review', {
+            'fields': (
+                'supervisor_reviewed_by', 'supervisor_reviewed_at',
+                'supervisor_decision_notes'
+            )
+        }),
+        ('Correction Execution', {
+            'fields': (
+                'corrected_at', 'corrected_by', 'correction_notes'
+            )
+        }),
+        ('Original State (Audit)', {
+            'fields': ('original_step_status', 'original_operator_name'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def has_delete_permission(self, request, obj=None):
+        # Don't allow deletion of correction requests (audit trail)
+        return request.user.is_superuser
