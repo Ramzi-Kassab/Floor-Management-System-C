@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Supplier, ItemCategory, UnitOfMeasure, Item,
     Warehouse, Location, ConditionType, OwnershipType,
-    StockLevel, StockTransaction
+    StockLevel, StockTransaction, UserPreferences
 )
 
 
@@ -128,5 +128,39 @@ class StockTransactionAdmin(admin.ModelAdmin):
         }),
         ('Metadata', {
             'fields': ('performed_at', 'performed_by', 'notes', 'external_reference')
+        }),
+    )
+
+
+@admin.register(UserPreferences)
+class UserPreferencesAdmin(admin.ModelAdmin):
+    list_display = ['user', 'dashboard_view', 'items_per_page', 'receive_low_stock_emails', 'default_export_format']
+    list_filter = ['dashboard_view', 'receive_low_stock_emails', 'default_export_format', 'language']
+    search_fields = ['user__username', 'user__email']
+    ordering = ['user__username']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = (
+        ('User', {
+            'fields': ('user',)
+        }),
+        ('Dashboard Preferences', {
+            'fields': ('dashboard_view', 'items_per_page')
+        }),
+        ('Notification Preferences', {
+            'fields': ('receive_low_stock_emails', 'low_stock_threshold')
+        }),
+        ('Export Preferences', {
+            'fields': ('default_export_format',)
+        }),
+        ('Display Preferences', {
+            'fields': ('show_qr_codes',)
+        }),
+        ('Localization', {
+            'fields': ('language', 'date_format')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
         }),
     )

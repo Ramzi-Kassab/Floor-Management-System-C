@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Item Import{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-file-earmark-arrow-up"></i> Bulk Item Import</h1>
+        <p class="text-muted">Import multiple items from Excel or CSV file</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Items
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Upload File</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="import_file" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="import_file" name="import_file"
+                               accept=".xlsx,.xls,.csv" required>
+                        <div class="form-text">Accepted formats: Excel (.xlsx, .xls) or CSV (.csv)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">File Format</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="format_excel"
+                                   value="excel" checked>
+                            <label class="form-check-label" for="format_excel">
+                                Excel (.xlsx, .xls)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="format_csv"
+                                   value="csv">
+                            <label class="form-check-label" for="format_csv">
+                                CSV (.csv)
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Import Items
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if summary %}
+        <div class="card mt-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Import Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-success text-white rounded">
+                            <h3>{{ summary.success_count }}</h3>
+                            <small>Created</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-primary text-white rounded">
+                            <h3>{{ summary.update_count }}</h3>
+                            <small>Updated</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-danger text-white rounded">
+                            <h3>{{ summary.error_count }}</h3>
+                            <small>Errors</small>
+                        </div>
+                    </div>
+                </div>
+
+                {% if summary.errors %}
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Errors Encountered:</h6>
+                    <ul class="mb-0">
+                        {% for error in summary.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">File Format Requirements</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Required Columns (in order):</strong></p>
+                <ol class="small">
+                    <li><code>item_code</code> - Unique item code</li>
+                    <li><code>name</code> - Item name</li>
+                    <li><code>category_code</code> - Category code (must exist)</li>
+                    <li><code>uom_code</code> - Unit of measure code (must exist)</li>
+                    <li><code>item_type</code> - Type (CUTTER, MATRIX_POWDER, etc.)</li>
+                    <li><code>reorder_level</code> - Reorder quantity</li>
+                    <li><code>description</code> - Item description (optional)</li>
+                    <li><code>supplier_code</code> - Supplier code (optional)</li>
+                </ol>
+
+                <hr>
+
+                <p><strong>Valid Item Types:</strong></p>
+                <ul class="small">
+                    <li>CUTTER</li>
+                    <li>MATRIX_POWDER</li>
+                    <li>STEEL_BODY</li>
+                    <li>JV_PARTIAL_BODY</li>
+                    <li>UPPER_SECTION</li>
+                    <li>HARDFACING</li>
+                    <li>CONSUMABLE</li>
+                    <li>TOOL</li>
+                    <li>SPARE_PART</li>
+                    <li>OTHER</li>
+                </ul>
+
+                <hr>
+
+                <div class="alert alert-info small mb-0">
+                    <i class="bi bi-info-circle"></i> <strong>Note:</strong>
+                    First row should contain column headers.
+                    If an item with the same code exists, it will be updated.
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Download Template</h5>
+            </div>
+            <div class="card-body">
+                <p class="small">Download a sample template to get started:</p>
+                <a href="#" class="btn btn-sm btn-success w-100 mb-2" download>
+                    <i class="bi bi-file-earmark-excel"></i> Excel Template
+                </a>
+                <a href="#" class="btn btn-sm btn-outline-success w-100" download>
+                    <i class="bi bi-file-earmark-text"></i> CSV Template
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

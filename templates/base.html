@@ -39,6 +39,35 @@
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="bulkDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-database"></i> Bulk Operations
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><h6 class="dropdown-header">Import</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:bulk_item_import' %}"><i class="bi bi-upload"></i> Import Items</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:bulk_stock_adjustment' %}"><i class="bi bi-file-earmark-plus"></i> Bulk Adjustments</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Batch Operations</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:batch_item_update' %}"><i class="bi bi-pencil-square"></i> Batch Update Items</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-file-earmark-text"></i> Reports
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><h6 class="dropdown-header">Export Reports</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:export_stock' %}?format=excel"><i class="bi bi-file-earmark-excel"></i> Stock Report (Excel)</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:export_items' %}?format=excel"><i class="bi bi-file-earmark-spreadsheet"></i> Items Report (Excel)</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:export_transactions' %}?format=excel"><i class="bi bi-clock-history"></i> Transactions Report (Excel)</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:export_low_stock' %}?format=excel"><i class="bi bi-exclamation-triangle text-danger"></i> Low Stock Report (Excel)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">CSV Exports</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:export_stock' %}?format=csv"><i class="bi bi-file-text"></i> Stock (CSV)</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:export_items' %}?format=csv"><i class="bi bi-file-text"></i> Items (CSV)</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="purchasingDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-cart"></i> Purchasing
                         </a>
@@ -58,9 +87,10 @@
                                 <i class="bi bi-person-circle"></i> {{ user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="/admin/">Admin</a></li>
+                                <li><a class="dropdown-item" href="{% url 'inventory:user_preferences' %}"><i class="bi bi-gear"></i> Preferences</a></li>
+                                <li><a class="dropdown-item" href="/admin/"><i class="bi bi-shield-lock"></i> Admin</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="/admin/logout/">Logout</a></li>
+                                <li><a class="dropdown-item" href="/admin/logout/"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                             </ul>
                         </li>
                     {% else %}

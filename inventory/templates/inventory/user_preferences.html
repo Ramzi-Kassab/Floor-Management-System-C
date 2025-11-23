@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}User Preferences{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-gear"></i> User Preferences & Settings</h1>
+        <p class="text-muted">Customize your experience</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Dashboard Preferences -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Dashboard Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="dashboard_view" class="form-label">Default Dashboard View</label>
+                        <select class="form-select" id="dashboard_view" name="dashboard_view">
+                            <option value="enhanced" {% if preferences.dashboard_view == 'enhanced' %}selected{% endif %}>
+                                Enhanced Dashboard with Charts
+                            </option>
+                            <option value="basic" {% if preferences.dashboard_view == 'basic' %}selected{% endif %}>
+                                Basic Dashboard
+                            </option>
+                        </select>
+                        <div class="form-text">Choose which dashboard to show by default</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="items_per_page" class="form-label">Items Per Page</label>
+                        <select class="form-select" id="items_per_page" name="items_per_page">
+                            <option value="10" {% if preferences.items_per_page == 10 %}selected{% endif %}>10 items</option>
+                            <option value="20" {% if preferences.items_per_page == 20 %}selected{% endif %}>20 items</option>
+                            <option value="50" {% if preferences.items_per_page == 50 %}selected{% endif %}>50 items</option>
+                            <option value="100" {% if preferences.items_per_page == 100 %}selected{% endif %}>100 items</option>
+                        </select>
+                        <div class="form-text">Number of items to display per page in lists</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Preferences -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="bi bi-bell"></i> Notification Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="receive_low_stock_emails"
+                               name="receive_low_stock_emails" {% if preferences.receive_low_stock_emails %}checked{% endif %}>
+                        <label class="form-check-label" for="receive_low_stock_emails">
+                            Receive Low Stock Email Alerts
+                        </label>
+                        <div class="form-text">Get notified when items fall below reorder levels</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="low_stock_threshold" class="form-label">
+                            Low Stock Alert Threshold: <strong id="threshold-value">{{ preferences.low_stock_threshold }}%</strong>
+                        </label>
+                        <input type="range" class="form-range" id="low_stock_threshold" name="low_stock_threshold"
+                               min="10" max="100" step="5" value="{{ preferences.low_stock_threshold }}"
+                               oninput="document.getElementById('threshold-value').textContent = this.value + '%'">
+                        <div class="form-text">Alert when stock falls below this percentage of reorder level</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Preferences -->
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-download"></i> Export Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="default_export_format" class="form-label">Default Export Format</label>
+                        <select class="form-select" id="default_export_format" name="default_export_format">
+                            <option value="excel" {% if preferences.default_export_format == 'excel' %}selected{% endif %}>
+                                Excel (.xlsx)
+                            </option>
+                            <option value="csv" {% if preferences.default_export_format == 'csv' %}selected{% endif %}>
+                                CSV (.csv)
+                            </option>
+                        </select>
+                        <div class="form-text">Preferred format for exporting reports</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Display Preferences -->
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-eye"></i> Display Preferences</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="show_qr_codes"
+                               name="show_qr_codes" {% if preferences.show_qr_codes %}checked{% endif %}>
+                        <label class="form-check-label" for="show_qr_codes">
+                            Show QR Code Buttons
+                        </label>
+                        <div class="form-text">Display QR code generation buttons in item and location lists</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Language and Localization -->
+            <div class="card mb-3">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-globe"></i> Language & Localization</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="language" class="form-label">Language</label>
+                        <select class="form-select" id="language" name="language">
+                            <option value="en" {% if preferences.language == 'en' %}selected{% endif %}>English</option>
+                            <option value="ar" {% if preferences.language == 'ar' %}selected{% endif %}>Arabic (Coming Soon)</option>
+                        </select>
+                        <div class="form-text">Preferred interface language</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="date_format" class="form-label">Date Format</label>
+                        <select class="form-select" id="date_format" name="date_format">
+                            <option value="YYYY-MM-DD" {% if preferences.date_format == 'YYYY-MM-DD' %}selected{% endif %}>
+                                YYYY-MM-DD (2025-01-15)
+                            </option>
+                            <option value="DD/MM/YYYY" {% if preferences.date_format == 'DD/MM/YYYY' %}selected{% endif %}>
+                                DD/MM/YYYY (15/01/2025)
+                            </option>
+                            <option value="MM/DD/YYYY" {% if preferences.date_format == 'MM/DD/YYYY' %}selected{% endif %}>
+                                MM/DD/YYYY (01/15/2025)
+                            </option>
+                        </select>
+                        <div class="form-text">How dates should be displayed throughout the system</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-save"></i> Save Preferences
+                </button>
+                <a href="{% url 'inventory:dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Help Sidebar -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> About Preferences</h5>
+            </div>
+            <div class="card-body">
+                <h6>Dashboard View</h6>
+                <p class="small">Choose between the enhanced dashboard with charts and analytics, or the basic dashboard with a simple list view.</p>
+
+                <hr>
+
+                <h6>Email Notifications</h6>
+                <p class="small">Configure whether you want to receive automatic email alerts when items fall below their reorder levels.</p>
+
+                <hr>
+
+                <h6>Threshold Settings</h6>
+                <p class="small">The threshold determines when you'll be alerted. For example, 25% means you'll be notified when an item reaches 25% of its reorder level.</p>
+
+                <hr>
+
+                <h6>Export Format</h6>
+                <p class="small">Choose your preferred format for downloading reports. Excel is recommended for data analysis, CSV for importing into other systems.</p>
+            </div>
+        </div>
+
+        <div class="card mt-3 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-circle"></i> User Info</h5>
+            </div>
+            <div class="card-body">
+                <dl>
+                    <dt>Username:</dt>
+                    <dd>{{ user.username }}</dd>
+
+                    <dt>Email:</dt>
+                    <dd>{{ user.email|default:"Not set" }}</dd>
+
+                    <dt>Member Since:</dt>
+                    <dd>{{ user.date_joined|date:"F Y" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

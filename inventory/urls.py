@@ -5,7 +5,8 @@ app_name = 'inventory'
 
 urlpatterns = [
     # Dashboard
-    path('', views.InventoryDashboardView.as_view(), name='dashboard'),
+    path('', views.EnhancedDashboardView.as_view(), name='dashboard'),
+    path('dashboard/basic/', views.InventoryDashboardView.as_view(), name='dashboard_basic'),
 
     # Suppliers
     path('suppliers/', views.SupplierListView.as_view(), name='supplier_list'),
@@ -42,4 +43,18 @@ urlpatterns = [
     path('stock/transfer/', views.StockTransferView.as_view(), name='stock_transfer'),
     path('stock/low-stock/', views.LowStockItemsView.as_view(), name='low_stock'),
     path('transactions/', views.StockTransactionListView.as_view(), name='transaction_list'),
+
+    # Export
+    path('export/stock/', views.ExportStockView.as_view(), name='export_stock'),
+    path('export/transactions/', views.ExportTransactionsView.as_view(), name='export_transactions'),
+    path('export/items/', views.ExportItemsView.as_view(), name='export_items'),
+    path('export/low-stock/', views.ExportLowStockView.as_view(), name='export_low_stock'),
+
+    # Bulk Operations
+    path('bulk/import-items/', views.BulkItemImportView.as_view(), name='bulk_item_import'),
+    path('bulk/stock-adjustment/', views.BulkStockAdjustmentView.as_view(), name='bulk_stock_adjustment'),
+    path('bulk/batch-update/', views.BatchItemUpdateView.as_view(), name='batch_item_update'),
+
+    # User Preferences
+    path('preferences/', views.UserPreferencesView.as_view(), name='user_preferences'),
 ]

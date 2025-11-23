@@ -24,6 +24,10 @@ urlpatterns = [
     path('inventory/', include('inventory.urls')),
     path('purchasing/', include('purchasing.urls')),
 
+    # REST API endpoints
+    path('api/inventory/', include('inventory.api_urls')),
+    path('api-auth/', include('rest_framework.urls')),
+
     # Core URLs temporarily disabled due to dependencies on other apps
     # path('', include('core.urls', namespace='core')),
 ]

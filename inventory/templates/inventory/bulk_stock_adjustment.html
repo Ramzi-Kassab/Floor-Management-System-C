@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Stock Adjustment{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-boxes"></i> Bulk Stock Adjustment</h1>
+        <p class="text-muted">Adjust stock levels for multiple items from Excel or CSV file</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'inventory:stock_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Stock
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Upload Adjustment File</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> <strong>Warning:</strong>
+                        This will create stock transactions and update stock levels for all rows in the file.
+                        Ensure your data is correct before uploading.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="adjustment_file" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="adjustment_file" name="adjustment_file"
+                               accept=".xlsx,.xls,.csv" required>
+                        <div class="form-text">Accepted formats: Excel (.xlsx, .xls) or CSV (.csv)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">File Format</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="format_excel"
+                                   value="excel" checked>
+                            <label class="form-check-label" for="format_excel">
+                                Excel (.xlsx, .xls)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="format_csv"
+                                   value="csv">
+                            <label class="form-check-label" for="format_csv">
+                                CSV (.csv)
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-upload"></i> Process Adjustments
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if summary %}
+        <div class="card mt-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Adjustment Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-success text-white rounded">
+                            <h3>{{ summary.success_count }}</h3>
+                            <small>Processed</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-danger text-white rounded">
+                            <h3>{{ summary.error_count }}</h3>
+                            <small>Errors</small>
+                        </div>
+                    </div>
+                </div>
+
+                {% if summary.errors %}
+                <div class="alert alert-danger">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Errors Encountered:</h6>
+                    <ul class="mb-0">
+                        {% for error in summary.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">File Format Requirements</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Required Columns (in order):</strong></p>
+                <ol class="small">
+                    <li><code>item_code</code> - Item code (must exist)</li>
+                    <li><code>location_code</code> - Location code (must exist)</li>
+                    <li><code>condition_code</code> - Condition type code (must exist)</li>
+                    <li><code>ownership_code</code> - Ownership type code (must exist)</li>
+                    <li><code>quantity</code> - Adjustment quantity (can be negative)</li>
+                    <li><code>reference</code> - Reference number (optional)</li>
+                    <li><code>notes</code> - Adjustment notes (optional)</li>
+                </ol>
+
+                <hr>
+
+                <div class="alert alert-info small">
+                    <i class="bi bi-info-circle"></i> <strong>About Quantities:</strong>
+                    <ul class="mb-0">
+                        <li>Positive numbers = Add stock</li>
+                        <li>Negative numbers = Remove stock</li>
+                    </ul>
+                </div>
+
+                <hr>
+
+                <div class="alert alert-warning small mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>Note:</strong>
+                    First row should contain column headers.
+                    All referenced items, locations, conditions, and ownership types must exist in the system.
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Download Template</h5>
+            </div>
+            <div class="card-body">
+                <p class="small">Download a sample template:</p>
+                <a href="#" class="btn btn-sm btn-success w-100 mb-2" download>
+                    <i class="bi bi-file-earmark-excel"></i> Excel Template
+                </a>
+                <a href="#" class="btn btn-sm btn-outline-success w-100" download>
+                    <i class="bi bi-file-earmark-text"></i> CSV Template
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

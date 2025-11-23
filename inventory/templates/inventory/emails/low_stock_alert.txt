@@ -1,0 +1,58 @@
+========================================
+LOW STOCK ALERT
+{{ check_date|date:"F d, Y - H:i" }}
+========================================
+
+SUMMARY
+-------
+Total items below reorder level: {{ total_low_stock }}
+
+- CRITICAL: {{ critical_items|length }} item(s) - Below 25% of reorder level
+- WARNING: {{ warning_items|length }} item(s) - Below reorder level
+
+{% if critical_items %}
+========================================
+CRITICAL ITEMS (IMMEDIATE ACTION REQUIRED)
+========================================
+{% for item_data in critical_items %}
+Item Code:      {{ item_data.item.item_code }}
+Name:           {{ item_data.item.name }}
+Current Stock:  {{ item_data.total_stock }} {{ item_data.item.unit_of_measure.code }}
+Reorder Level:  {{ item_data.item.reorder_level }} {{ item_data.item.unit_of_measure.code }}
+Shortfall:      {{ item_data.shortfall }} {{ item_data.item.unit_of_measure.code }}
+Supplier:       {{ item_data.item.preferred_supplier|default:"N/A" }}
+Stock Level:    {{ item_data.stock_percentage|floatformat:1 }}% of reorder level
+
+----------------------------------------
+{% endfor %}
+{% endif %}
+
+{% if warning_items %}
+========================================
+WARNING ITEMS
+========================================
+{% for item_data in warning_items %}
+Item Code:      {{ item_data.item.item_code }}
+Name:           {{ item_data.item.name }}
+Current Stock:  {{ item_data.total_stock }} {{ item_data.item.unit_of_measure.code }}
+Reorder Level:  {{ item_data.item.reorder_level }} {{ item_data.item.unit_of_measure.code }}
+Shortfall:      {{ item_data.shortfall }} {{ item_data.item.unit_of_measure.code }}
+Supplier:       {{ item_data.item.preferred_supplier|default:"N/A" }}
+Stock Level:    {{ item_data.stock_percentage|floatformat:1 }}% of reorder level
+
+----------------------------------------
+{% endfor %}
+{% endif %}
+
+========================================
+RECOMMENDED ACTIONS
+========================================
+- Review critical items immediately and create purchase requisitions
+- Contact suppliers to confirm availability and lead times
+- Consider emergency procurement for critical items
+- Update reorder levels if necessary based on consumption patterns
+
+========================================
+This is an automated alert from the Logistics Management System.
+To manage stock levels and view details, please log in to the system.
+========================================

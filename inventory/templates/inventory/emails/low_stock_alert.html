@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .summary {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc3545;
+            border-radius: 3px;
+        }
+        .critical {
+            background-color: #fff5f5;
+            border-left: 4px solid #dc3545;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+        .warning {
+            background-color: #fff9f0;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+        .item-code {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stock-level {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-critical {
+            background-color: #dc3545;
+            color: white;
+        }
+        .badge-warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+        .footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: white;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f1f3f5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚨 Low Stock Alert</h1>
+        <p>{{ check_date|date:"F d, Y - H:i" }}</p>
+    </div>
+
+    <div class="content">
+        <div class="summary">
+            <h2>Summary</h2>
+            <p>Total items below reorder level: <strong>{{ total_low_stock }}</strong></p>
+            <ul>
+                <li><span class="badge badge-critical">CRITICAL</span> {{ critical_items|length }} item(s) - Below 25% of reorder level</li>
+                <li><span class="badge badge-warning">WARNING</span> {{ warning_items|length }} item(s) - Below reorder level</li>
+            </ul>
+        </div>
+
+        {% if critical_items %}
+        <h2 style="color: #dc3545;">🔴 Critical Items (Immediate Action Required)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item Code</th>
+                    <th>Name</th>
+                    <th>Current Stock</th>
+                    <th>Reorder Level</th>
+                    <th>Shortfall</th>
+                    <th>Supplier</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item_data in critical_items %}
+                <tr style="background-color: #fff5f5;">
+                    <td><span class="item-code">{{ item_data.item.item_code }}</span></td>
+                    <td>{{ item_data.item.name }}</td>
+                    <td class="stock-level">{{ item_data.total_stock }} {{ item_data.item.unit_of_measure.code }}</td>
+                    <td>{{ item_data.item.reorder_level }} {{ item_data.item.unit_of_measure.code }}</td>
+                    <td>{{ item_data.shortfall }} {{ item_data.item.unit_of_measure.code }}</td>
+                    <td>{{ item_data.item.preferred_supplier|default:"N/A" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if warning_items %}
+        <h2 style="color: #ffc107;">⚠️ Warning Items</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item Code</th>
+                    <th>Name</th>
+                    <th>Current Stock</th>
+                    <th>Reorder Level</th>
+                    <th>Shortfall</th>
+                    <th>Supplier</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item_data in warning_items %}
+                <tr style="background-color: #fff9f0;">
+                    <td><span class="item-code">{{ item_data.item.item_code }}</span></td>
+                    <td>{{ item_data.item.name }}</td>
+                    <td class="stock-level">{{ item_data.total_stock }} {{ item_data.item.unit_of_measure.code }}</td>
+                    <td>{{ item_data.item.reorder_level }} {{ item_data.item.unit_of_measure.code }}</td>
+                    <td>{{ item_data.shortfall }} {{ item_data.item.unit_of_measure.code }}</td>
+                    <td>{{ item_data.item.preferred_supplier|default:"N/A" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <div style="background-color: #e7f3ff; padding: 15px; border-radius: 3px; margin-top: 20px;">
+            <h3 style="margin-top: 0;">📋 Recommended Actions</h3>
+            <ul>
+                <li>Review critical items immediately and create purchase requisitions</li>
+                <li>Contact suppliers to confirm availability and lead times</li>
+                <li>Consider emergency procurement for critical items</li>
+                <li>Update reorder levels if necessary based on consumption patterns</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>This is an automated alert from the Logistics Management System</p>
+        <p>To manage stock levels and view details, please log in to the system</p>
+    </div>
+</body>
+</html>

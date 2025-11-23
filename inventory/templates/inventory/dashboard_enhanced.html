@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Dashboard{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.stat-card { transition: transform 0.2s; }
+.stat-card:hover { transform: translateY(-5px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+.chart-container { position: relative; height: 300px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-box-seam"></i> Inventory Dashboard</h1>
+        <p class="text-muted">Real-time inventory analytics and insights</p>
+    </div>
+    <div class="col-auto">
+        <div class="btn-group">
+            <a href="{% url 'inventory:export_stock' %}?format=excel" class="btn btn-success btn-sm">
+                <i class="bi bi-download"></i> Export Report
+            </a>
+            <button class="btn btn-primary btn-sm" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0"><i class="bi bi-boxes"></i> Total Items</h6>
+                        <h2 class="mt-2 mb-0">{{ total_items }}</h2>
+                        <small>Active items in catalog</small>
+                    </div>
+                    <i class="bi bi-box-seam" style="font-size: 3rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-success stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0"><i class="bi bi-building"></i> Warehouses</h6>
+                        <h2 class="mt-2 mb-0">{{ total_warehouses }}</h2>
+                        <small>Active warehouses</small>
+                    </div>
+                    <i class="bi bi-building" style="font-size: 3rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-info stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0"><i class="bi bi-truck"></i> Suppliers</h6>
+                        <h2 class="mt-2 mb-0">{{ total_suppliers }}</h2>
+                        <small>Active suppliers</small>
+                    </div>
+                    <i class="bi bi-truck" style="font-size: 3rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-warning stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0"><i class="bi bi-exclamation-triangle"></i> Low Stock</h6>
+                        <h2 class="mt-2 mb-0">{{ low_stock_count }}</h2>
+                        <small>Items need attention</small>
+                    </div>
+                    <i class="bi bi-exclamation-triangle" style="font-size: 3rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-lightning-charge"></i> Quick Actions</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- Stock Operations -->
+            <div class="col-md-3">
+                <div class="d-grid gap-2">
+                    <h6 class="text-muted mb-2"><i class="bi bi-boxes"></i> Stock Operations</h6>
+                    <a href="{% url 'inventory:stock_adjustment' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Stock Adjustment
+                    </a>
+                    <a href="{% url 'inventory:stock_transfer' %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-arrow-left-right"></i> Stock Transfer
+                    </a>
+                    <a href="{% url 'inventory:stock_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-list-ul"></i> View Stock Levels
+                    </a>
+                </div>
+            </div>
+
+            <!-- Item Management -->
+            <div class="col-md-3">
+                <div class="d-grid gap-2">
+                    <h6 class="text-muted mb-2"><i class="bi bi-box-seam"></i> Item Management</h6>
+                    <a href="{% url 'inventory:item_create' %}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-plus-lg"></i> New Item
+                    </a>
+                    <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-grid"></i> Browse Items
+                    </a>
+                    <a href="{% url 'inventory:category_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-tags"></i> Categories
+                    </a>
+                </div>
+            </div>
+
+            <!-- Bulk Operations -->
+            <div class="col-md-3">
+                <div class="d-grid gap-2">
+                    <h6 class="text-muted mb-2"><i class="bi bi-database"></i> Bulk Operations</h6>
+                    <a href="{% url 'inventory:bulk_item_import' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-upload"></i> Import Items
+                    </a>
+                    <a href="{% url 'inventory:bulk_stock_adjustment' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-file-earmark-plus"></i> Bulk Adjustments
+                    </a>
+                    <a href="{% url 'inventory:batch_item_update' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-pencil-square"></i> Batch Update
+                    </a>
+                </div>
+            </div>
+
+            <!-- Reports & Export -->
+            <div class="col-md-3">
+                <div class="d-grid gap-2">
+                    <h6 class="text-muted mb-2"><i class="bi bi-file-earmark-text"></i> Reports & Export</h6>
+                    <a href="{% url 'inventory:export_stock' %}?format=excel" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-file-earmark-excel"></i> Export Stock
+                    </a>
+                    <a href="{% url 'inventory:export_items' %}?format=excel" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Items
+                    </a>
+                    <a href="{% url 'inventory:export_low_stock' %}?format=excel" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-exclamation-triangle"></i> Low Stock Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-pie-chart"></i> Stock by Category</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart"></i> Stock by Warehouse</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="warehouseChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity and Low Stock -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-circle"></i> Critical Low Stock Items</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if low_stock_items %}
+                    <div class="list-group list-group-flush">
+                        {% for item in low_stock_items %}
+                            <a href="{% url 'inventory:item_detail' item.pk %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ item.item_code }} - {{ item.name }}</h6>
+                                        <small class="text-muted">{{ item.category.name }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-danger">Stock: 0</span><br>
+                                        <small class="text-muted">Reorder: {{ item.reorder_level }}</small>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-4 text-center text-success">
+                        <i class="bi bi-check-circle" style="font-size: 3rem;"></i>
+                        <p class="mt-2 mb-0">All stock levels are healthy!</p>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'inventory:low_stock' %}" class="btn btn-sm btn-outline-danger w-100">
+                    <i class="bi bi-list"></i> View All Low Stock Items
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Transactions</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for trans in recent_transactions %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <span class="badge bg-secondary">{{ trans.get_transaction_type_display }}</span>
+                                        {{ trans.item.item_code }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        Qty: {{ trans.quantity }} {{ trans.item.unit_of_measure.code }}
+                                        {% if trans.to_location %} → {{ trans.to_location.code }}{% endif %}
+                                    </small>
+                                </div>
+                                <small class="text-muted">{{ trans.performed_at|date:"M d, H:i" }}</small>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="list-group-item text-center text-muted">
+                            No recent transactions
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'inventory:transaction_list' %}" class="btn btn-sm btn-outline-primary w-100">
+                    <i class="bi bi-list"></i> View All Transactions
+                        </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h5><i class="bi bi-lightning"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <a href="{% url 'inventory:item_create' %}" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Add New Item
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'inventory:stock_adjustment' %}" class="btn btn-success w-100">
+                            <i class="bi bi-plus-minus"></i> Stock Adjustment
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'inventory:stock_transfer' %}" class="btn btn-info w-100">
+                            <i class="bi bi-arrow-left-right"></i> Stock Transfer
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'inventory:supplier_create' %}" class="btn btn-warning w-100">
+                            <i class="bi bi-truck"></i> Add Supplier
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Stock by Category Chart
+const categoryCtx = document.getElementById('categoryChart');
+new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ category_labels|safe }},
+        datasets: [{
+            data: {{ category_data|safe }},
+            backgroundColor: [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'right' }
+        }
+    }
+});
+
+// Stock by Warehouse Chart
+const warehouseCtx = document.getElementById('warehouseChart');
+new Chart(warehouseCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ warehouse_labels|safe }},
+        datasets: [{
+            label: 'Stock Items',
+            data: {{ warehouse_data|safe }},
+            backgroundColor: '#36A2EB'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+{% endblock %}

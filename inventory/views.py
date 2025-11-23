@@ -3,6 +3,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, Sum, F
+from decimal import Decimal
 from .models import (
     Supplier, ItemCategory, UnitOfMeasure, Item,
     Warehouse, Location, ConditionType, OwnershipType,
@@ -434,3 +435,358 @@ class LocationQRCodeView(LoginRequiredMixin, DetailView):
         context['qr_code'] = generate_qr_code(qr_data)
         context['qr_data'] = qr_data
         return context
+
+
+# Export Views
+from django.views import View
+from .export_utils import (
+    export_to_csv, export_to_excel,
+    get_stock_export_fields, get_transaction_export_fields,
+    get_items_export_fields, get_low_stock_export_fields
+)
+from datetime import datetime
+
+
+class ExportStockView(LoginRequiredMixin, View):
+    """Export stock levels to CSV or Excel."""
+
+    def get(self, request):
+        format_type = request.GET.get('format', 'excel')
+
+        queryset = StockLevel.objects.filter(quantity__gt=0).select_related(
+            'item', 'location__warehouse', 'condition_type', 'ownership_type'
+        )
+
+        # Apply filters
+        warehouse = request.GET.get('warehouse')
+        if warehouse:
+            queryset = queryset.filter(location__warehouse_id=warehouse)
+
+        filename = f"stock_levels_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        fields = get_stock_export_fields()
+
+        if format_type == 'csv':
+            return export_to_csv(queryset, f"{filename}.csv", fields)
+        else:
+            return export_to_excel(queryset, f"{filename}.xlsx", fields, 'Stock Levels')
+
+
+class ExportTransactionsView(LoginRequiredMixin, View):
+    """Export stock transactions to CSV or Excel."""
+
+    def get(self, request):
+        format_type = request.GET.get('format', 'excel')
+
+        queryset = StockTransaction.objects.all().select_related(
+            'item', 'from_location', 'to_location', 'performed_by'
+        )
+
+        # Apply filters
+        transaction_type = request.GET.get('transaction_type')
+        if transaction_type:
+            queryset = queryset.filter(transaction_type=transaction_type)
+
+        filename = f"transactions_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        fields = get_transaction_export_fields()
+
+        if format_type == 'csv':
+            return export_to_csv(queryset, f"{filename}.csv", fields)
+        else:
+            return export_to_excel(queryset, f"{filename}.xlsx", fields, 'Transactions')
+
+
+class ExportItemsView(LoginRequiredMixin, View):
+    """Export items to CSV or Excel."""
+
+    def get(self, request):
+        format_type = request.GET.get('format', 'excel')
+
+        queryset = Item.objects.filter(active=True).select_related(
+            'category', 'unit_of_measure', 'preferred_supplier'
+        )
+
+        filename = f"items_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        fields = get_items_export_fields()
+
+        if format_type == 'csv':
+            return export_to_csv(queryset, f"{filename}.csv", fields)
+        else:
+            return export_to_excel(queryset, f"{filename}.xlsx", fields, 'Items')
+
+
+class ExportLowStockView(LoginRequiredMixin, View):
+    """Export low stock items to CSV or Excel."""
+
+    def get(self, request):
+        from django.db.models import Sum, F
+
+        format_type = request.GET.get('format', 'excel')
+
+        queryset = Item.objects.filter(active=True).annotate(
+            total_stock=Sum('stock_levels__quantity')
+        ).filter(
+            total_stock__lt=F('reorder_level')
+        ).select_related('category', 'unit_of_measure', 'preferred_supplier')
+
+        filename = f"low_stock_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        fields = get_low_stock_export_fields()
+
+        if format_type == 'csv':
+            return export_to_csv(queryset, f"{filename}.csv", fields)
+        else:
+            return export_to_excel(queryset, f"{filename}.xlsx", fields, 'Low Stock Items')
+
+
+# Enhanced Dashboard View
+import json
+from django.db.models import Sum, Count
+
+
+class EnhancedDashboardView(LoginRequiredMixin, ListView):
+    """Enhanced dashboard with charts and analytics."""
+    template_name = 'inventory/dashboard_enhanced.html'
+    model = Item
+    context_object_name = 'items'
+    paginate_by = 10
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import F, Sum, Count, Q
+
+        context = super().get_context_data(**kwargs)
+
+        # Basic stats
+        context['total_items'] = Item.objects.filter(active=True).count()
+        context['total_warehouses'] = Warehouse.objects.filter(active=True).count()
+        context['total_suppliers'] = Supplier.objects.filter(active=True).count()
+
+        # Low stock items
+        low_stock_qs = Item.objects.filter(active=True).annotate(
+            total_stock=Sum('stock_levels__quantity')
+        ).filter(
+            Q(total_stock__lt=F('reorder_level')) | Q(total_stock__isnull=True)
+        )
+        context['low_stock_count'] = low_stock_qs.count()
+        context['low_stock_items'] = low_stock_qs[:5]
+
+        # Recent transactions
+        context['recent_transactions'] = StockTransaction.objects.select_related(
+            'item', 'to_location', 'performed_by'
+        )[:10]
+
+        # Stock by Category (for chart)
+        category_stats = ItemCategory.objects.annotate(
+            item_count=Count('items', filter=Q(items__active=True))
+        ).filter(item_count__gt=0).order_by('-item_count')[:10]
+
+        context['category_labels'] = json.dumps([cat.name for cat in category_stats])
+        context['category_data'] = json.dumps([cat.item_count for cat in category_stats])
+
+        # Stock by Warehouse (for chart)
+        warehouse_stats = Warehouse.objects.filter(active=True).annotate(
+            stock_count=Count('locations__stock_levels')
+        ).order_by('-stock_count')
+
+        context['warehouse_labels'] = json.dumps([wh.code for wh in warehouse_stats])
+        context['warehouse_data'] = json.dumps([wh.stock_count for wh in warehouse_stats])
+
+        return context
+
+# ==================== Bulk Operations Views ====================
+
+from django.contrib import messages
+from .bulk_operations import BulkItemImporter, BulkStockAdjustment, BatchItemUpdater
+from django.views import View
+
+
+class BulkItemImportView(LoginRequiredMixin, View):
+    """
+    View for bulk importing items from Excel or CSV files.
+    """
+    template_name = 'inventory/bulk_item_import.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
+        uploaded_file = request.FILES.get('import_file')
+        file_format = request.POST.get('format', 'excel')
+
+        if not uploaded_file:
+            messages.error(request, 'Please select a file to upload.')
+            return render(request, self.template_name)
+
+        importer = BulkItemImporter(request.user)
+
+        # Process based on format
+        if file_format == 'excel':
+            success = importer.import_from_excel(uploaded_file)
+        else:
+            success = importer.import_from_csv(uploaded_file)
+
+        # Get summary
+        summary = importer.get_summary()
+
+        if success:
+            messages.success(
+                request,
+                f"Import completed! Created: {summary['success_count']}, "
+                f"Updated: {summary['update_count']}"
+            )
+        else:
+            messages.warning(
+                request,
+                f"Import completed with errors. Created: {summary['success_count']}, "
+                f"Updated: {summary['update_count']}, Errors: {summary['error_count']}"
+            )
+
+        return render(request, self.template_name, {'summary': summary})
+
+
+class BulkStockAdjustmentView(LoginRequiredMixin, View):
+    """
+    View for bulk stock adjustments from Excel or CSV files.
+    """
+    template_name = 'inventory/bulk_stock_adjustment.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
+        uploaded_file = request.FILES.get('adjustment_file')
+        file_format = request.POST.get('format', 'excel')
+
+        if not uploaded_file:
+            messages.error(request, 'Please select a file to upload.')
+            return render(request, self.template_name)
+
+        adjuster = BulkStockAdjustment(request.user)
+
+        # Process based on format
+        if file_format == 'excel':
+            success = adjuster.process_from_excel(uploaded_file)
+        else:
+            success = adjuster.process_from_csv(uploaded_file)
+
+        # Get summary
+        summary = adjuster.get_summary()
+
+        if success:
+            messages.success(
+                request,
+                f"Bulk adjustment completed! {summary['success_count']} adjustments processed."
+            )
+        else:
+            messages.warning(
+                request,
+                f"Adjustment completed with errors. Processed: {summary['success_count']}, "
+                f"Errors: {summary['error_count']}"
+            )
+
+        return render(request, self.template_name, {'summary': summary})
+
+
+class BatchItemUpdateView(LoginRequiredMixin, View):
+    """
+    View for batch updating multiple items at once.
+    """
+    template_name = 'inventory/batch_item_update.html'
+
+    def get(self, request):
+        categories = ItemCategory.objects.all()
+        suppliers = Supplier.objects.filter(active=True)
+        items = Item.objects.filter(active=True)
+        return render(request, self.template_name, {
+            'categories': categories,
+            'suppliers': suppliers,
+            'items': items
+        })
+
+    def post(self, request):
+        action = request.POST.get('action')
+        item_ids = request.POST.getlist('item_ids')
+
+        if not item_ids:
+            messages.error(request, 'Please select at least one item.')
+            return redirect('inventory:batch_item_update')
+
+        # Convert to integers
+        item_ids = [int(id) for id in item_ids]
+
+        # Perform action
+        try:
+            if action == 'update_category':
+                category_id = request.POST.get('new_category')
+                if category_id:
+                    category = ItemCategory.objects.get(id=category_id)
+                    count = BatchItemUpdater.update_category(item_ids, category)
+                    messages.success(request, f"Updated category for {count} items.")
+                else:
+                    messages.error(request, 'Please select a category.')
+
+            elif action == 'update_reorder_level':
+                new_level = request.POST.get('new_reorder_level')
+                if new_level:
+                    count = BatchItemUpdater.update_reorder_level(item_ids, Decimal(new_level))
+                    messages.success(request, f"Updated reorder level for {count} items.")
+                else:
+                    messages.error(request, 'Please enter a reorder level.')
+
+            elif action == 'activate':
+                count = BatchItemUpdater.activate_items(item_ids)
+                messages.success(request, f"Activated {count} items.")
+
+            elif action == 'deactivate':
+                count = BatchItemUpdater.deactivate_items(item_ids)
+                messages.success(request, f"Deactivated {count} items.")
+
+            elif action == 'update_supplier':
+                supplier_id = request.POST.get('new_supplier')
+                if supplier_id:
+                    supplier = Supplier.objects.get(id=supplier_id)
+                    count = BatchItemUpdater.update_supplier(item_ids, supplier)
+                    messages.success(request, f"Updated supplier for {count} items.")
+                else:
+                    messages.error(request, 'Please select a supplier.')
+
+            else:
+                messages.error(request, 'Invalid action.')
+
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+
+        return redirect('inventory:batch_item_update')
+
+
+# ==================== User Preferences Views ====================
+
+from .models import UserPreferences
+
+
+class UserPreferencesView(LoginRequiredMixin, View):
+    """
+    View for managing user preferences and settings.
+    """
+    template_name = 'inventory/user_preferences.html'
+
+    def get(self, request):
+        # Get or create preferences for the current user
+        preferences, created = UserPreferences.objects.get_or_create(user=request.user)
+        return render(request, self.template_name, {'preferences': preferences})
+
+    def post(self, request):
+        preferences, created = UserPreferences.objects.get_or_create(user=request.user)
+
+        # Update preferences from form
+        preferences.dashboard_view = request.POST.get('dashboard_view', 'enhanced')
+        preferences.items_per_page = int(request.POST.get('items_per_page', 20))
+        preferences.receive_low_stock_emails = request.POST.get('receive_low_stock_emails') == 'on'
+        preferences.low_stock_threshold = int(request.POST.get('low_stock_threshold', 25))
+        preferences.default_export_format = request.POST.get('default_export_format', 'excel')
+        preferences.show_qr_codes = request.POST.get('show_qr_codes') == 'on'
+        preferences.language = request.POST.get('language', 'en')
+        preferences.date_format = request.POST.get('date_format', 'YYYY-MM-DD')
+
+        preferences.save()
+
+        messages.success(request, 'Your preferences have been updated successfully!')
+        return redirect('inventory:user_preferences')

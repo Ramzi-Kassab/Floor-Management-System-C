@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}Batch Item Update{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-pencil-square"></i> Batch Item Update</h1>
+        <p class="text-muted">Update multiple items at once</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Items
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Select Items and Action</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="batch-update-form">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Select Items to Update:</label>
+                        <div class="mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="select-all">
+                                Select All
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all">
+                                Deselect All
+                            </button>
+                        </div>
+                        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                            {% for item in items %}
+                            <div class="form-check">
+                                <input class="form-check-input item-checkbox" type="checkbox" name="item_ids"
+                                       value="{{ item.id }}" id="item_{{ item.id }}">
+                                <label class="form-check-label" for="item_{{ item.id }}">
+                                    <strong>{{ item.item_code }}</strong> - {{ item.name }}
+                                    <span class="badge bg-secondary">{{ item.category.code }}</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">
+                            <span id="selected-count">0</span> item(s) selected
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label for="action" class="form-label">Select Action:</label>
+                        <select class="form-select" id="action" name="action" required>
+                            <option value="">-- Choose an action --</option>
+                            <option value="update_category">Update Category</option>
+                            <option value="update_reorder_level">Update Reorder Level</option>
+                            <option value="update_supplier">Update Supplier</option>
+                            <option value="activate">Activate Items</option>
+                            <option value="deactivate">Deactivate Items</option>
+                        </select>
+                    </div>
+
+                    <!-- Action-specific fields -->
+                    <div id="category-field" class="mb-3" style="display: none;">
+                        <label for="new_category" class="form-label">New Category:</label>
+                        <select class="form-select" id="new_category" name="new_category">
+                            <option value="">-- Select Category --</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.code }} - {{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="reorder-field" class="mb-3" style="display: none;">
+                        <label for="new_reorder_level" class="form-label">New Reorder Level:</label>
+                        <input type="number" class="form-control" id="new_reorder_level" name="new_reorder_level"
+                               step="0.01" min="0">
+                    </div>
+
+                    <div id="supplier-field" class="mb-3" style="display: none;">
+                        <label for="new_supplier" class="form-label">New Supplier:</label>
+                        <select class="form-select" id="new_supplier" name="new_supplier">
+                            <option value="">-- Select Supplier --</option>
+                            {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}">{{ supplier.code }} - {{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Apply Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Available Actions</h5>
+            </div>
+            <div class="card-body">
+                <dl class="small">
+                    <dt><i class="bi bi-tag"></i> Update Category</dt>
+                    <dd>Change the category for all selected items</dd>
+
+                    <dt><i class="bi bi-graph-down"></i> Update Reorder Level</dt>
+                    <dd>Set a new reorder level for all selected items</dd>
+
+                    <dt><i class="bi bi-truck"></i> Update Supplier</dt>
+                    <dd>Change the preferred supplier for all selected items</dd>
+
+                    <dt><i class="bi bi-check-circle"></i> Activate Items</dt>
+                    <dd>Mark all selected items as active</dd>
+
+                    <dt><i class="bi bi-x-circle"></i> Deactivate Items</dt>
+                    <dd>Mark all selected items as inactive</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Important</h5>
+            </div>
+            <div class="card-body">
+                <ul class="small mb-0">
+                    <li>All selected items will be updated with the same value</li>
+                    <li>This action cannot be undone</li>
+                    <li>Review your selection carefully before applying changes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    const selectedCount = document.getElementById('selected-count');
+    const actionSelect = document.getElementById('action');
+    const categoryField = document.getElementById('category-field');
+    const reorderField = document.getElementById('reorder-field');
+    const supplierField = document.getElementById('supplier-field');
+
+    // Update selected count
+    function updateCount() {
+        const count = document.querySelectorAll('.item-checkbox:checked').length;
+        selectedCount.textContent = count;
+    }
+
+    // Select/Deselect all
+    document.getElementById('select-all').addEventListener('click', function() {
+        checkboxes.forEach(cb => cb.checked = true);
+        updateCount();
+    });
+
+    document.getElementById('deselect-all').addEventListener('click', function() {
+        checkboxes.forEach(cb => cb.checked = false);
+        updateCount();
+    });
+
+    // Update count on checkbox change
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateCount);
+    });
+
+    // Show/hide action-specific fields
+    actionSelect.addEventListener('change', function() {
+        // Hide all
+        categoryField.style.display = 'none';
+        reorderField.style.display = 'none';
+        supplierField.style.display = 'none';
+
+        // Show relevant field
+        if (this.value === 'update_category') {
+            categoryField.style.display = 'block';
+        } else if (this.value === 'update_reorder_level') {
+            reorderField.style.display = 'block';
+        } else if (this.value === 'update_supplier') {
+            supplierField.style.display = 'block';
+        }
+    });
+});
+</script>
+{% endblock %}
