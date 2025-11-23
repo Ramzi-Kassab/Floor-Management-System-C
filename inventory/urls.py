@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import quality_views
 
 app_name = 'inventory'
 
@@ -57,4 +58,21 @@ urlpatterns = [
 
     # User Preferences
     path('preferences/', views.UserPreferencesView.as_view(), name='user_preferences'),
+
+    # Quality Control & Lifecycle Management
+    path('quality/', quality_views.QualityQuickActionsView.as_view(), name='quality_quick_actions'),
+    path('quality/dashboard/', quality_views.QualityInspectionDashboardView.as_view(), name='quality_dashboard'),
+    path('quality/inspections/', quality_views.QualityInspectionListView.as_view(), name='quality_inspection_list'),
+
+    # Expiry Management
+    path('quality/expiry/', quality_views.ExpiryManagementDashboardView.as_view(), name='expiry_dashboard'),
+    path('quality/expiry/action/<int:batch_pk>/', quality_views.ExpiredItemActionCreateView.as_view(), name='expired_item_action_create'),
+
+    # Defective Items
+    path('quality/defective/', quality_views.DefectiveItemsListView.as_view(), name='defective_items_list'),
+    path('quality/defect-report/', quality_views.DefectReportView.as_view(), name='defect_report'),
+
+    # Used Items
+    path('quality/used-items/', quality_views.UsedItemsListView.as_view(), name='used_items_list'),
+    path('quality/maintenance-schedule/', quality_views.MaintenanceScheduleView.as_view(), name='maintenance_schedule'),
 ]

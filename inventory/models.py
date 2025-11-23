@@ -521,3 +521,14 @@ class StockOperationApproval(models.Model):
         self.review_date = timezone.now()
         self.review_notes = notes
         self.save()
+
+
+# ==================== Import Quality Control Models ====================
+# Import quality control, expiry, and lifecycle management models
+from .quality_control import (
+    QualityInspection,
+    ItemBatch,
+    DefectiveItemDisposition,
+    UsedItemTracking,
+    ExpiredItemAction
+)

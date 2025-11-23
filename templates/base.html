@@ -86,6 +86,27 @@
                             <li><a class="dropdown-item" href="{% url 'purchasing:quick_actions' %}"><i class="bi bi-tools text-primary"></i> Quick Actions Menu</a></li>
                         </ul>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="qualityDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-shield-check"></i> Quality & Lifecycle
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'inventory:quality_quick_actions' %}"><i class="bi bi-lightning"></i> Quick Actions Menu</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Quality Inspection</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:quality_dashboard' %}">Quality Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:quality_inspection_list' %}">Inspection List</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:defective_items_list' %}"><i class="bi bi-exclamation-octagon text-danger"></i> Defective Items</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:defect_report' %}"><i class="bi bi-graph-up"></i> Defect Reports</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Expiry Management</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:expiry_dashboard' %}"><i class="bi bi-calendar-x text-warning"></i> Expiry Dashboard</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Used Items</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:used_items_list' %}"><i class="bi bi-recycle"></i> Used Items List</a></li>
+                            <li><a class="dropdown-item" href="{% url 'inventory:maintenance_schedule' %}"><i class="bi bi-tools"></i> Maintenance Schedule</a></li>
+                        </ul>
+                    </li>
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}

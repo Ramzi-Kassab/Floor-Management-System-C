@@ -80,10 +80,10 @@
                     <li>Create return if vendor fault</li>
                 </ul>
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-danger btn-sm">
+                    <a href="{% url 'inventory:quality_inspection_list' %}" class="btn btn-outline-danger btn-sm">
                         <i class="bi bi-clipboard-check"></i> Create Quality Inspection
                     </a>
-                    <a href="#" class="btn btn-outline-warning btn-sm">
+                    <a href="{% url 'inventory:defective_items_list' %}" class="btn btn-outline-warning btn-sm">
                         <i class="bi bi-gear"></i> Record Disposition
                     </a>
                 </div>
@@ -112,10 +112,10 @@
                     <li>Request write-off approval</li>
                 </ul>
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-warning btn-sm">
+                    <a href="{% url 'inventory:expiry_dashboard' %}" class="btn btn-outline-warning btn-sm">
                         <i class="bi bi-calendar-x"></i> View Expiring Items
                     </a>
-                    <a href="#" class="btn btn-outline-danger btn-sm">
+                    <a href="{% url 'inventory:expiry_dashboard' %}" class="btn btn-outline-danger btn-sm">
                         <i class="bi bi-trash"></i> Create Disposal Action
                     </a>
                 </div>
@@ -144,10 +144,10 @@
                     <li>Check warranty status</li>
                 </ul>
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-info btn-sm">
+                    <a href="{% url 'inventory:used_items_list' %}" class="btn btn-outline-info btn-sm">
                         <i class="bi bi-card-checklist"></i> View Used Items
                     </a>
-                    <a href="#" class="btn btn-outline-primary btn-sm">
+                    <a href="{% url 'inventory:maintenance_schedule' %}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-tools"></i> Maintenance Schedule
                     </a>
                 </div>
@@ -176,10 +176,10 @@
                     <li>Return to stock if approved</li>
                 </ul>
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-secondary btn-sm">
+                    <a href="{% url 'inventory:defective_items_list' %}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-right-circle"></i> Send to Rework
                     </a>
-                    <a href="#" class="btn btn-outline-success btn-sm">
+                    <a href="{% url 'inventory:defective_items_list' %}" class="btn btn-outline-success btn-sm">
                         <i class="bi bi-check-circle"></i> Complete Rework
                     </a>
                 </div>
@@ -208,10 +208,10 @@
                     <li>Release or reject</li>
                 </ul>
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-dark btn-sm">
+                    <a href="{% url 'inventory:quality_dashboard' %}" class="btn btn-outline-dark btn-sm">
                         <i class="bi bi-list"></i> View Quarantine
                     </a>
-                    <a href="#" class="btn btn-outline-success btn-sm">
+                    <a href="{% url 'inventory:quality_dashboard' %}" class="btn btn-outline-success btn-sm">
                         <i class="bi bi-unlock"></i> Release Items
                     </a>
                 </div>
@@ -240,10 +240,10 @@
                     <li>Track recovery value</li>
                 </ul>
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-warning btn-sm">
+                    <a href="{% url 'inventory:defective_items_list' %}" class="btn btn-outline-warning btn-sm">
                         <i class="bi bi-tag"></i> Downgrade Items
                     </a>
-                    <a href="#" class="btn btn-outline-success btn-sm">
+                    <a href="{% url 'inventory:defective_items_list' %}" class="btn btn-outline-success btn-sm">
                         <i class="bi bi-currency-dollar"></i> Set Recovery Price
                     </a>
                 </div>
