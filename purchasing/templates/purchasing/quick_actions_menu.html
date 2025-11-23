@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+
+{% block title %}Real-Life Scenarios - Quick Actions{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-tools"></i> Real-Life Scenarios - Quick Actions</h1>
+        <p class="text-muted">Handle common purchasing and receiving issues</p>
+    </div>
+</div>
+
+<!-- Status Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-exclamation-triangle text-warning"></i> Pending Returns</h5>
+                <h2 class="mb-0">{{ pending_returns }}</h2>
+                <small class="text-muted">Returns awaiting processing</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-danger">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-pencil-square text-danger"></i> Pending Corrections</h5>
+                <h2 class="mb-0">{{ pending_corrections }}</h2>
+                <small class="text-muted">GRN corrections awaiting approval</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-inbox text-info"></i> Recent GRNs</h5>
+                <h2 class="mb-0">{{ recent_grns|length }}</h2>
+                <small class="text-muted">Last 10 goods receipts</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scenario Action Cards -->
+<div class="row g-4">
+    <!-- Wrong Item Received -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-x-circle"></i> Wrong Item Received</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Received an item different from what was ordered in the PO.</p>
+                <h6>Actions:</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'purchasing:goods_return_list' %}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-arrow-return-left"></i> Create Return
+                    </a>
+                    <a href="{% url 'purchasing:grn_correction_list' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-pencil-square"></i> Create Correction
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Return if different item, correct if wrong recording
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wrong Quantity -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-calculator"></i> Wrong Quantity</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Quantity received doesn't match PO or physical count differs from system.</p>
+                <h6>Actions:</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'purchasing:grn_correction_list' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-pencil-square"></i> Quantity Correction
+                    </a>
+                    <a href="{% url 'purchasing:goods_return_list' %}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-arrow-return-left"></i> Return Excess
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Correct if count error, return if truly excess
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Damaged Items -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-secondary">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Damaged Items</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Items received in damaged condition or found defective.</p>
+                <h6>Actions:</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'purchasing:goods_return_list' %}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-arrow-return-left"></i> Return Damaged
+                    </a>
+                    <a href="{% url 'inventory:stock_adjustment' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-down-circle"></i> Move to Scrap
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Return for credit or move to scrap location
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Need to Return Released Item -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-arrow-counterclockwise"></i> Return Released Item</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Item was issued/released but needs to be returned to stock.</p>
+                <h6>Actions:</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'inventory:stock_adjustment' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Return to Stock
+                    </a>
+                    <a href="{% url 'inventory:stock_transfer' %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-arrow-left-right"></i> Transfer Location
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Use stock adjustment to add back to inventory
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wrong Location -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Wrong Location</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Items were stored in wrong location or need to be moved.</p>
+                <h6>Actions:</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'inventory:stock_transfer' %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-arrow-left-right"></i> Transfer Stock
+                    </a>
+                    <a href="{% url 'purchasing:grn_correction_list' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-pencil-square"></i> Correct GRN Location
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Transfer for current stock, correct for GRN errors
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Physical Count Discrepancy -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Physical Count</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Physical count differs from system stock levels.</p>
+                <h6>Actions:</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'inventory:stock_adjustment' %}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-clipboard-data"></i> Stock Reconciliation
+                    </a>
+                    <a href="{% url 'purchasing:grn_correction_list' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-pencil-square"></i> Check Recent GRNs
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Adjust stock to match physical count
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent GRNs -->
+{% if recent_grns %}
+<div class="card mt-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Goods Receipts</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>GRN Number</th>
+                        <th>Purchase Order</th>
+                        <th>Receipt Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grn in recent_grns %}
+                    <tr>
+                        <td><strong>{{ grn.grn_number }}</strong></td>
+                        <td>{{ grn.purchase_order.po_number }}</td>
+                        <td>{{ grn.receipt_date }}</td>
+                        <td><span class="badge bg-success">{{ grn.get_status_display }}</span></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'purchasing:grn_detail' grn.pk %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'purchasing:goods_return_create' grn.pk %}" class="btn btn-outline-danger">
+                                    <i class="bi bi-arrow-return-left"></i> Return
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Links -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-link-45deg"></i> Manage Returns</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'purchasing:goods_return_list' %}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-list"></i> View All Returns
+                </a>
+                <a href="{% url 'purchasing:goods_return_list' %}?status=DRAFT" class="list-group-item list-group-item-action">
+                    <i class="bi bi-file-earmark"></i> Draft Returns
+                </a>
+                <a href="{% url 'purchasing:goods_return_list' %}?status=SUBMITTED" class="list-group-item list-group-item-action">
+                    <i class="bi bi-send"></i> Submitted Returns
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-link-45deg"></i> Manage Corrections</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'purchasing:grn_correction_list' %}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-list"></i> View All Corrections
+                </a>
+                <a href="{% url 'purchasing:grn_correction_list' %}?approved=no" class="list-group-item list-group-item-action">
+                    <i class="bi bi-hourglass"></i> Pending Approval
+                </a>
+                <a href="{% url 'purchasing:grn_correction_list' %}?approved=yes" class="list-group-item list-group-item-action">
+                    <i class="bi bi-check-circle"></i> Approved Corrections
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

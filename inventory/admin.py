@@ -2,7 +2,8 @@ from django.contrib import admin
 from .models import (
     Supplier, ItemCategory, UnitOfMeasure, Item,
     Warehouse, Location, ConditionType, OwnershipType,
-    StockLevel, StockTransaction, UserPreferences
+    StockLevel, StockTransaction, UserPreferences,
+    StockOperationApproval
 )
 
 
@@ -164,3 +165,49 @@ class UserPreferencesAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(StockOperationApproval)
+class StockOperationApprovalAdmin(admin.ModelAdmin):
+    list_display = ['requested_by', 'operation_type', 'item', 'quantity', 'status', 'request_date', 'reviewed_by']
+    list_filter = ['status', 'operation_type', 'request_date']
+    search_fields = ['requested_by__username', 'item__item_code', 'item__name', 'reason_for_request']
+    ordering = ['-request_date']
+    raw_id_fields = ['transaction', 'requested_by', 'reviewed_by', 'item']
+    readonly_fields = ['request_date', 'created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Request Information', {
+            'fields': ('requested_by', 'request_date', 'operation_type')
+        }),
+        ('Operation Details', {
+            'fields': ('item', 'quantity', 'transaction', 'reason_for_request')
+        }),
+        ('Review', {
+            'fields': ('status', 'reviewed_by', 'review_date', 'review_notes')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['approve_selected', 'reject_selected']
+    
+    def approve_selected(self, request, queryset):
+        """Approve selected requests."""
+        count = 0
+        for approval in queryset.filter(status='PENDING'):
+            approval.approve(request.user, 'Approved via admin action')
+            count += 1
+        self.message_user(request, f'{count} approval(s) approved.')
+    approve_selected.short_description = 'Approve selected requests'
+    
+    def reject_selected(self, request, queryset):
+        """Reject selected requests."""
+        count = 0
+        for approval in queryset.filter(status='PENDING'):
+            approval.reject(request.user, 'Rejected via admin action')
+            count += 1
+        self.message_user(request, f'{count} approval(s) rejected.')
+    reject_selected.short_description = 'Reject selected requests'

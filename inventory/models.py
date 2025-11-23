@@ -436,3 +436,88 @@ class UserPreferences(models.Model):
 
     def __str__(self):
         return f"Preferences for {self.user.username}"
+
+
+# ==================== Stock Operation Approval ====================
+
+class StockOperationApproval(models.Model):
+    """
+    Approval workflow for stock operations that require supervisor review.
+    """
+    
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Approval'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    
+    transaction = models.ForeignKey(
+        StockTransaction,
+        on_delete=models.CASCADE,
+        related_name='approvals',
+        null=True,
+        blank=True,
+        help_text="Stock transaction awaiting approval (null if pending creation)"
+    )
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name='approval_requests'
+    )
+    request_date = models.DateTimeField(auto_now_add=True)
+    
+    # Request details
+    operation_type = models.CharField(max_length=50, help_text="Type of operation")
+    item = models.ForeignKey(
+        'Item',
+        on_delete=models.PROTECT,
+        related_name='approval_requests'
+    )
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    reason_for_request = models.TextField(help_text="Why this operation needs approval")
+    
+    # Approval details
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='PENDING'
+    )
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approvals_reviewed'
+    )
+    review_date = models.DateTimeField(null=True, blank=True)
+    review_notes = models.TextField(blank=True, help_text="Supervisor's notes")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-request_date']
+        verbose_name = 'Stock Operation Approval'
+        verbose_name_plural = 'Stock Operation Approvals'
+    
+    def __str__(self):
+        return f"Approval Request by {self.requested_by.username} - {self.operation_type} - {self.status}"
+    
+    def approve(self, reviewer, notes=''):
+        """Approve the request."""
+        from django.utils import timezone
+        self.status = 'APPROVED'
+        self.reviewed_by = reviewer
+        self.review_date = timezone.now()
+        self.review_notes = notes
+        self.save()
+    
+    def reject(self, reviewer, notes=''):
+        """Reject the request."""
+        from django.utils import timezone
+        self.status = 'REJECTED'
+        self.reviewed_by = reviewer
+        self.review_date = timezone.now()
+        self.review_notes = notes
+        self.save()

@@ -74,9 +74,16 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'purchasing:dashboard' %}">Dashboard</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Documents</h6></li>
                             <li><a class="dropdown-item" href="{% url 'purchasing:pr_list' %}">Purchase Requests</a></li>
                             <li><a class="dropdown-item" href="{% url 'purchasing:po_list' %}">Purchase Orders</a></li>
                             <li><a class="dropdown-item" href="{% url 'purchasing:grn_list' %}">Goods Receipts</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Returns & Corrections</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'purchasing:goods_return_list' %}"><i class="bi bi-arrow-return-left text-danger"></i> Goods Returns</a></li>
+                            <li><a class="dropdown-item" href="{% url 'purchasing:grn_correction_list' %}"><i class="bi bi-pencil-square text-warning"></i> GRN Corrections</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'purchasing:quick_actions' %}"><i class="bi bi-tools text-primary"></i> Quick Actions Menu</a></li>
                         </ul>
                     </li>
                 </ul>

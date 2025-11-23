@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Goods Return{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-arrow-return-left"></i> Create Goods Return (RTV)</h1>
+        <p class="text-muted">Return items to vendor from GRN {{ grn.grn_number }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'purchasing:grn_detail' grn.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-circle"></i> Cancel
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">GRN Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl>
+                            <dt>GRN Number:</dt>
+                            <dd>{{ grn.grn_number }}</dd>
+                            <dt>Purchase Order:</dt>
+                            <dd>{{ grn.purchase_order.po_number }}</dd>
+                            <dt>Supplier:</dt>
+                            <dd>{{ grn.purchase_order.supplier }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl>
+                            <dt>Receipt Date:</dt>
+                            <dd>{{ grn.receipt_date }}</dd>
+                            <dt>Received By:</dt>
+                            <dd>{{ grn.received_by.username }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" class="mt-3">
+            {% csrf_token %}
+
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Return Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="return_date" class="form-label">Return Date *</label>
+                            <input type="date" class="form-control" id="return_date" name="return_date"
+                                   value="{% now 'Y-m-d' %}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="return_reason" class="form-label">Return Reason *</label>
+                            <select class="form-select" id="return_reason" name="return_reason" required>
+                                <option value="">-- Select Reason --</option>
+                                {% for value, label in return_reasons %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="supplier_contact" class="form-label">Supplier Contact Person</label>
+                        <input type="text" class="form-control" id="supplier_contact" name="supplier_contact"
+                               placeholder="Contact person at supplier">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3"
+                                  placeholder="Additional notes about this return"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Items to Return</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th>Received Qty</th>
+                                    <th>Return Qty *</th>
+                                    <th>Unit Price</th>
+                                    <th>Condition *</th>
+                                    <th>Location *</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for line in grn_lines %}
+                                <tr>
+                                    <td><strong>{{ line.purchase_order_line.item.item_code }}</strong></td>
+                                    <td>{{ line.purchase_order_line.item.name }}</td>
+                                    <td>{{ line.received_quantity }} {{ line.purchase_order_line.item.unit_of_measure.code }}</td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm"
+                                               name="return_qty_{{ line.pk }}" step="0.01" min="0"
+                                               max="{{ line.received_quantity }}" style="width: 100px;">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm"
+                                               name="unit_price_{{ line.pk }}" step="0.01" min="0"
+                                               value="{{ line.purchase_order_line.unit_price }}"
+                                               style="width: 100px;">
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" name="condition_{{ line.pk }}"
+                                                style="width: 120px;">
+                                            {% for condition in conditions %}
+                                                <option value="{{ condition.pk }}"
+                                                    {% if condition.pk == line.condition_type.pk %}selected{% endif %}>
+                                                    {{ condition.code }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" name="location_{{ line.pk }}"
+                                                style="width: 150px;">
+                                            {% for location in locations %}
+                                                <option value="{{ location.pk }}"
+                                                    {% if location.pk == line.location.pk %}selected{% endif %}>
+                                                    {{ location.code }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm"
+                                               name="notes_{{ line.pk }}" placeholder="Notes"
+                                               style="width: 150px;">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-danger btn-lg">
+                    <i class="bi bi-arrow-return-left"></i> Create Return
+                </button>
+                <a href="{% url 'purchasing:grn_detail' grn.pk %}" class="btn btn-outline-secondary btn-lg">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Return Process</h5>
+            </div>
+            <div class="card-body">
+                <h6>Steps:</h6>
+                <ol class="small">
+                    <li><strong>Create Return</strong> - Fill in return details and items</li>
+                    <li><strong>Submit to Supplier</strong> - Send return notification</li>
+                    <li><strong>Get Approval</strong> - Receive RMA/approval from supplier</li>
+                    <li><strong>Pickup</strong> - Supplier collects items</li>
+                    <li><strong>Credit Note</strong> - Receive credit from supplier</li>
+                </ol>
+
+                <hr>
+
+                <h6>Common Return Reasons:</h6>
+                <ul class="small">
+                    <li><strong>Wrong Item</strong> - Received different item than ordered</li>
+                    <li><strong>Excess Quantity</strong> - More than ordered quantity</li>
+                    <li><strong>Damaged</strong> - Items damaged during transport</li>
+                    <li><strong>Defective</strong> - Quality issues or defects</li>
+                    <li><strong>Not Ordered</strong> - Items not in PO</li>
+                </ul>
+
+                <hr>
+
+                <div class="alert alert-warning small mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>Note:</strong>
+                    Stock will be deducted when you submit the return to the supplier.
+                    Enter return quantities only for items you want to return.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

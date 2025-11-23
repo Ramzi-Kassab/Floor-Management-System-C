@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Create GRN Correction{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-pencil-square"></i> Create GRN Correction</h1>
+        <p class="text-muted">Correct errors in GRN {{ grn_line.goods_receipt.grn_number }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Original GRN Line Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl>
+                            <dt>GRN Number:</dt>
+                            <dd>{{ grn_line.goods_receipt.grn_number }}</dd>
+                            <dt>Item Code:</dt>
+                            <dd><strong>{{ grn_line.purchase_order_line.item.item_code }}</strong></dd>
+                            <dt>Item Name:</dt>
+                            <dd>{{ grn_line.purchase_order_line.item.name }}</dd>
+                            <dt>Received Quantity:</dt>
+                            <dd><strong class="text-primary">{{ grn_line.received_quantity }} {{ grn_line.purchase_order_line.item.unit_of_measure.code }}</strong></dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl>
+                            <dt>Location:</dt>
+                            <dd>{{ grn_line.location.code }} - {{ grn_line.location.name }}</dd>
+                            <dt>Condition:</dt>
+                            <dd>{{ grn_line.condition_type.name }}</dd>
+                            <dt>Receipt Date:</dt>
+                            <dd>{{ grn_line.goods_receipt.receipt_date }}</dd>
+                            <dt>Received By:</dt>
+                            <dd>{{ grn_line.goods_receipt.received_by.username }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Correction Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="correction_type" class="form-label">Correction Type *</label>
+                            <select class="form-select" id="correction_type" name="correction_type" required
+                                    onchange="toggleCorrectionFields()">
+                                <option value="">-- Select Type --</option>
+                                {% for value, label in correction_types %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="correction_date" class="form-label">Correction Date *</label>
+                            <input type="date" class="form-control" id="correction_date" name="correction_date"
+                                   value="{% now 'Y-m-d' %}" required>
+                        </div>
+                    </div>
+
+                    <!-- Quantity Correction Fields -->
+                    <div id="quantity_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="corrected_quantity" class="form-label">Corrected Quantity</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Original: {{ grn_line.received_quantity }}</span>
+                                <input type="number" class="form-control" id="corrected_quantity"
+                                       name="corrected_quantity" step="0.01" min="0"
+                                       placeholder="Enter actual quantity">
+                                <span class="input-group-text">{{ grn_line.purchase_order_line.item.unit_of_measure.code }}</span>
+                            </div>
+                            <div class="form-text">
+                                <span id="qty_difference"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Correction Fields -->
+                    <div id="location_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="corrected_location" class="form-label">Corrected Location</label>
+                            <select class="form-select" id="corrected_location" name="corrected_location">
+                                <option value="">-- Select Location --</option>
+                                {% for location in locations %}
+                                    <option value="{{ location.pk }}"
+                                        {% if location.pk == grn_line.location.pk %}selected{% endif %}>
+                                        {{ location.code }} - {{ location.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Current: {{ grn_line.location.code }} - {{ grn_line.location.name }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Condition Correction Fields -->
+                    <div id="condition_fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="corrected_condition" class="form-label">Corrected Condition</label>
+                            <select class="form-select" id="corrected_condition" name="corrected_condition">
+                                <option value="">-- Select Condition --</option>
+                                {% for condition in conditions %}
+                                    <option value="{{ condition.pk }}"
+                                        {% if condition.pk == grn_line.condition_type.pk %}selected{% endif %}>
+                                        {{ condition.code }} - {{ condition.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Current: {{ grn_line.condition_type.code }} - {{ grn_line.condition_type.name }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Detailed Reason for Correction *</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="4" required
+                                  placeholder="Explain why this correction is needed and what caused the error"></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> <strong>Important:</strong>
+                        This correction will be submitted for approval. Once approved, stock adjustments will be made automatically.
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-warning btn-lg">
+                    <i class="bi bi-pencil-square"></i> Submit Correction
+                </button>
+                <a href="{% url 'purchasing:grn_detail' grn_line.goods_receipt.pk %}" class="btn btn-outline-secondary btn-lg">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-question-circle"></i> Correction Types</h5>
+            </div>
+            <div class="card-body">
+                <h6>Quantity Overcounted</h6>
+                <p class="small">System shows more than physically received. Enter actual quantity received.</p>
+
+                <h6>Quantity Undercounted</h6>
+                <p class="small">System shows less than physically received. Enter actual quantity received.</p>
+
+                <h6>Wrong Item</h6>
+                <p class="small">Recorded item doesn't match what was actually received. Consider creating a return instead.</p>
+
+                <h6>Wrong Location</h6>
+                <p class="small">Items were put in different location than recorded. Stock will be transferred.</p>
+
+                <h6>Wrong Condition</h6>
+                <p class="small">Condition type (NEW, USED, etc.) was incorrectly recorded.</p>
+            </div>
+        </div>
+
+        <div class="card mt-3 border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-shield-check"></i> Approval Process</h5>
+            </div>
+            <div class="card-body">
+                <ol class="small mb-0">
+                    <li>Create correction with detailed reason</li>
+                    <li>Submit for review</li>
+                    <li>Supervisor/Manager approves</li>
+                    <li>Stock adjustments applied automatically</li>
+                    <li>Audit trail maintained</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleCorrectionFields() {
+    const correctionType = document.getElementById('correction_type').value;
+    const qtyFields = document.getElementById('quantity_fields');
+    const locFields = document.getElementById('location_fields');
+    const condFields = document.getElementById('condition_fields');
+
+    // Hide all fields first
+    qtyFields.style.display = 'none';
+    locFields.style.display = 'none';
+    condFields.style.display = 'none';
+
+    // Show relevant fields based on type
+    if (correctionType === 'QUANTITY_OVERCOUNT' || correctionType === 'QUANTITY_UNDERCOUNT') {
+        qtyFields.style.display = 'block';
+    } else if (correctionType === 'WRONG_LOCATION') {
+        locFields.style.display = 'block';
+    } else if (correctionType === 'WRONG_CONDITION') {
+        condFields.style.display = 'block';
+    }
+}
+
+// Calculate quantity difference
+document.getElementById('corrected_quantity')?.addEventListener('input', function() {
+    const original = parseFloat('{{ grn_line.received_quantity }}');
+    const corrected = parseFloat(this.value) || 0;
+    const difference = corrected - original;
+    const diffText = document.getElementById('qty_difference');
+
+    if (difference > 0) {
+        diffText.innerHTML = `<i class="bi bi-arrow-up text-success"></i> Increase by <strong>${difference.toFixed(2)}</strong>`;
+    } else if (difference < 0) {
+        diffText.innerHTML = `<i class="bi bi-arrow-down text-danger"></i> Decrease by <strong>${Math.abs(difference).toFixed(2)}</strong>`;
+    } else {
+        diffText.innerHTML = '';
+    }
+});
+</script>
+{% endblock %}
