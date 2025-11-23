@@ -1,0 +1,221 @@
+{% extends 'production/base.html' %}
+{% load i18n %}
+
+{% block title %}Repair Decision{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-diagram-3"></i> Repair Decision</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'production:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Evaluation Information -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Evaluation Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Job Card:</strong> {{ decision.evaluation_summary.job_card.jobcard_code }}</p>
+                        <p><strong>Evaluation Date:</strong> {{ decision.evaluation_summary.evaluation_date|date:"Y-m-d" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Overall Condition:</strong>
+                            <span class="badge {% if decision.evaluation_summary.overall_condition == 'EXCELLENT' %}bg-success{% elif decision.evaluation_summary.overall_condition == 'GOOD' %}bg-primary{% elif decision.evaluation_summary.overall_condition == 'FAIR' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ decision.evaluation_summary.get_overall_condition_display }}
+                            </span>
+                        </p>
+                        <p><strong>Recommended Action:</strong> {{ decision.evaluation_summary.get_recommended_action_display }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Repair Decision -->
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-tools"></i> Repair Decision</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h6>Recommended Route Category</h6>
+                        <span class="badge bg-info fs-5">{{ decision.generate_route_recommendation }}</span>
+                    </div>
+                </div>
+
+                {% if decision.recommended_route %}
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h6>Route Template</h6>
+                        <p><strong>{{ decision.recommended_route.template_name }}</strong></p>
+                        <p class="text-muted">{{ decision.recommended_route.description }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <h6 class="mt-4 mb-3">Required Processes</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                {% if decision.needs_cutter_replacement %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                                Cutter Replacement
+                            </li>
+                            <li class="mb-2">
+                                {% if decision.needs_nozzle_replacement %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                                Nozzle Replacement
+                            </li>
+                            <li class="mb-2">
+                                {% if decision.needs_hardfacing %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                                Hardfacing
+                            </li>
+                            <li class="mb-2">
+                                {% if decision.needs_thread_repair %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                                Thread Repair
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                {% if decision.needs_gauge_repair %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                                Gauge Repair
+                            </li>
+                            <li class="mb-2">
+                                {% if decision.needs_balance %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                                Balancing
+                            </li>
+                            <li class="mb-2">
+                                {% if decision.needs_ndt %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                {% else %}
+                                <i class="bi bi-circle text-muted"></i>
+                                {% endif %}
+                                NDT Inspection
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                {% if decision.decision_notes %}
+                <hr>
+                <h6>Decision Notes</h6>
+                <p>{{ decision.decision_notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Route Steps -->
+        {% if route_steps %}
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-list-ol"></i> Route Steps</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Seq</th>
+                                <th>Process Code</th>
+                                <th>Description</th>
+                                <th>Department</th>
+                                <th>Estimated Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for step in route_steps %}
+                            <tr>
+                                <td><span class="badge bg-secondary">{{ step.sequence }}</span></td>
+                                <td><strong>{{ step.process_code }}</strong></td>
+                                <td>{{ step.description|truncatewords:8 }}</td>
+                                <td>{{ step.get_department_display }}</td>
+                                <td>{{ step.estimated_hours|default:"-" }} hrs</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <!-- Estimates -->
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-calculator"></i> Estimates</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Estimated Hours:</strong>
+                    <div class="fs-4 text-primary">
+                        {{ decision.estimated_hours|default:"-" }}
+                        {% if decision.estimated_hours %}hrs{% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <strong>Estimated Cutter Count:</strong>
+                    <div class="fs-4 text-warning">
+                        {{ decision.estimated_cutter_count|default:"-" }}
+                        {% if decision.estimated_cutter_count %}cutters{% endif %}
+                    </div>
+                </div>
+                <div class="mb-0">
+                    <strong>Estimated Cost:</strong>
+                    <div class="fs-4 text-success">
+                        {{ decision.estimated_cost|default:"-" }}
+                        {% if decision.estimated_cost %}SAR{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Metadata</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Created:</strong><br>{{ decision.created_at|date:"Y-m-d H:i" }}</p>
+                <p class="mb-0"><strong>Updated:</strong><br>{{ decision.updated_at|date:"Y-m-d H:i" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

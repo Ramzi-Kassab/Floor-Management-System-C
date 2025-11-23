@@ -1,0 +1,51 @@
+{% extends 'production/base.html' %}
+{% load i18n %}
+{% block title %}BOM Tracking{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-box-seam"></i> BOM Tracking</h1>
+        {% if work_order %}<p class="text-muted">Work Order: <strong>{{ work_order.wo_number }}</strong></p>{% endif %}
+    </div>
+</div>
+
+{% if bom_items %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Bill of Materials - Planned vs. Actual</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr><th>Part Number</th><th>Description</th><th>Type</th><th>Planned</th><th>Actual</th><th>Variance</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for bom in bom_items %}
+                    <tr>
+                        <td><strong>{{ bom.bom_item.part_number }}</strong></td>
+                        <td>{{ bom.bom_item.description|truncatewords:8 }}</td>
+                        <td><span class="badge bg-secondary">{{ bom.bom_item.get_item_type_display }}</span></td>
+                        <td>{{ bom.planned_quantity }} {{ bom.bom_item.unit }}</td>
+                        <td>{% if bom.actual_quantity %}{{ bom.actual_quantity }} {{ bom.bom_item.unit }}{% else %}<span class="text-muted">Not recorded</span>{% endif %}</td>
+                        <td>
+                            {% with variance=bom.get_variance %}
+                            {% if variance %}
+                                {% if variance > 0 %}<span class="badge bg-warning">+{{ variance }}</span>
+                                {% elif variance < 0 %}<span class="badge bg-danger">{{ variance }}</span>
+                                {% else %}<span class="badge bg-success">0</span>{% endif %}
+                            {% else %}<span class="text-muted">-</span>{% endif %}
+                            {% endwith %}
+                        </td>
+                        <td><a href="{% url 'production:actual-bom-edit' bom.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info"><i class="bi bi-info-circle"></i> No BOM items found.</div>
+{% endif %}
+{% endblock %}

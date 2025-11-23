@@ -1,0 +1,49 @@
+{% extends 'production/base.html' %}
+{% load i18n %}
+{% block title %}Cutter Layout - {{ design_revision.design.design_code }}{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-grid-3x3"></i> Cutter Layout</h1>
+        <p class="text-muted">Design: <strong>{{ design_revision.design.design_code }}</strong> - MAT: {{ design_revision.mat_number }}</p>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header bg-primary text-white"><h5 class="mb-0">Layout Summary</h5></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4"><strong>Total Cutters:</strong> {{ total_cutters }}</div>
+            <div class="col-md-4"><strong>Blades:</strong> {{ positions_by_blade|length }}</div>
+            <div class="col-md-4"><strong>Design:</strong> {{ design_revision.design.bit_type }}</div>
+        </div>
+    </div>
+</div>
+
+{% for blade, positions in positions_by_blade.items %}
+<div class="card mb-3">
+    <div class="card-header bg-secondary text-white"><h6 class="mb-0">Blade {{ blade }}</h6></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr><th>Position</th><th>Zone</th><th>Size</th><th>Type</th><th>Rake Angle</th><th>Exposure</th></tr>
+                </thead>
+                <tbody>
+                    {% for pos in positions %}
+                    <tr>
+                        <td><span class="badge bg-info">{{ pos.get_position_code }}</span></td>
+                        <td><span class="badge bg-secondary">{{ pos.get_zone_display }}</span></td>
+                        <td>{{ pos.cutter_size_mm }}mm</td>
+                        <td>{{ pos.get_cutter_type_display }}</td>
+                        <td>{{ pos.back_rake_angle }}°</td>
+                        <td>{{ pos.exposure_mm }}mm</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

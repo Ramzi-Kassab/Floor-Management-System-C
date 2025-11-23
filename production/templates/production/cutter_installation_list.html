@@ -1,0 +1,70 @@
+{% extends 'production/base.html' %}
+{% load i18n %}
+{% block title %}Cutter Installations{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-grid-3x3"></i> Cutter Installations</h1>
+        {% if work_order %}<p class="text-muted">Work Order: <strong>{{ work_order.wo_number }}</strong></p>{% endif %}
+    </div>
+    <div class="col-md-4 text-end">
+        {% if work_order %}
+        <a href="{% url 'production:cutter-installation-record' work_order_id=work_order.pk %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Record Installation
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if work_order and stats %}
+<div class="card mb-3">
+    <div class="card-header bg-info text-white"><h6 class="mb-0">Installation Progress</h6></div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3"><h3>{{ stats.installed }}</h3><small>Installed</small></div>
+            <div class="col-md-3"><h3>{{ stats.remaining }}</h3><small>Remaining</small></div>
+            <div class="col-md-3"><h3>{{ stats.substitutions }}</h3><small>Substitutions</small></div>
+            <div class="col-md-3">
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar" role="progressbar" style="width: {% widthratio stats.installed stats.total_positions 100 %}%">
+                        {% widthratio stats.installed stats.total_positions 100 %}%
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if installations %}
+<div class="card">
+    <div class="card-header bg-success text-white"><h5 class="mb-0">Installed Cutters</h5></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr><th>Position</th><th>Zone</th><th>Design</th><th>Actual</th><th>Status</th><th>Notes</th></tr>
+                </thead>
+                <tbody>
+                    {% for inst in installations %}
+                    <tr {% if inst.is_substitution %}class="table-warning"{% endif %}>
+                        <td><strong>{{ inst.layout_position.get_position_code }}</strong></td>
+                        <td><span class="badge bg-secondary">{{ inst.layout_position.get_zone_display }}</span></td>
+                        <td>{{ inst.layout_position.cutter_size_mm }}mm {{ inst.layout_position.get_cutter_type_display }}</td>
+                        <td>
+                            {{ inst.actual_cutter_size_mm }}mm {{ inst.get_actual_cutter_type_display }}
+                            {% if inst.is_substitution %}<span class="badge bg-warning">SUB</span>{% endif %}
+                        </td>
+                        <td><span class="badge bg-{{ inst.status|lower }}">{{ inst.get_status_display }}</span></td>
+                        <td class="small">{{ inst.substitution_reason|truncatewords:5 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info"><i class="bi bi-info-circle"></i> No cutters installed yet.</div>
+{% endif %}
+{% endblock %}

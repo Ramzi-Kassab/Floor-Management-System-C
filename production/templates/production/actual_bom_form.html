@@ -1,0 +1,54 @@
+{% extends 'production/base.html' %}
+{% load i18n %}
+{% block title %}Record Material Usage{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12"><h1><i class="bi bi-box-seam"></i> Record Material Usage</h1></div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">Material Usage Form</h5></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Actual Quantity Used *</strong></label>
+                        {{ form.actual_quantity }}
+                        {% if form.actual_quantity.errors %}<div class="text-danger">{{ form.actual_quantity.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Lot Number</strong></label>
+                        {{ form.lot_number }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Serial Numbers</strong></label>
+                        {{ form.serial_numbers }}
+                        <small class="form-text text-muted">For serialized components (comma-separated)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Variance Notes</strong></label>
+                        {{ form.variance_notes }}
+                        <small class="form-text text-muted">Explain any variance from planned quantity</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Recorded By</strong></label>
+                        {{ form.recorded_by_name }}
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="javascript:history.back()" class="btn btn-secondary"><i class="bi bi-x"></i> Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+    input[type="number"], input[type="text"], textarea { width: 100%; padding: 0.375rem 0.75rem; border: 1px solid #ced4da; border-radius: 0.25rem; }
+    textarea { min-height: 80px; }
+</style>
+{% endblock %}
