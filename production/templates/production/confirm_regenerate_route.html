@@ -1,0 +1,77 @@
+{% extends 'production/base.html' %}
+{% block title %}Regenerate Route - {{ jobcard.jobcard_code }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Confirm Route Regeneration</h5>
+            </div>
+            <div class="card-body">
+                <p>You are about to regenerate the route steps for job card <strong>{{ jobcard.jobcard_code }}</strong>.</p>
+
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> What will happen:</h6>
+                    <ul class="mb-0">
+                        <li>All <strong>PENDING</strong> route steps will be deleted</li>
+                        <li>New route steps will be automatically generated based on:
+                            <ul>
+                                <li>Bit design: {{ jobcard.work_order.design_revision.design.design_code }}</li>
+                                <li>Bit type: {{ jobcard.work_order.design_revision.design.get_bit_type_display }}</li>
+                                <li>Body material: {{ jobcard.work_order.design_revision.design.get_body_material_display|default:"N/A" }}</li>
+                                <li>Order type: {{ jobcard.work_order.get_order_type_display }}</li>
+                                {% if jobcard.evaluations.exists %}
+                                <li>Evaluation condition: {{ jobcard.evaluations.first.get_overall_condition_display }}</li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                        <li>Steps that are <strong>IN_PROGRESS</strong>, <strong>DONE</strong>, or <strong>SKIPPED</strong> will NOT be affected</li>
+                    </ul>
+                </div>
+
+                {% if existing_steps %}
+                <h6 class="mt-3">Current Route Steps:</h6>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Process</th>
+                            <th>Status</th>
+                            <th>Will be deleted?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for step in existing_steps %}
+                        <tr>
+                            <td>{{ step.sequence }}</td>
+                            <td>{{ step.process_code }}</td>
+                            <td><span class="badge bg-secondary">{{ step.get_status_display }}</span></td>
+                            <td>
+                                {% if step.status == 'PENDING' %}
+                                <span class="text-danger"><i class="bi bi-x-circle"></i> Yes</span>
+                                {% else %}
+                                <span class="text-success"><i class="bi bi-check-circle"></i> No, will be kept</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <a href="{% url 'production:jobcard-detail' jobcard.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-arrow-repeat"></i> Regenerate Route Steps
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

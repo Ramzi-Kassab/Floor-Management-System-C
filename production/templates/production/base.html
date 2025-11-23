@@ -59,6 +59,29 @@
                             <li><a class="dropdown-item" href="{% url 'production:bitdesign-create' %}">Create Design</a></li>
                         </ul>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-shield-check"></i> Quality
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'production:evaluation-list' %}">
+                                <i class="bi bi-clipboard-data"></i> Evaluations
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'production:ncr-list' %}">
+                                <i class="bi bi-exclamation-triangle"></i> NCRs
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'production:hold-list' %}">
+                                <i class="bi bi-pause-circle"></i> Holds
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'production:evaluation-create' %}">
+                                <i class="bi bi-plus-circle"></i> New Evaluation
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'production:ncr-create' %}">
+                                <i class="bi bi-plus-circle"></i> New NCR
+                            </a></li>
+                        </ul>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'production:infiltrationbatch-list' %}">
                             <i class="bi bi-fire"></i> Infiltration

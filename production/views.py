@@ -469,3 +469,260 @@ def qr_scan_view(request, code):
     except models.QRCode.DoesNotExist:
         messages.error(request, f'QR code {code} not found.')
         return redirect('production:dashboard')
+
+
+# ============================================================================
+# EVALUATION & QUALITY CONTROL
+# ============================================================================
+
+class EvaluationSummaryCreateView(LoginRequiredMixin, CreateView):
+    """
+    Create evaluation summary for a job card
+    Automatically adjusts route based on evaluation results
+    """
+    model = models.EvaluationSummary
+    template_name = 'production/evaluation_form.html'
+    fields = ['job_card', 'evaluation_date', 'evaluator_name',
+              'overall_condition', 'recommended_action', 'remarks']
+
+    def get_initial(self):
+        initial = super().get_initial()
+        # Pre-fill job_card if provided in URL
+        job_card_id = self.request.GET.get('job_card')
+        if job_card_id:
+            initial['job_card'] = job_card_id
+        return initial
+
+    def get_success_url(self):
+        return reverse_lazy('production:jobcard-detail',
+                          kwargs={'pk': self.object.job_card.pk})
+
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'Evaluation created for {form.instance.job_card.jobcard_code}. '
+            f'Condition: {form.instance.get_overall_condition_display()}. '
+            f'Route has been automatically adjusted.'
+        )
+        return super().form_valid(form)
+
+
+class EvaluationSummaryListView(LoginRequiredMixin, ListView):
+    """
+    List all evaluations
+    """
+    model = models.EvaluationSummary
+    template_name = 'production/evaluation_list.html'
+    context_object_name = 'evaluations'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('job_card')
+
+        # Filter by condition
+        condition = self.request.GET.get('condition')
+        if condition:
+            queryset = queryset.filter(overall_condition=condition)
+
+        return queryset.order_by('-evaluation_date')
+
+
+# ============================================================================
+# ROUTE MANAGEMENT
+# ============================================================================
+
+def regenerate_route_steps_view(request, pk):
+    """
+    Regenerate route steps for a job card
+    Useful when job card configuration changes or evaluation results arrive
+    """
+    from .routing_logic import regenerate_route_steps
+
+    jobcard = get_object_or_404(models.JobCard, pk=pk)
+
+    if request.method == 'POST':
+        try:
+            steps = regenerate_route_steps(jobcard)
+            messages.success(
+                request,
+                f'Successfully regenerated {len(steps)} route steps '
+                f'for job card {jobcard.jobcard_code}.'
+            )
+        except Exception as e:
+            messages.error(
+                request,
+                f'Failed to regenerate route steps: {str(e)}'
+            )
+        return redirect('production:jobcard-detail', pk=jobcard.pk)
+
+    # GET request - show confirmation page
+    return render(request, 'production/confirm_regenerate_route.html', {
+        'jobcard': jobcard,
+        'existing_steps': jobcard.route_steps.all().order_by('sequence')
+    })
+
+
+def update_route_step_status_view(request, pk, new_status):
+    """
+    Quick update of route step status
+    Used for AJAX calls from shop floor
+    """
+    step = get_object_or_404(models.JobRouteStep, pk=pk)
+
+    if new_status not in dict(models.RouteStepStatus.choices):
+        return JsonResponse({'error': 'Invalid status'}, status=400)
+
+    old_status = step.status
+    step.status = new_status
+
+    # Update timestamps
+    if new_status == models.RouteStepStatus.IN_PROGRESS and not step.actual_start:
+        step.actual_start = timezone.now()
+    elif new_status == models.RouteStepStatus.DONE and not step.actual_end:
+        step.actual_end = timezone.now()
+
+    step.save()
+
+    return JsonResponse({
+        'success': True,
+        'step_id': step.pk,
+        'old_status': old_status,
+        'new_status': new_status,
+        'step_description': step.description
+    })
+
+
+# ============================================================================
+# NCR / QUALITY ISSUES
+# ============================================================================
+
+class NCRCreateView(LoginRequiredMixin, CreateView):
+    """
+    Create Non-Conformance Report
+    """
+    model = models.NonConformanceReport
+    template_name = 'production/ncr_form.html'
+    fields = ['ncr_number', 'job_card', 'work_order', 'bit_instance',
+              'severity', 'detected_at_process', 'detected_by_name',
+              'description', 'root_cause', 'disposition',
+              'corrective_action', 'status']
+
+    def get_initial(self):
+        initial = super().get_initial()
+        job_card_id = self.request.GET.get('job_card')
+        if job_card_id:
+            job_card = models.JobCard.objects.get(pk=job_card_id)
+            initial['job_card'] = job_card_id
+            initial['work_order'] = job_card.work_order.pk
+            initial['bit_instance'] = job_card.work_order.bit_instance.pk if job_card.work_order.bit_instance else None
+        return initial
+
+    def get_success_url(self):
+        return reverse_lazy('production:ncr-list')
+
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'NCR {form.instance.ncr_number} created successfully.'
+        )
+        return super().form_valid(form)
+
+
+class NCRListView(LoginRequiredMixin, ListView):
+    """
+    List all NCRs with filtering
+    """
+    model = models.NonConformanceReport
+    template_name = 'production/ncr_list.html'
+    context_object_name = 'ncrs'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related(
+            'job_card', 'work_order'
+        )
+
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Filter by severity
+        severity = self.request.GET.get('severity')
+        if severity:
+            queryset = queryset.filter(severity=severity)
+
+        return queryset.order_by('-reported_at')
+
+
+class NCRDetailView(LoginRequiredMixin, DetailView):
+    """
+    NCR details
+    """
+    model = models.NonConformanceReport
+    template_name = 'production/ncr_detail.html'
+    context_object_name = 'ncr'
+
+
+# ============================================================================
+# PRODUCTION HOLDS
+# ============================================================================
+
+class ProductionHoldCreateView(LoginRequiredMixin, CreateView):
+    """
+    Create production hold
+    """
+    model = models.ProductionHold
+    template_name = 'production/hold_form.html'
+    fields = ['hold_number', 'job_card', 'work_order', 'hold_reason',
+              'description', 'requires_approval', 'hold_placed_by_name']
+
+    def get_initial(self):
+        initial = super().get_initial()
+        job_card_id = self.request.GET.get('job_card')
+        if job_card_id:
+            job_card = models.JobCard.objects.get(pk=job_card_id)
+            initial['job_card'] = job_card_id
+            initial['work_order'] = job_card.work_order.pk
+        return initial
+
+    def form_valid(self, form):
+        # Update job card status
+        if form.instance.job_card:
+            form.instance.job_card.status = models.JobCardStatus.QC_HOLD
+            form.instance.job_card.save()
+
+        messages.warning(
+            self.request,
+            f'Production hold {form.instance.hold_number} created. '
+            f'Job card status updated to QC Hold.'
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('production:jobcard-detail',
+                          kwargs={'pk': self.object.job_card.pk})
+
+
+class ProductionHoldListView(LoginRequiredMixin, ListView):
+    """
+    List all production holds
+    """
+    model = models.ProductionHold
+    template_name = 'production/hold_list.html'
+    context_object_name = 'holds'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('job_card', 'work_order')
+
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Show active holds by default
+        if not status:
+            queryset = queryset.filter(status='ACTIVE')
+
+        return queryset.order_by('-hold_placed_at')

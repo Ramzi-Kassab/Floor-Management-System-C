@@ -45,4 +45,21 @@ urlpatterns = [
     # QR Code functionality
     path('jobcards/<int:pk>/qr/', views.generate_qr_code_view, name='jobcard-qr'),
     path('qr/<str:code>/', views.qr_scan_view, name='qr-scan'),
+
+    # Route Management
+    path('jobcards/<int:pk>/regenerate-route/', views.regenerate_route_steps_view, name='jobcard-regenerate-route'),
+    path('route-steps/<int:pk>/status/<str:new_status>/', views.update_route_step_status_view, name='routestep-update-status'),
+
+    # Evaluations
+    path('evaluations/', views.EvaluationSummaryListView.as_view(), name='evaluation-list'),
+    path('evaluations/create/', views.EvaluationSummaryCreateView.as_view(), name='evaluation-create'),
+
+    # Non-Conformance Reports (NCR)
+    path('ncr/', views.NCRListView.as_view(), name='ncr-list'),
+    path('ncr/<int:pk>/', views.NCRDetailView.as_view(), name='ncr-detail'),
+    path('ncr/create/', views.NCRCreateView.as_view(), name='ncr-create'),
+
+    # Production Holds
+    path('holds/', views.ProductionHoldListView.as_view(), name='hold-list'),
+    path('holds/create/', views.ProductionHoldCreateView.as_view(), name='hold-create'),
 ]

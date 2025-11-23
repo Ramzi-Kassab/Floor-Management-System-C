@@ -4,54 +4,240 @@
 <div class="row mb-4">
     <div class="col-md-6"><h1><i class="bi bi-card-checklist"></i> Job Card: {{ jobcard.jobcard_code }}</h1></div>
     <div class="col-md-6 text-end">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-plus-circle"></i> Quick Actions
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{% url 'production:evaluation-create' %}?job_card={{ jobcard.pk }}">
+                    <i class="bi bi-clipboard-check"></i> Add Evaluation
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'production:ncr-create' %}?job_card={{ jobcard.pk }}">
+                    <i class="bi bi-exclamation-triangle"></i> Create NCR
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'production:hold-create' %}?job_card={{ jobcard.pk }}">
+                    <i class="bi bi-pause-circle"></i> Place Hold
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'production:jobcard-regenerate-route' jobcard.pk %}">
+                    <i class="bi bi-arrow-repeat"></i> Regenerate Route
+                </a></li>
+            </ul>
+        </div>
         <a href="{% url 'production:jobcard-qr' jobcard.pk %}" class="btn btn-success" target="_blank"><i class="bi bi-qr-code"></i> QR Code</a>
         <a href="{% url 'production:jobcard-edit' jobcard.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> Edit</a>
         <a href="{% url 'production:jobcard-list' %}" class="btn btn-secondary">Back</a>
     </div>
 </div>
+
+<!-- Alerts for special conditions -->
+{% if jobcard.status == 'QC_HOLD' %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i> This job card is on <strong>QC Hold</strong>.
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-md-8">
+        <!-- Job Card Details -->
         <div class="card mb-3">
-            <div class="card-header"><h5>Job Card Details</h5></div>
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Job Card Details</h5>
+            </div>
             <div class="card-body">
-                <p><strong>Job Card Code:</strong> {{ jobcard.jobcard_code }}</p>
-                <p><strong>Work Order:</strong> <a href="{% url 'production:workorder-detail' jobcard.work_order.pk %}">{{ jobcard.work_order.wo_number }}</a></p>
-                <p><strong>Department:</strong> {{ jobcard.get_department_display|default:"—" }}</p>
-                <p><strong>Status:</strong> <span class="badge bg-primary">{{ jobcard.get_status_display }}</span></p>
-                <p><strong>Type:</strong> {% if jobcard.is_repair %}<span class="badge bg-warning">Repair</span>{% else %}<span class="badge bg-info">New Build</span>{% endif %}</p>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <p><strong>Job Card Code:</strong> {{ jobcard.jobcard_code }}</p>
+                        <p><strong>Work Order:</strong> <a href="{% url 'production:workorder-detail' jobcard.work_order.pk %}">{{ jobcard.work_order.wo_number }}</a></p>
+                        <p><strong>Customer:</strong> {{ jobcard.work_order.customer_name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Department:</strong> {{ jobcard.get_department_display|default:"—" }}</p>
+                        <p><strong>Status:</strong>
+                            {% if jobcard.status == 'IN_PROGRESS' %}
+                            <span class="badge bg-primary">{{ jobcard.get_status_display }}</span>
+                            {% elif jobcard.status == 'COMPLETED' %}
+                            <span class="badge bg-success">{{ jobcard.get_status_display }}</span>
+                            {% elif jobcard.status == 'QC_HOLD' %}
+                            <span class="badge bg-warning">{{ jobcard.get_status_display }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ jobcard.get_status_display }}</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Type:</strong> {% if jobcard.is_repair %}<span class="badge bg-warning">Repair</span>{% else %}<span class="badge bg-info">New Build</span>{% endif %}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6><i class="bi bi-wrench"></i> Bit Design Information</h6>
+                        <p><strong>Design:</strong> {{ jobcard.work_order.design_revision.design.design_code }}</p>
+                        <p><strong>MAT Number:</strong> {{ jobcard.work_order.design_revision.mat_number }}</p>
+                        <p><strong>Type:</strong> {{ jobcard.work_order.design_revision.design.get_bit_type_display }}</p>
+                        <p><strong>Body Material:</strong> {{ jobcard.work_order.design_revision.design.get_body_material_display|default:"—" }}</p>
+                        <p><strong>Size:</strong> {{ jobcard.work_order.design_revision.design.size_inch }}"</p>
+                        {% if jobcard.work_order.design_revision.design.blade_count %}
+                        <p><strong>Blade Count:</strong> {{ jobcard.work_order.design_revision.design.blade_count }}</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-header"><h5>Route Steps ({{ route_steps.count }})</h5></div>
+
+        <!-- Route Steps -->
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Route Steps ({{ route_steps.count }})</h5>
+                <small>Auto-generated based on bit design and order type</small>
+            </div>
             <div class="card-body">
                 {% if route_steps %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Process</th>
+                                <th>Description</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for step in route_steps %}
+                            <tr>
+                                <td><strong>{{ step.sequence }}</strong></td>
+                                <td><code>{{ step.process_code }}</code></td>
+                                <td>{{ step.description|truncatewords:8 }}</td>
+                                <td><span class="badge bg-secondary">{{ step.get_department_display|default:"—" }}</span></td>
+                                <td>
+                                    {% if step.status == 'PENDING' %}
+                                    <span class="badge bg-secondary">{{ step.get_status_display }}</span>
+                                    {% elif step.status == 'IN_PROGRESS' %}
+                                    <span class="badge bg-primary">{{ step.get_status_display }}</span>
+                                    {% elif step.status == 'DONE' %}
+                                    <span class="badge bg-success">{{ step.get_status_display }}</span>
+                                    {% elif step.status == 'SKIPPED' %}
+                                    <span class="badge bg-warning">{{ step.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if step.actual_start and step.actual_end %}
+                                    {{ step.actual_end|timeuntil:step.actual_start }}
+                                    {% else %}
+                                    —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-end mt-2">
+                    <a href="{% url 'production:jobcard-regenerate-route' jobcard.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-repeat"></i> Regenerate Route
+                    </a>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No route steps have been generated yet.
+                    <a href="{% url 'production:jobcard-regenerate-route' jobcard.pk %}" class="alert-link">Click here to generate routes</a>.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Evaluations -->
+        {% if evaluations %}
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Evaluations</h5>
+            </div>
+            <div class="card-body">
+                {% for eval in evaluations %}
+                <div class="mb-2 p-2 border-start border-4 {% if eval.overall_condition == 'SCRAP' %}border-danger{% elif eval.overall_condition == 'MAJOR_DAMAGE' %}border-warning{% else %}border-success{% endif %}">
+                    <p class="mb-1"><strong>{{ eval.evaluation_date|date:"Y-m-d" }}</strong> by {{ eval.evaluator_name }}</p>
+                    <p class="mb-1"><strong>Condition:</strong> <span class="badge {% if eval.overall_condition == 'SCRAP' %}bg-danger{% elif eval.overall_condition == 'MAJOR_DAMAGE' %}bg-warning{% else %}bg-success{% endif %}">{{ eval.get_overall_condition_display }}</span></p>
+                    <p class="mb-1"><strong>Recommended Action:</strong> {{ eval.get_recommended_action_display }}</p>
+                    {% if eval.remarks %}<p class="mb-0 small text-muted">{{ eval.remarks }}</p>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- NDT Results -->
+        {% if ndt_results %}
+        <div class="card mb-3">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-shield-check"></i> NDT Results</h5></div>
+            <div class="card-body">
                 <table class="table table-sm">
-                    <thead><tr><th>#</th><th>Process</th><th>Department</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Method</th><th>Result</th><th>Inspector</th><th>Date</th></tr></thead>
                     <tbody>
-                        {% for step in route_steps %}
+                        {% for ndt in ndt_results %}
                         <tr>
-                            <td>{{ step.sequence }}</td>
-                            <td>{{ step.process_code }}</td>
-                            <td>{{ step.get_department_display|default:"—" }}</td>
-                            <td><span class="badge bg-secondary">{{ step.get_status_display }}</span></td>
+                            <td>{{ ndt.get_method_display }}</td>
+                            <td><span class="badge {% if ndt.result == 'PASS' %}bg-success{% else %}bg-danger{% endif %}">{{ ndt.get_result_display }}</span></td>
+                            <td>{{ ndt.inspector_name }}</td>
+                            <td>{{ ndt.performed_at|date:"Y-m-d" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                {% else %}
-                <p class="text-muted">No route steps defined.</p>
-                {% endif %}
             </div>
         </div>
+        {% endif %}
     </div>
+
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><h6>QR Code</h6></div>
+        <!-- QR Code -->
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white"><h6 class="mb-0"><i class="bi bi-qr-code"></i> QR Code</h6></div>
             <div class="card-body text-center">
                 <img src="{% url 'production:jobcard-qr' jobcard.pk %}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
                 <p class="mt-2 small text-muted">Scan to access this job card</p>
+                <a href="{% url 'production:jobcard-qr' jobcard.pk %}" class="btn btn-sm btn-success" target="_blank">
+                    <i class="bi bi-download"></i> Download
+                </a>
             </div>
         </div>
+
+        <!-- Timeline -->
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-clock-history"></i> Timeline</h6></div>
+            <div class="card-body">
+                <p class="small mb-1"><strong>Created:</strong> {{ jobcard.created_at|date:"Y-m-d H:i" }}</p>
+                <p class="small mb-1"><strong>Updated:</strong> {{ jobcard.updated_at|date:"Y-m-d H:i" }}</p>
+                {% if jobcard.planned_start %}
+                <p class="small mb-1"><strong>Planned Start:</strong> {{ jobcard.planned_start|date:"Y-m-d H:i" }}</p>
+                {% endif %}
+                {% if jobcard.planned_end %}
+                <p class="small mb-1"><strong>Planned End:</strong> {{ jobcard.planned_end|date:"Y-m-d H:i" }}</p>
+                {% endif %}
+                {% if jobcard.actual_start %}
+                <p class="small mb-1"><strong>Actual Start:</strong> {{ jobcard.actual_start|date:"Y-m-d H:i" }}</p>
+                {% endif %}
+                {% if jobcard.actual_end %}
+                <p class="small mb-1"><strong>Actual End:</strong> {{ jobcard.actual_end|date:"Y-m-d H:i" }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pauses/Holds -->
+        {% if pauses %}
+        <div class="card">
+            <div class="card-header bg-warning"><h6 class="mb-0"><i class="bi bi-pause-circle"></i> Pauses</h6></div>
+            <div class="card-body">
+                {% for pause in pauses %}
+                <div class="small mb-2 pb-2 border-bottom">
+                    <p class="mb-1"><strong>{{ pause.reason }}</strong></p>
+                    <p class="mb-0 text-muted">{{ pause.start_time|date:"Y-m-d H:i" }} {% if pause.end_time %}→ {{ pause.end_time|date:"H:i" }}{% else %}(ongoing){% endif %}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
