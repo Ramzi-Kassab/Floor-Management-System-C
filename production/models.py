@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Production Department Models for Drilling Bits Factory
 

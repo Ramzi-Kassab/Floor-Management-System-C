@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Production Department Views
 Class-based views for CRUD operations and dashboards
