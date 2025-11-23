@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}Quality & Lifecycle Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-shield-check"></i> Quality & Lifecycle Management</h1>
+        <p class="text-muted">Handle defective items, expiry, used items, and quality control</p>
+    </div>
+</div>
+
+<!-- Alert Counters -->
+<div class="row g-3 mb-4">
+    <div class="col-md-2">
+        <div class="card border-{% if pending_inspections > 0 %}warning{% else %}success{% endif %}">
+            <div class="card-body text-center">
+                <h3 class="mb-0 {% if pending_inspections > 0 %}text-warning{% endif %}">{{ pending_inspections }}</h3>
+                <small>Pending Inspections</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-{% if expired_items > 0 %}danger{% else %}success{% endif %}">
+            <div class="card-body text-center">
+                <h3 class="mb-0 {% if expired_items > 0 %}text-danger{% endif %}">{{ expired_items }}</h3>
+                <small>Expired Items</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-{% if expiring_soon > 0 %}warning{% else %}success{% endif %}">
+            <div class="card-body text-center">
+                <h3 class="mb-0 {% if expiring_soon > 0 %}text-warning{% endif %}">{{ expiring_soon }}</h3>
+                <small>Expiring This Week</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-{% if defective_pending > 0 %}danger{% else %}success{% endif %}">
+            <div class="card-body text-center">
+                <h3 class="mb-0 {% if defective_pending > 0 %}text-danger{% endif %}">{{ defective_pending }}</h3>
+                <small>Defective Pending</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-{% if maintenance_overdue > 0 %}warning{% else %}success{% endif %}">
+            <div class="card-body text-center">
+                <h3 class="mb-0 {% if maintenance_overdue > 0 %}text-warning{% endif %}">{{ maintenance_overdue }}</h3>
+                <small>Maintenance Due</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card border-{% if quarantined > 0 %}secondary{% else %}success{% endif %}">
+            <div class="card-body text-center">
+                <h3 class="mb-0 {% if quarantined > 0 %}text-secondary{% endif %}">{{ quarantined }}</h3>
+                <small>In Quarantine</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scenario Action Cards -->
+<div class="row g-4">
+    <!-- Defective Items Received -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-octagon"></i> Defective Items Received</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Items failed quality inspection during receiving.</p>
+                <h6>What to do:</h6>
+                <ul class="small">
+                    <li>Document defects with photos</li>
+                    <li>Record inspection results</li>
+                    <li>Decide disposition: Return, Rework, or Scrap</li>
+                    <li>Create return if vendor fault</li>
+                </ul>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-clipboard-check"></i> Create Quality Inspection
+                    </a>
+                    <a href="#" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-gear"></i> Record Disposition
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Triggers automatic notifications to purchasing
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Near Expiry -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Items Near Expiry</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Items approaching or past expiration date.</p>
+                <h6>What to do:</h6>
+                <ul class="small">
+                    <li>Check FEFO recommendations</li>
+                    <li>Prioritize using near-expiry items</li>
+                    <li>Initiate disposal for expired items</li>
+                    <li>Request write-off approval</li>
+                </ul>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-calendar-x"></i> View Expiring Items
+                    </a>
+                    <a href="#" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-trash"></i> Create Disposal Action
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> FEFO: First Expired First Out
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second-Hand / Used Items -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-recycle"></i> Second-Hand / Used Items</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Track condition and maintenance of reused items.</p>
+                <h6>What to do:</h6>
+                <ul class="small">
+                    <li>Assess condition grade (A/B/C/D/R)</li>
+                    <li>Record usage hours/cycles</li>
+                    <li>Schedule maintenance</li>
+                    <li>Check warranty status</li>
+                </ul>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-card-checklist"></i> View Used Items
+                    </a>
+                    <a href="#" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-tools"></i> Maintenance Schedule
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Extends asset life, reduces costs
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Need Rework -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-secondary">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-hammer"></i> Items Need Rework/Repair</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Items require repair or rework before use.</p>
+                <h6>What to do:</h6>
+                <ul class="small">
+                    <li>Move to rework location</li>
+                    <li>Track rework costs</li>
+                    <li>Re-inspect after repair</li>
+                    <li>Return to stock if approved</li>
+                </ul>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-right-circle"></i> Send to Rework
+                    </a>
+                    <a href="#" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-check-circle"></i> Complete Rework
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Track costs for recovery
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quality Quarantine -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-dark">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-shield-x"></i> Quarantined Items</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Items under inspection, not approved for use.</p>
+                <h6>What to do:</h6>
+                <ul class="small">
+                    <li>Complete quality inspection</li>
+                    <li>Verify batch certificates</li>
+                    <li>Test samples if needed</li>
+                    <li>Release or reject</li>
+                </ul>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-dark btn-sm">
+                        <i class="bi bi-list"></i> View Quarantine
+                    </a>
+                    <a href="#" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-unlock"></i> Release Items
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Prevents use of unapproved items
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Downgrade Items -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-arrow-down-circle"></i> Downgrade to Second Grade</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Sell defective items at reduced price instead of scrapping.</p>
+                <h6>What to do:</h6>
+                <ul class="small">
+                    <li>Assess market value</li>
+                    <li>Change condition to USED/SECOND_GRADE</li>
+                    <li>Update pricing</li>
+                    <li>Track recovery value</li>
+                </ul>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-tag"></i> Downgrade Items
+                    </a>
+                    <a href="#" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-currency-dollar"></i> Set Recovery Price
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Recover value instead of total loss
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Statistics -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Quality Metrics (Last 30 Days)</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 class="text-success">85%</h4>
+                        <small>Pass Rate</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-warning">10%</h4>
+                        <small>Rework</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-danger">5%</h4>
+                        <small>Rejected</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Cost Recovery</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4>$12,500</h4>
+                        <small>Defect Losses</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-success">$4,200</h4>
+                        <small>Recovered</small>
+                    </div>
+                    <div class="col-4">
+                        <h4>33.6%</h4>
+                        <small>Recovery Rate</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Common Workflows -->
+<div class="card mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Common Workflows</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6><i class="bi bi-1-circle"></i> Defective Item Received</h6>
+                <ol class="small">
+                    <li>Quality inspection → Failed</li>
+                    <li>Document defects</li>
+                    <li>Create disposition</li>
+                    <li>If vendor fault → Create return</li>
+                    <li>If repairable → Send to rework</li>
+                    <li>If unusable → Scrap</li>
+                </ol>
+            </div>
+
+            <div class="col-md-4">
+                <h6><i class="bi bi-2-circle"></i> Item Expired</h6>
+                <ol class="small">
+                    <li>System alerts 30 days before</li>
+                    <li>Try to use before expiry (FEFO)</li>
+                    <li>If expired → Create disposal action</li>
+                    <li>Get supervisor approval</li>
+                    <li>Execute disposal</li>
+                    <li>Record write-off</li>
+                </ol>
+            </div>
+
+            <div class="col-md-4">
+                <h6><i class="bi bi-3-circle"></i> Used Item Management</h6>
+                <ol class="small">
+                    <li>Assess condition grade</li>
+                    <li>Record in system with S/N</li>
+                    <li>Track usage hours</li>
+                    <li>Schedule maintenance</li>
+                    <li>Re-inspect periodically</li>
+                    <li>Retire when grade D</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
