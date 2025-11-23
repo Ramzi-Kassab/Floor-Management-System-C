@@ -552,3 +552,134 @@ class ProductionHoldAdmin(admin.ModelAdmin):
             'fields': ('remarks',)
         }),
     )
+
+
+# ============================================================================
+# EMPLOYEE MANAGEMENT
+# ============================================================================
+
+@admin.register(models.Employee)
+class EmployeeAdmin(admin.ModelAdmin):
+    list_display = ['employee_code', 'get_full_name', 'department', 'role', 'status', 'hire_date']
+    list_filter = ['department', 'role', 'status']
+    search_fields = ['employee_code', 'first_name', 'last_name', 'email']
+    autocomplete_fields = ['user']
+
+    fieldsets = (
+        ('Employee Information', {
+            'fields': ('employee_code', 'user', 'first_name', 'last_name')
+        }),
+        ('Department & Role', {
+            'fields': ('department', 'role', 'status')
+        }),
+        ('Contact Information', {
+            'fields': ('phone', 'email')
+        }),
+        ('Employment Details', {
+            'fields': ('hire_date', 'skills')
+        }),
+        ('Notes', {
+            'fields': ('notes',)
+        }),
+    )
+
+
+# ============================================================================
+# BIT RECEIVING & RELEASE
+# ============================================================================
+
+@admin.register(models.BitReceive)
+class BitReceiveAdmin(admin.ModelAdmin):
+    list_display = ['receive_number', 'customer_name', 'received_date', 'inspection_status', 'received_by']
+    list_filter = ['inspection_status', 'package_condition', 'received_date']
+    search_fields = ['receive_number', 'customer_name', 'tracking_number']
+    autocomplete_fields = ['work_order', 'bit_instance', 'received_by', 'inspected_by']
+    date_hierarchy = 'received_date'
+
+    fieldsets = (
+        ('Receive Information', {
+            'fields': ('receive_number', 'work_order', 'bit_instance', 'received_date')
+        }),
+        ('Received By', {
+            'fields': ('received_by', 'received_by_name')
+        }),
+        ('Customer & Shipping', {
+            'fields': ('customer_name', 'transport_company', 'tracking_number')
+        }),
+        ('Package Condition', {
+            'fields': ('package_condition',)
+        }),
+        ('Inspection', {
+            'fields': ('inspection_status', 'inspected_by', 'inspection_date', 'inspection_notes')
+        }),
+        ('Documentation', {
+            'fields': ('customer_po', 'packing_slip', 'has_bit_record', 'photo_paths')
+        }),
+        ('Remarks', {
+            'fields': ('remarks',)
+        }),
+    )
+
+
+@admin.register(models.BitRelease)
+class BitReleaseAdmin(admin.ModelAdmin):
+    list_display = ['release_number', 'customer_name', 'status', 'planned_release_date', 'actual_release_date']
+    list_filter = ['status', 'planned_release_date']
+    search_fields = ['release_number', 'customer_name', 'tracking_number', 'invoice_number']
+    autocomplete_fields = ['work_order', 'bit_instance', 'prepared_by', 'qc_approved_by']
+    date_hierarchy = 'planned_release_date'
+
+    fieldsets = (
+        ('Release Information', {
+            'fields': ('release_number', 'work_order', 'bit_instance', 'status')
+        }),
+        ('Dates', {
+            'fields': ('planned_release_date', 'actual_release_date', 'delivered_date')
+        }),
+        ('Personnel', {
+            'fields': ('prepared_by', 'qc_approved_by', 'qc_approval_date')
+        }),
+        ('Customer Information', {
+            'fields': ('customer_name', 'delivery_address', 'customer_contact_name', 'customer_contact_phone')
+        }),
+        ('Shipping', {
+            'fields': ('transport_company', 'tracking_number', 'awb_number')
+        }),
+        ('Package Details', {
+            'fields': ('packaging_type', 'number_of_packages', 'total_weight_kg')
+        }),
+        ('Documentation', {
+            'fields': ('delivery_note_number', 'invoice_number', 'certificate_numbers')
+        }),
+        ('Delivery Confirmation', {
+            'fields': ('received_by_customer', 'customer_signature')
+        }),
+        ('Remarks', {
+            'fields': ('remarks',)
+        }),
+    )
+
+
+@admin.register(models.BitLocationHistory)
+class BitLocationHistoryAdmin(admin.ModelAdmin):
+    list_display = ['bit_instance', 'location_status', 'changed_at', 'changed_by', 'physical_location']
+    list_filter = ['location_status', 'changed_at']
+    search_fields = ['bit_instance__serial_number', 'physical_location']
+    autocomplete_fields = ['bit_instance', 'changed_by', 'work_order', 'job_card', 'receive_transaction', 'release_transaction']
+    date_hierarchy = 'changed_at'
+    readonly_fields = ['created_at']
+
+    fieldsets = (
+        ('Location Change', {
+            'fields': ('bit_instance', 'location_status', 'changed_at', 'changed_by')
+        }),
+        ('Physical Location', {
+            'fields': ('physical_location',)
+        }),
+        ('Related Transactions', {
+            'fields': ('work_order', 'job_card', 'receive_transaction', 'release_transaction')
+        }),
+        ('Notes', {
+            'fields': ('notes',)
+        }),
+    )

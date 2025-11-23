@@ -1471,3 +1471,477 @@ class ProductionHold(models.Model):
             return (self.hold_end - self.hold_start).total_seconds() / 3600
         else:
             return (timezone.now() - self.hold_start).total_seconds() / 3600
+
+
+# ============================================================================
+# EMPLOYEE MANAGEMENT
+# ============================================================================
+
+class EmployeeRole(models.TextChoices):
+    """Employee roles in production"""
+    OPERATOR = 'OPERATOR', 'Machine Operator'
+    TECHNICIAN = 'TECHNICIAN', 'Technician'
+    QC_INSPECTOR = 'QC_INSPECTOR', 'QC Inspector'
+    SUPERVISOR = 'SUPERVISOR', 'Supervisor'
+    ENGINEER = 'ENGINEER', 'Engineer'
+    MANAGER = 'MANAGER', 'Manager'
+
+
+class EmployeeStatus(models.TextChoices):
+    """Employee employment status"""
+    ACTIVE = 'ACTIVE', 'Active'
+    ON_LEAVE = 'ON_LEAVE', 'On Leave'
+    INACTIVE = 'INACTIVE', 'Inactive'
+
+
+class Employee(models.Model):
+    """
+    Employee/Worker in production department
+    Links to Django User for authentication
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='employee_profile',
+        help_text="Linked user account (optional)"
+    )
+    employee_code = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique employee ID (e.g., EMP001)"
+    )
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    department = models.CharField(
+        max_length=30,
+        choices=Department.choices,
+        db_index=True,
+        help_text="Primary department assignment"
+    )
+    role = models.CharField(
+        max_length=20,
+        choices=EmployeeRole.choices,
+        default=EmployeeRole.OPERATOR
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=EmployeeStatus.choices,
+        default=EmployeeStatus.ACTIVE,
+        db_index=True
+    )
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    hire_date = models.DateField(help_text="Employment start date")
+    skills = models.TextField(
+        blank=True,
+        help_text="Comma-separated list of skills/certifications"
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['last_name', 'first_name']
+        indexes = [
+            models.Index(fields=['department', 'status']),
+            models.Index(fields=['role', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.employee_code} - {self.first_name} {self.last_name} ({self.get_department_display()})"
+
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+
+# ============================================================================
+# BIT RECEIVING & RELEASE
+# ============================================================================
+
+class ReceiveInspectionStatus(models.TextChoices):
+    """Status of receiving inspection"""
+    PENDING = 'PENDING', 'Pending Inspection'
+    IN_PROGRESS = 'IN_PROGRESS', 'Inspection In Progress'
+    PASSED = 'PASSED', 'Passed'
+    FAILED = 'FAILED', 'Failed'
+    CONDITIONAL = 'CONDITIONAL', 'Conditional Accept'
+
+
+class BitLocationStatus(models.TextChoices):
+    """Current location/status of a bit"""
+    IN_TRANSIT_RECEIVING = 'IN_TRANSIT_RECEIVING', 'In Transit (Receiving)'
+    RECEIVING_INSPECTION = 'RECEIVING_INSPECTION', 'Receiving Inspection'
+    IN_PRODUCTION = 'IN_PRODUCTION', 'In Production'
+    QC_HOLD = 'QC_HOLD', 'QC Hold'
+    READY_FOR_RELEASE = 'READY_FOR_RELEASE', 'Ready for Release'
+    IN_TRANSIT_SHIPPING = 'IN_TRANSIT_SHIPPING', 'In Transit (Shipping)'
+    WITH_CUSTOMER = 'WITH_CUSTOMER', 'With Customer'
+    SCRAPPED = 'SCRAPPED', 'Scrapped'
+
+
+class ReleaseStatus(models.TextChoices):
+    """Status of bit release/dispatch"""
+    DRAFT = 'DRAFT', 'Draft'
+    READY = 'READY', 'Ready for Dispatch'
+    DISPATCHED = 'DISPATCHED', 'Dispatched'
+    DELIVERED = 'DELIVERED', 'Delivered'
+    CANCELLED = 'CANCELLED', 'Cancelled'
+
+
+class BitReceive(models.Model):
+    """
+    Record of drill bit receiving into facility
+    For both new builds (raw materials) and repairs (returning bits)
+    """
+    receive_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique receive transaction number (e.g., RCV-2025-001)"
+    )
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name='receives',
+        help_text="Associated work order"
+    )
+    bit_instance = models.ForeignKey(
+        BitInstance,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='receives',
+        help_text="Bit instance (for repairs)"
+    )
+    received_date = models.DateTimeField(
+        default=timezone.now,
+        help_text="Date/time bit was received"
+    )
+    received_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='received_bits',
+        help_text="Employee who received the bit"
+    )
+    received_by_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Name if not linked to Employee"
+    )
+    customer_name = models.CharField(max_length=200)
+    transport_company = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Shipping/transport company"
+    )
+    tracking_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Shipment tracking number"
+    )
+
+    # Physical condition on arrival
+    package_condition = models.CharField(
+        max_length=20,
+        choices=[
+            ('GOOD', 'Good'),
+            ('DAMAGED', 'Damaged'),
+            ('POOR', 'Poor')
+        ],
+        default='GOOD',
+        help_text="Condition of packaging"
+    )
+
+    # Inspection
+    inspection_status = models.CharField(
+        max_length=20,
+        choices=ReceiveInspectionStatus.choices,
+        default=ReceiveInspectionStatus.PENDING,
+        db_index=True
+    )
+    inspected_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='inspected_receives',
+        help_text="QC inspector"
+    )
+    inspection_date = models.DateTimeField(blank=True, null=True)
+    inspection_notes = models.TextField(
+        blank=True,
+        help_text="Initial inspection observations"
+    )
+
+    # Accompanying documentation
+    customer_po = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Customer PO number"
+    )
+    packing_slip = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Packing slip number"
+    )
+    has_bit_record = models.BooleanField(
+        default=False,
+        help_text="Did bit arrive with usage/drilling record?"
+    )
+
+    # Photos/attachments (file paths)
+    photo_paths = models.TextField(
+        blank=True,
+        help_text="JSON array of photo file paths"
+    )
+
+    remarks = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-received_date']
+        indexes = [
+            models.Index(fields=['inspection_status', 'received_date']),
+            models.Index(fields=['work_order', 'received_date']),
+        ]
+        verbose_name = 'Bit Receive'
+        verbose_name_plural = 'Bit Receives'
+
+    def __str__(self):
+        return f"{self.receive_number} - {self.customer_name} ({self.received_date.strftime('%Y-%m-%d')})"
+
+
+class BitRelease(models.Model):
+    """
+    Record of drill bit release/dispatch to customer
+    """
+    release_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique release transaction number (e.g., REL-2025-001)"
+    )
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name='releases',
+        help_text="Associated work order"
+    )
+    bit_instance = models.ForeignKey(
+        BitInstance,
+        on_delete=models.PROTECT,
+        related_name='releases',
+        help_text="Bit being released"
+    )
+
+    # Release details
+    status = models.CharField(
+        max_length=20,
+        choices=ReleaseStatus.choices,
+        default=ReleaseStatus.DRAFT,
+        db_index=True
+    )
+    planned_release_date = models.DateField(
+        help_text="Planned dispatch date"
+    )
+    actual_release_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Actual dispatch date/time"
+    )
+
+    # Personnel
+    prepared_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='prepared_releases',
+        help_text="Employee who prepared the release"
+    )
+    qc_approved_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='qc_approved_releases',
+        help_text="QC final approval"
+    )
+    qc_approval_date = models.DateTimeField(blank=True, null=True)
+
+    # Customer/delivery info
+    customer_name = models.CharField(max_length=200)
+    delivery_address = models.TextField(
+        help_text="Full delivery address"
+    )
+    customer_contact_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Customer contact person"
+    )
+    customer_contact_phone = models.CharField(max_length=20, blank=True)
+
+    # Shipping
+    transport_company = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Shipping company"
+    )
+    tracking_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Shipment tracking number"
+    )
+    awb_number = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Air Waybill number (if applicable)"
+    )
+
+    # Documentation
+    delivery_note_number = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Delivery note number"
+    )
+    invoice_number = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Invoice number"
+    )
+    certificate_numbers = models.TextField(
+        blank=True,
+        help_text="Quality certificates, test reports, etc."
+    )
+
+    # Delivery confirmation
+    delivered_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Actual delivery date"
+    )
+    received_by_customer = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Name of person who received at customer site"
+    )
+    customer_signature = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Signature reference or file path"
+    )
+
+    # Package details
+    packaging_type = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="e.g., Wooden crate, cardboard box, etc."
+    )
+    number_of_packages = models.PositiveIntegerField(
+        default=1,
+        help_text="Number of packages/parcels"
+    )
+    total_weight_kg = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Total weight in kg"
+    )
+
+    remarks = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-planned_release_date', '-created_at']
+        indexes = [
+            models.Index(fields=['status', 'planned_release_date']),
+            models.Index(fields=['work_order', 'status']),
+            models.Index(fields=['customer_name']),
+        ]
+        verbose_name = 'Bit Release'
+        verbose_name_plural = 'Bit Releases'
+
+    def __str__(self):
+        return f"{self.release_number} - {self.customer_name} ({self.get_status_display()})"
+
+
+class BitLocationHistory(models.Model):
+    """
+    Track bit location changes throughout lifecycle
+    Audit trail of where bit has been
+    """
+    bit_instance = models.ForeignKey(
+        BitInstance,
+        on_delete=models.CASCADE,
+        related_name='location_history'
+    )
+    location_status = models.CharField(
+        max_length=30,
+        choices=BitLocationStatus.choices,
+        db_index=True
+    )
+    changed_at = models.DateTimeField(
+        default=timezone.now,
+        db_index=True
+    )
+    changed_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='location_changes'
+    )
+
+    # References to related transactions
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+    job_card = models.ForeignKey(
+        JobCard,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+    receive_transaction = models.ForeignKey(
+        BitReceive,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+    release_transaction = models.ForeignKey(
+        BitRelease,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+
+    physical_location = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="e.g., 'Warehouse A, Shelf 5' or 'Finishing Dept, Station 3'"
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-changed_at']
+        indexes = [
+            models.Index(fields=['bit_instance', '-changed_at']),
+            models.Index(fields=['location_status', 'changed_at']),
+        ]
+        verbose_name = 'Bit Location History'
+        verbose_name_plural = 'Bit Location Histories'
+
+    def __str__(self):
+        return f"{self.bit_instance.serial_number} - {self.get_location_status_display()} ({self.changed_at.strftime('%Y-%m-%d %H:%M')})"
