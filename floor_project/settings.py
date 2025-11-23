@@ -138,8 +138,8 @@ LOCALE_PATHS = [
 
 TIME_ZONE = 'Asia/Riyadh'  # Saudi Arabia timezone
 
-USE_I18N = True  # Enable internationalization
-USE_L10N = True  # Enable localized formatting
+USE_I18N = False  # Enable internationalization
+USE_L10N = False  # Enable localized formatting
 USE_TZ = True
 
 # Character encoding
@@ -201,3 +201,21 @@ try:
     locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 except:
     pass  # Ignore if locale not available
+
+# CSRF Trusted Origins - Codespaces configuration
+import os
+CODESPACE_NAME = os.getenv('CODESPACE_NAME')
+CSRF_TRUSTED_ORIGINS = []
+if CODESPACE_NAME:
+    CSRF_TRUSTED_ORIGINS = [
+        f'https://{CODESPACE_NAME}-8000.app.github.dev',
+        'https://*.app.github.dev',
+        'https://*.githubpreview.dev',
+        'https://localhost:8000',  # Browser quirk workaround
+        'http://localhost:8000',   # Browser quirk workaround
+    ]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+    ]
