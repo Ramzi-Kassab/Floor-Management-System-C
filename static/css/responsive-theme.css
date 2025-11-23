@@ -117,6 +117,15 @@
     --card-shadow: 0 0 0 2px #000000;
 }
 
+/* Custom Theme */
+/* Note: Custom theme colors are dynamically set via JavaScript */
+/* This provides base fallback values that will be overridden */
+[data-theme="custom"] {
+    --primary-color: #9c27b0;
+    /* Other values will be set dynamically by theme-switcher.js */
+    /* based on user-selected colors from color pickers */
+}
+
 /* ==================== Base Styles ==================== */
 
 body {
@@ -564,6 +573,81 @@ a:hover {
     border-radius: 50%;
     margin-right: var(--spacing-md);
     border: 2px solid var(--border-color);
+}
+
+/* Custom Theme Controls */
+.custom-theme-controls {
+    padding: var(--spacing-sm) 0;
+}
+
+.color-control {
+    margin-bottom: var(--spacing-sm);
+}
+
+.color-control label {
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: var(--spacing-xs);
+}
+
+.form-control-color {
+    width: 50px;
+    height: 38px;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}
+
+.color-hex-input {
+    background-color: var(--bg-secondary);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    font-family: monospace;
+}
+
+.theme-options h6 {
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.theme-options hr {
+    border-color: var(--border-color);
+    opacity: 0.5;
+}
+
+.theme-presets {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Enhanced theme options panel sizing */
+.theme-options {
+    min-width: 280px;
+    max-width: 320px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+/* Custom scrollbar for theme options */
+.theme-options::-webkit-scrollbar {
+    width: 8px;
+}
+
+.theme-options::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+}
+
+.theme-options::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--border-radius);
+}
+
+.theme-options::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 /* ==================== Responsive Utilities ==================== */
