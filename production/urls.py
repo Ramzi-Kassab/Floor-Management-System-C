@@ -4,6 +4,7 @@ Production Department URL Configuration
 
 from django.urls import path
 from . import views
+from . import analytics_views
 
 app_name = 'production'
 
@@ -62,4 +63,14 @@ urlpatterns = [
     # Production Holds
     path('holds/', views.ProductionHoldListView.as_view(), name='hold-list'),
     path('holds/create/', views.ProductionHoldCreateView.as_view(), name='hold-create'),
+
+    # WIP Dashboard & Analytics
+    path('wip/', analytics_views.WIPDashboardView.as_view(), name='wip-dashboard'),
+    path('analytics/process/', analytics_views.ProcessAnalyticsView.as_view(), name='process-analytics'),
+    path('analytics/kpi/', analytics_views.KPIDashboardView.as_view(), name='kpi-dashboard'),
+
+    # Maintenance
+    path('maintenance/', analytics_views.MaintenanceRequestListView.as_view(), name='maintenance-list'),
+    path('maintenance/create/', analytics_views.MaintenanceRequestCreateView.as_view(), name='maintenance-create'),
+    path('equipment/', analytics_views.EquipmentListView.as_view(), name='equipment-list'),
 ]

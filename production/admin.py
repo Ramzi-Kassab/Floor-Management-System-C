@@ -683,3 +683,126 @@ class BitLocationHistoryAdmin(admin.ModelAdmin):
             'fields': ('notes',)
         }),
     )
+
+
+# ============================================================================
+# ANALYTICS & KPIs
+# ============================================================================
+
+@admin.register(models.ProcessTimeMetric)
+class ProcessTimeMetricAdmin(admin.ModelAdmin):
+    list_display = ['process_code', 'job_card', 'bit_type', 'bit_size_inch', 'processing_time_minutes', 'wait_time_before_minutes', 'operator', 'completed_at']
+    list_filter = ['bit_type', 'body_material', 'department', 'had_issues']
+    search_fields = ['process_code', 'job_card__jobcard_code']
+    autocomplete_fields = ['job_route_step', 'job_card', 'operator']
+    date_hierarchy = 'completed_at'
+    readonly_fields = ['completed_at']
+
+
+@admin.register(models.ProcessAverageTime)
+class ProcessAverageTimeAdmin(admin.ModelAdmin):
+    list_display = ['process_code', 'bit_type', 'bit_size_inch', 'avg_processing_time_minutes', 'avg_wait_time_minutes', 'sample_count', 'last_updated']
+    list_filter = ['bit_type', 'body_material']
+    search_fields = ['process_code']
+    readonly_fields = ['last_updated']
+
+
+@admin.register(models.DepartmentKPI)
+class DepartmentKPIAdmin(admin.ModelAdmin):
+    list_display = ['department', 'date', 'shift', 'efficiency_percentage', 'jobs_completed', 'total_downtime_hours', 'ncr_count']
+    list_filter = ['department', 'shift', 'date']
+    date_hierarchy = 'date'
+    readonly_fields = ['created_at', 'updated_at']
+
+    fieldsets = (
+        ('Period', {
+            'fields': ('department', 'date', 'shift')
+        }),
+        ('Throughput', {
+            'fields': ('jobs_completed', 'jobs_started', 'jobs_in_progress')
+        }),
+        ('Time Metrics', {
+            'fields': ('total_processing_time_hours', 'total_wait_time_hours', 'total_downtime_hours', 'efficiency_percentage')
+        }),
+        ('Quality', {
+            'fields': ('quality_holds_count', 'ncr_count')
+        }),
+        ('Delays', {
+            'fields': ('avg_delay_minutes', 'top_delay_reason')
+        }),
+        ('Notes', {
+            'fields': ('notes',)
+        }),
+    )
+
+
+# ============================================================================
+# MAINTENANCE & EQUIPMENT
+# ============================================================================
+
+@admin.register(models.Equipment)
+class EquipmentAdmin(admin.ModelAdmin):
+    list_display = ['equipment_code', 'name', 'department', 'status', 'is_maintenance_due', 'last_maintenance_date', 'next_maintenance_date']
+    list_filter = ['department', 'status', 'equipment_type']
+    search_fields = ['equipment_code', 'name', 'serial_number']
+    date_hierarchy = 'installation_date'
+
+    fieldsets = (
+        ('Equipment Information', {
+            'fields': ('equipment_code', 'name', 'equipment_type', 'status')
+        }),
+        ('Location', {
+            'fields': ('department', 'location')
+        }),
+        ('Specifications', {
+            'fields': ('manufacturer', 'model_number', 'serial_number', 'installation_date')
+        }),
+        ('Maintenance', {
+            'fields': ('last_maintenance_date', 'next_maintenance_date', 'maintenance_interval_days')
+        }),
+        ('Usage', {
+            'fields': ('total_operating_hours',)
+        }),
+        ('Notes', {
+            'fields': ('notes',)
+        }),
+    )
+
+
+@admin.register(models.MaintenanceRequest)
+class MaintenanceRequestAdmin(admin.ModelAdmin):
+    list_display = ['request_number', 'equipment', 'request_type', 'priority', 'status', 'reported_at', 'downtime_hours']
+    list_filter = ['request_type', 'priority', 'status', 'reported_at']
+    search_fields = ['request_number', 'equipment__equipment_code', 'problem_description']
+    autocomplete_fields = ['equipment', 'reported_by', 'assigned_to', 'affected_job_cards']
+    date_hierarchy = 'reported_at'
+
+    fieldsets = (
+        ('Request Information', {
+            'fields': ('request_number', 'equipment', 'request_type', 'priority', 'status')
+        }),
+        ('Reported By', {
+            'fields': ('reported_by', 'reported_by_name', 'reported_at')
+        }),
+        ('Problem Details', {
+            'fields': ('problem_description', 'impact_on_production')
+        }),
+        ('Assignment', {
+            'fields': ('assigned_to', 'assigned_at')
+        }),
+        ('Work Performed', {
+            'fields': ('work_started_at', 'work_completed_at', 'work_performed', 'parts_used')
+        }),
+        ('Costs', {
+            'fields': ('labor_hours', 'parts_cost', 'total_cost')
+        }),
+        ('Downtime', {
+            'fields': ('downtime_start', 'downtime_end', 'downtime_hours')
+        }),
+        ('Impact', {
+            'fields': ('affected_job_cards',)
+        }),
+        ('Notes', {
+            'fields': ('notes',)
+        }),
+    )

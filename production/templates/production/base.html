@@ -30,6 +30,24 @@
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'production:wip-dashboard' %}">
+                            <i class="bi bi-kanban"></i> WIP Floor
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-graph-up"></i> Analytics
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'production:process-analytics' %}">
+                                <i class="bi bi-clock-history"></i> Process Times
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'production:kpi-dashboard' %}">
+                                <i class="bi bi-bar-chart"></i> Department KPIs
+                            </a></li>
+                        </ul>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                             <i class="bi bi-clipboard-check"></i> Work Orders
@@ -91,6 +109,23 @@
                         <a class="nav-link" href="{% url 'production:routetemplate-list' %}">
                             <i class="bi bi-diagram-3"></i> Routes
                         </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-tools"></i> Maintenance
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'production:equipment-list' %}">
+                                <i class="bi bi-gear"></i> Equipment
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'production:maintenance-list' %}">
+                                <i class="bi bi-wrench"></i> Requests
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'production:maintenance-create' %}">
+                                <i class="bi bi-exclamation-triangle"></i> Report Issue
+                            </a></li>
+                        </ul>
                     </li>
                     {% endif %}
                 </ul>

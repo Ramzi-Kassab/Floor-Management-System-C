@@ -1,0 +1,366 @@
+{% extends 'production/base.html' %}
+{% block title %}WIP Dashboard - Bits on Floor{% endblock %}
+
+{% block extra_css %}
+<style>
+    .progress-bar-container {
+        background: #e9ecef;
+        height: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s;
+    }
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+    .status-in-progress { background: #007bff; }
+    .status-released { background: #ffc107; }
+    .status-qc-hold { background: #dc3545; }
+    .status-completed { background: #28a745; }
+    .bit-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .bit-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .filter-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-kanban"></i> Work in Progress Dashboard</h1>
+        <p class="text-muted">Real-time view of all bits currently on the floor</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'production:process-analytics' %}" class="btn btn-primary">
+            <i class="bi bi-graph-up"></i> Process Analytics
+        </a>
+        <a href="{% url 'production:kpi-dashboard' %}" class="btn btn-success">
+            <i class="bi bi-speedometer2"></i> KPIs
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ total_wip }}</h3>
+                <small>Total Bits on Floor</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ by_status|length }}</h3>
+                <small>Active Statuses</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ by_department|length }}</h3>
+                <small>Departments Working</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h3 class="mb-0">{{ by_bit_type|length }}</h3>
+                <small>Bit Types in Production</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-section">
+    <form method="get" class="row g-3">
+        <div class="col-md-2">
+            <label class="form-label">Bit Type</label>
+            <select name="bit_type" class="form-select form-select-sm">
+                <option value="">All Types</option>
+                {% for choice in bit_types %}
+                <option value="{{ choice.0 }}" {% if current_filters.bit_type == choice.0 %}selected{% endif %}>
+                    {{ choice.1 }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Body Material</label>
+            <select name="body_material" class="form-select form-select-sm">
+                <option value="">All Materials</option>
+                {% for choice in body_materials %}
+                <option value="{{ choice.0 }}" {% if current_filters.body_material == choice.0 %}selected{% endif %}>
+                    {{ choice.1 }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Size (inches)</label>
+            <select name="size" class="form-select form-select-sm">
+                <option value="">All Sizes</option>
+                {% for size in available_sizes %}
+                <option value="{{ size }}" {% if current_filters.size == size|stringformat:"s" %}selected{% endif %}>
+                    {{ size }}"
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Department</label>
+            <select name="department" class="form-select form-select-sm">
+                <option value="">All Departments</option>
+                {% for choice in departments %}
+                <option value="{{ choice.0 }}" {% if current_filters.department == choice.0 %}selected{% endif %}>
+                    {{ choice.1 }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select form-select-sm">
+                <option value="">All Statuses</option>
+                {% for choice in statuses %}
+                <option value="{{ choice.0 }}" {% if current_filters.status == choice.0 %}selected{% endif %}>
+                    {{ choice.1 }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">&nbsp;</label>
+            <div>
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Distribution Charts -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <strong>By Department</strong>
+            </div>
+            <div class="card-body">
+                {% for item in by_department %}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span>{{ item.department }}</span>
+                        <strong>{{ item.count }}</strong>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-primary" style="width: {% widthratio item.count total_wip 100 %}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <strong>By Status</strong>
+            </div>
+            <div class="card-body">
+                {% for item in by_status %}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span>{{ item.status }}</span>
+                        <strong>{{ item.count }}</strong>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-success" style="width: {% widthratio item.count total_wip 100 %}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <strong>By Bit Type</strong>
+            </div>
+            <div class="card-body">
+                {% for item in by_bit_type %}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span>{{ item.bit_type }}</span>
+                        <strong>{{ item.count }}</strong>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-info" style="width: {% widthratio item.count total_wip 100 %}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bits List -->
+<div class="row">
+    {% for item in job_cards_with_progress %}
+    <div class="col-md-6 mb-4">
+        <div class="card bit-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>
+                        <a href="{% url 'production:jobcard-detail' item.job_card.pk %}">
+                            {{ item.job_card.jobcard_code }}
+                        </a>
+                    </strong>
+                    {% if item.bit_instance %}
+                    <br><small class="text-muted">SN: {{ item.bit_instance.serial_number }}</small>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="status-indicator status-{{ item.job_card.status|lower }}"></span>
+                    <span class="badge {% if item.job_card.status == 'IN_PROGRESS' %}bg-primary{% elif item.job_card.status == 'QC_HOLD' %}bg-danger{% else %}bg-secondary{% endif %}">
+                        {{ item.job_card.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Bit Info -->
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <small class="text-muted">Type:</small><br>
+                        {% if item.design %}
+                        <strong>{{ item.design.get_bit_type_display }}</strong>
+                        {% else %}
+                        <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Size:</small><br>
+                        {% if item.design %}
+                        <strong>{{ item.design.size_inch }}"</strong>
+                        {% else %}
+                        <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <small class="text-muted">Material:</small><br>
+                        {% if item.design and item.design.body_material %}
+                        <strong>{{ item.design.get_body_material_display }}</strong>
+                        {% else %}
+                        <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Department:</small><br>
+                        <strong>{{ item.job_card.get_department_display|default:"—" }}</strong>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Progress -->
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small><strong>Progress:</strong> {{ item.completed_steps }}/{{ item.total_steps }} steps</small>
+                        <small><strong>{{ item.progress_pct }}%</strong></small>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: {{ item.progress_pct }}%"></div>
+                    </div>
+                </div>
+
+                <!-- Current Step -->
+                {% if item.current_step %}
+                <div class="alert alert-info py-2 mb-2">
+                    <small><strong>Current Step:</strong> {{ item.current_step.process_code }}</small><br>
+                    <small class="text-muted">{{ item.current_step.description|truncatewords:10 }}</small>
+                    {% if item.time_in_step_hours %}
+                    <br><small><strong>Time in step:</strong> {{ item.time_in_step_hours }}h</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Location -->
+                {% if item.latest_location %}
+                <div class="mb-2">
+                    <small class="text-muted"><i class="bi bi-geo-alt"></i> Location:</small>
+                    <strong>{{ item.latest_location.get_location_status_display }}</strong>
+                    {% if item.latest_location.physical_location %}
+                    <br><small class="text-muted">{{ item.latest_location.physical_location }}</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Customer -->
+                <div class="mb-2">
+                    <small class="text-muted"><i class="bi bi-person"></i> Customer:</small>
+                    <strong>{{ item.job_card.work_order.customer_name }}</strong>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Created: {{ item.job_card.created_at|date:"Y-m-d H:i" }}
+                    </small>
+                    <a href="{% url 'production:jobcard-detail' item.job_card.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No bits currently match your filters.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Auto-refresh option -->
+<div class="text-center mt-4">
+    <small class="text-muted">
+        <i class="bi bi-arrow-clockwise"></i>
+        Dashboard shows real-time data.
+        <a href="#" onclick="location.reload(); return false;">Refresh now</a>
+    </small>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh every 2 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 120000);
+</script>
+{% endblock %}

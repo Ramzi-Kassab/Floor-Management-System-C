@@ -1945,3 +1945,496 @@ class BitLocationHistory(models.Model):
 
     def __str__(self):
         return f"{self.bit_instance.serial_number} - {self.get_location_status_display()} ({self.changed_at.strftime('%Y-%m-%d %H:%M')})"
+
+
+# ============================================================================
+# PROCESS TIME ANALYTICS & KPIs
+# ============================================================================
+
+class ProcessTimeMetric(models.Model):
+    """
+    Track actual process execution times for analytics and planning
+    Calculates averages by bit size, type, and features
+    """
+    job_route_step = models.OneToOneField(
+        JobRouteStep,
+        on_delete=models.CASCADE,
+        related_name='time_metric'
+    )
+    job_card = models.ForeignKey(
+        JobCard,
+        on_delete=models.CASCADE,
+        related_name='time_metrics'
+    )
+    process_code = models.CharField(max_length=100, db_index=True)
+    
+    # Bit characteristics for grouping
+    bit_type = models.CharField(
+        max_length=20,
+        choices=BitType.choices
+    )
+    body_material = models.CharField(
+        max_length=20,
+        choices=BodyMaterial.choices,
+        blank=True
+    )
+    bit_size_inch = models.DecimalField(
+        max_digits=5,
+        decimal_places=3,
+        help_text="Bit diameter for grouping metrics"
+    )
+    blade_count = models.PositiveIntegerField(blank=True, null=True)
+    
+    # Time measurements
+    setup_time_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        help_text="Time to setup for process"
+    )
+    processing_time_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        help_text="Actual processing time"
+    )
+    wait_time_before_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        help_text="Waiting time before process started"
+    )
+    total_time_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        help_text="Total time from arrival to completion"
+    )
+    
+    # Performance indicators
+    operator = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='process_metrics'
+    )
+    workstation = models.CharField(max_length=100, blank=True)
+    department = models.CharField(
+        max_length=30,
+        choices=Department.choices
+    )
+    
+    # Delay tracking
+    delay_reason = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Reason for delays if any"
+    )
+    had_issues = models.BooleanField(
+        default=False,
+        help_text="Were there any issues during process?"
+    )
+    
+    completed_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-completed_at']
+        indexes = [
+            models.Index(fields=['process_code', 'bit_type', 'bit_size_inch']),
+            models.Index(fields=['department', 'completed_at']),
+            models.Index(fields=['operator', 'completed_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.process_code} - {self.bit_type} {self.bit_size_inch}\" - {self.processing_time_minutes}min"
+
+
+class ProcessAverageTime(models.Model):
+    """
+    Aggregated average times for processes
+    Updated periodically for planning purposes
+    """
+    process_code = models.CharField(max_length=100, db_index=True)
+    bit_type = models.CharField(
+        max_length=20,
+        choices=BitType.choices
+    )
+    body_material = models.CharField(
+        max_length=20,
+        choices=BodyMaterial.choices,
+        blank=True
+    )
+    bit_size_inch = models.DecimalField(
+        max_digits=5,
+        decimal_places=3
+    )
+    
+    # Averages
+    avg_setup_time_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2
+    )
+    avg_processing_time_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2
+    )
+    avg_wait_time_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2
+    )
+    avg_total_time_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2
+    )
+    
+    # Standard deviation for variability
+    std_dev_processing_time = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0
+    )
+    
+    # Sample info
+    sample_count = models.PositiveIntegerField(
+        help_text="Number of samples in average"
+    )
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = [['process_code', 'bit_type', 'body_material', 'bit_size_inch']]
+        ordering = ['process_code', 'bit_type', 'bit_size_inch']
+        indexes = [
+            models.Index(fields=['process_code', 'bit_type']),
+        ]
+    
+    def __str__(self):
+        return f"{self.process_code} - {self.bit_type} {self.bit_size_inch}\" - Avg: {self.avg_processing_time_minutes}min"
+
+
+class DepartmentKPI(models.Model):
+    """
+    Daily/Weekly KPIs for departments
+    Track efficiency, throughput, delays
+    """
+    department = models.CharField(
+        max_length=30,
+        choices=Department.choices,
+        db_index=True
+    )
+    date = models.DateField(db_index=True)
+    shift = models.CharField(
+        max_length=20,
+        choices=[
+            ('DAY', 'Day Shift'),
+            ('NIGHT', 'Night Shift'),
+            ('FULL_DAY', 'Full Day')
+        ],
+        default='FULL_DAY'
+    )
+    
+    # Throughput
+    jobs_completed = models.PositiveIntegerField(default=0)
+    jobs_started = models.PositiveIntegerField(default=0)
+    jobs_in_progress = models.PositiveIntegerField(default=0)
+    
+    # Time metrics
+    total_processing_time_hours = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0
+    )
+    total_wait_time_hours = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0
+    )
+    total_downtime_hours = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        help_text="Equipment downtime"
+    )
+    
+    # Efficiency
+    efficiency_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Processing time / (Processing + Wait + Downtime)"
+    )
+    
+    # Quality
+    quality_holds_count = models.PositiveIntegerField(default=0)
+    ncr_count = models.PositiveIntegerField(default=0)
+    
+    # Delays
+    avg_delay_minutes = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0
+    )
+    top_delay_reason = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Most common delay reason"
+    )
+    
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = [['department', 'date', 'shift']]
+        ordering = ['-date', 'department']
+        indexes = [
+            models.Index(fields=['department', '-date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_department_display()} - {self.date} - Eff: {self.efficiency_percentage}%"
+
+
+# ============================================================================
+# MAINTENANCE & EQUIPMENT
+# ============================================================================
+
+class Equipment(models.Model):
+    """
+    Production equipment/machines
+    """
+    equipment_code = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique equipment ID (e.g., INFIL-01, LATHE-03)"
+    )
+    name = models.CharField(max_length=200)
+    equipment_type = models.CharField(
+        max_length=100,
+        help_text="e.g., Infiltration Furnace, CNC Lathe, Welding Station"
+    )
+    department = models.CharField(
+        max_length=30,
+        choices=Department.choices,
+        db_index=True
+    )
+    location = models.CharField(
+        max_length=200,
+        help_text="Physical location in facility"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('OPERATIONAL', 'Operational'),
+            ('MAINTENANCE', 'Under Maintenance'),
+            ('BREAKDOWN', 'Broken Down'),
+            ('IDLE', 'Idle'),
+            ('DECOMMISSIONED', 'Decommissioned')
+        ],
+        default='OPERATIONAL',
+        db_index=True
+    )
+    
+    # Specifications
+    manufacturer = models.CharField(max_length=200, blank=True)
+    model_number = models.CharField(max_length=100, blank=True)
+    serial_number = models.CharField(max_length=100, blank=True)
+    installation_date = models.DateField(blank=True, null=True)
+    
+    # Maintenance
+    last_maintenance_date = models.DateField(blank=True, null=True)
+    next_maintenance_date = models.DateField(
+        blank=True,
+        null=True,
+        help_text="Scheduled preventive maintenance"
+    )
+    maintenance_interval_days = models.PositiveIntegerField(
+        default=90,
+        help_text="Days between preventive maintenance"
+    )
+    
+    # Usage tracking
+    total_operating_hours = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['department', 'equipment_code']
+        indexes = [
+            models.Index(fields=['department', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.equipment_code} - {self.name} ({self.get_status_display()})"
+    
+    def is_maintenance_due(self):
+        """Check if maintenance is overdue"""
+        if not self.next_maintenance_date:
+            return False
+        from django.utils import timezone
+        return self.next_maintenance_date <= timezone.now().date()
+
+
+class MaintenanceRequest(models.Model):
+    """
+    Equipment maintenance requests and work orders
+    """
+    request_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique request number (e.g., MAINT-2025-001)"
+    )
+    equipment = models.ForeignKey(
+        Equipment,
+        on_delete=models.CASCADE,
+        related_name='maintenance_requests'
+    )
+    request_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('BREAKDOWN', 'Breakdown/Emergency'),
+            ('PREVENTIVE', 'Preventive Maintenance'),
+            ('CALIBRATION', 'Calibration'),
+            ('UPGRADE', 'Upgrade/Modification'),
+            ('INSPECTION', 'Inspection')
+        ],
+        db_index=True
+    )
+    priority = models.CharField(
+        max_length=20,
+        choices=[
+            ('CRITICAL', 'Critical - Production Stopped'),
+            ('HIGH', 'High - Affecting Performance'),
+            ('MEDIUM', 'Medium - Schedule Soon'),
+            ('LOW', 'Low - Routine')
+        ],
+        default='MEDIUM',
+        db_index=True
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('SUBMITTED', 'Submitted'),
+            ('APPROVED', 'Approved'),
+            ('IN_PROGRESS', 'In Progress'),
+            ('WAITING_PARTS', 'Waiting for Parts'),
+            ('COMPLETED', 'Completed'),
+            ('CANCELLED', 'Cancelled')
+        ],
+        default='SUBMITTED',
+        db_index=True
+    )
+    
+    # Request details
+    reported_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='maintenance_reports',
+        help_text="Employee who reported the issue"
+    )
+    reported_by_name = models.CharField(max_length=100, blank=True)
+    reported_at = models.DateTimeField(default=timezone.now)
+    
+    problem_description = models.TextField(
+        help_text="Detailed description of the problem"
+    )
+    impact_on_production = models.TextField(
+        blank=True,
+        help_text="How this affects production"
+    )
+    
+    # Assignment
+    assigned_to = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='assigned_maintenance',
+        help_text="Maintenance technician assigned"
+    )
+    assigned_at = models.DateTimeField(blank=True, null=True)
+    
+    # Work performed
+    work_started_at = models.DateTimeField(blank=True, null=True)
+    work_completed_at = models.DateTimeField(blank=True, null=True)
+    work_performed = models.TextField(
+        blank=True,
+        help_text="Description of work done"
+    )
+    parts_used = models.TextField(
+        blank=True,
+        help_text="Parts and materials used"
+    )
+    
+    # Costs
+    labor_hours = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=0
+    )
+    parts_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    total_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    
+    # Downtime tracking
+    downtime_start = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="When equipment became unavailable"
+    )
+    downtime_end = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="When equipment returned to service"
+    )
+    downtime_hours = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        help_text="Total downtime in hours"
+    )
+    
+    # Jobs affected
+    affected_job_cards = models.ManyToManyField(
+        JobCard,
+        blank=True,
+        related_name='affected_by_maintenance',
+        help_text="Job cards delayed by this maintenance"
+    )
+    
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-reported_at']
+        indexes = [
+            models.Index(fields=['status', 'priority']),
+            models.Index(fields=['equipment', 'status']),
+            models.Index(fields=['-reported_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.request_number} - {self.equipment.equipment_code} ({self.get_status_display()})"
+    
+    def calculate_downtime(self):
+        """Calculate downtime in hours"""
+        if self.downtime_start and self.downtime_end:
+            delta = self.downtime_end - self.downtime_start
+            return delta.total_seconds() / 3600
+        return 0
