@@ -171,6 +171,12 @@ class BitInstanceDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['work_orders'] = self.object.work_orders.all().order_by('-created_at')
+
+        # Add repair history chain
+        context['repair_history'] = self.object.get_repair_history_chain()
+        context['last_repair'] = self.object.get_last_repair()
+        context['can_repair_again'] = self.object.can_be_repaired_again()
+
         return context
 
 
@@ -224,6 +230,26 @@ class WorkOrderDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['job_cards'] = self.object.job_cards.all().prefetch_related('route_steps')
+
+        # Add BOM information
+        context['actual_bom'] = models.ActualBOM.objects.filter(
+            work_order=self.object
+        ).select_related('bom_item')
+
+        # Add cutter installation information
+        context['cutter_installations'] = models.ActualCutterInstallation.objects.filter(
+            work_order=self.object
+        ).select_related('layout_position')
+
+        # Add repair history if this is a repair work order
+        if self.object.bit_instance and self.object.order_type == 'REPAIR':
+            try:
+                context['repair_record'] = models.RepairHistory.objects.get(
+                    work_order=self.object
+                )
+            except models.RepairHistory.DoesNotExist:
+                pass
+
         return context
 
 
@@ -1300,3 +1326,412 @@ class ProcessExecutionLogListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(was_corrected=False)
 
         return queryset.order_by('-scanned_at')
+
+
+# ============================================================================
+# REPAIR WORKFLOW - REPAIR HISTORY
+# ============================================================================
+
+class RepairHistoryListView(LoginRequiredMixin, ListView):
+    """
+    List all repairs for a specific bit instance
+    Shows complete repair chain (R1 → R2 → R3...)
+    """
+    model = models.RepairHistory
+    template_name = 'production/repair_history_list.html'
+    context_object_name = 'repairs'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related(
+            'bit_instance', 'work_order', 'evaluation_summary'
+        )
+
+        # Filter by bit instance if provided
+        bit_instance_id = self.request.GET.get('bit_instance')
+        if bit_instance_id:
+            queryset = queryset.filter(bit_instance_id=bit_instance_id)
+
+        return queryset.order_by('bit_instance', 'repair_index')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # If filtering by bit, add bit instance to context
+        bit_instance_id = self.request.GET.get('bit_instance')
+        if bit_instance_id:
+            context['bit_instance'] = models.BitInstance.objects.get(pk=bit_instance_id)
+
+        return context
+
+
+class RepairHistoryDetailView(LoginRequiredMixin, DetailView):
+    """
+    Detailed view of a specific repair cycle
+    Shows work performed, materials used, evaluations
+    """
+    model = models.RepairHistory
+    template_name = 'production/repair_history_detail.html'
+    context_object_name = 'repair'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get actual BOM used in this repair
+        context['actual_bom'] = models.ActualBOM.objects.filter(
+            work_order=self.object.work_order
+        ).select_related('bom_item')
+
+        # Get cutter installations for this repair
+        context['cutter_installations'] = models.ActualCutterInstallation.objects.filter(
+            work_order=self.object.work_order
+        ).select_related('layout_position', 'actual_bom_item')
+
+        # Get previous repair in chain
+        context['previous_repair'] = self.object.previous_repair
+
+        # Get next repair in chain (if exists)
+        context['next_repair'] = models.RepairHistory.objects.filter(
+            previous_repair=self.object
+        ).first()
+
+        return context
+
+
+# ============================================================================
+# REPAIR WORKFLOW - REPAIR DECISION
+# ============================================================================
+
+class RepairDecisionCreateView(LoginRequiredMixin, CreateView):
+    """
+    Create repair decision based on evaluation results
+    Recommends repair route and required processes
+    """
+    model = models.RepairDecision
+    template_name = 'production/repair_decision_form.html'
+    fields = [
+        'evaluation_summary', 'recommended_route',
+        'needs_cutter_replacement', 'needs_nozzle_replacement',
+        'needs_hardfacing', 'needs_thread_repair',
+        'needs_gauge_repair', 'needs_balance', 'needs_ndt',
+        'estimated_hours', 'estimated_cutter_count',
+        'decision_notes', 'estimated_cost'
+    ]
+
+    def get_initial(self):
+        initial = super().get_initial()
+
+        # Pre-fill evaluation if provided
+        evaluation_id = self.request.GET.get('evaluation')
+        if evaluation_id:
+            try:
+                evaluation = models.EvaluationSummary.objects.get(pk=evaluation_id)
+                initial['evaluation_summary'] = evaluation_id
+
+                # Auto-populate based on evaluation condition
+                if evaluation.overall_condition in ['POOR', 'FAILED']:
+                    initial['needs_cutter_replacement'] = True
+                    initial['needs_hardfacing'] = True
+                    initial['needs_ndt'] = True
+                elif evaluation.overall_condition == 'FAIR':
+                    initial['needs_cutter_replacement'] = True
+
+            except models.EvaluationSummary.DoesNotExist:
+                pass
+
+        return initial
+
+    def get_success_url(self):
+        return reverse_lazy('production:repair-decision-detail',
+                          kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            f'Repair decision created. Recommended route: '
+            f'{form.instance.generate_route_recommendation()}'
+        )
+        return super().form_valid(form)
+
+
+class RepairDecisionDetailView(LoginRequiredMixin, DetailView):
+    """
+    View repair decision details with work breakdown
+    """
+    model = models.RepairDecision
+    template_name = 'production/repair_decision_detail.html'
+    context_object_name = 'decision'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get recommended route details
+        if self.object.recommended_route:
+            context['route_steps'] = self.object.recommended_route.steps.all().order_by('sequence')
+
+        return context
+
+
+# ============================================================================
+# REPAIR WORKFLOW - BOM TRACKING
+# ============================================================================
+
+class ActualBOMListView(LoginRequiredMixin, ListView):
+    """
+    View actual BOM usage for a work order
+    Shows planned vs. actual quantities with variances
+    """
+    model = models.ActualBOM
+    template_name = 'production/actual_bom_list.html'
+    context_object_name = 'bom_items'
+    paginate_by = 100
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related(
+            'work_order', 'bom_item'
+        )
+
+        # Filter by work order
+        work_order_id = self.request.GET.get('work_order')
+        if work_order_id:
+            queryset = queryset.filter(work_order_id=work_order_id)
+
+        return queryset.order_by('bom_item__item_type', 'bom_item__part_number')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Add work order to context
+        work_order_id = self.request.GET.get('work_order')
+        if work_order_id:
+            context['work_order'] = models.WorkOrder.objects.get(pk=work_order_id)
+
+        return context
+
+
+class ActualBOMUpdateView(LoginRequiredMixin, UpdateView):
+    """
+    Record actual materials used during work order execution
+    """
+    model = models.ActualBOM
+    template_name = 'production/actual_bom_form.html'
+    fields = [
+        'actual_quantity', 'lot_number', 'serial_numbers',
+        'variance_notes', 'recorded_by_name'
+    ]
+
+    def get_success_url(self):
+        return reverse_lazy('production:actual-bom-list') + \
+               f'?work_order={self.object.work_order.pk}'
+
+    def form_valid(self, form):
+        # Auto-fill recorded by
+        if not form.instance.recorded_by_name and self.request.user.is_authenticated:
+            form.instance.recorded_by_name = self.request.user.username
+
+        variance = form.instance.get_variance()
+        if variance and abs(variance) > 0:
+            messages.warning(
+                self.request,
+                f'Material usage variance recorded: {variance:+.2f} {form.instance.bom_item.unit}'
+            )
+        else:
+            messages.success(self.request, 'Material usage recorded successfully.')
+
+        return super().form_valid(form)
+
+
+# ============================================================================
+# REPAIR WORKFLOW - CUTTER LAYOUT & INSTALLATION
+# ============================================================================
+
+class CutterLayoutView(LoginRequiredMixin, DetailView):
+    """
+    View cutter layout grid for a bit design
+    Shows all positions and specifications
+    """
+    model = models.BitDesignRevision
+    template_name = 'production/cutter_layout.html'
+    context_object_name = 'design_revision'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get all layout positions grouped by blade
+        positions = models.CutterLayoutPosition.objects.filter(
+            design_revision=self.object
+        ).order_by('blade_number', 'row_number', 'position_in_row')
+
+        # Group positions by blade for display
+        from itertools import groupby
+        positions_by_blade = {
+            blade: list(items)
+            for blade, items in groupby(positions, key=lambda x: x.blade_number)
+        }
+
+        context['positions_by_blade'] = positions_by_blade
+        context['total_cutters'] = positions.count()
+
+        # Get cutter type summary
+        from django.db.models import Count
+        cutter_summary = positions.values('cutter_type').annotate(
+            count=Count('id')
+        ).order_by('cutter_type')
+        context['cutter_summary'] = cutter_summary
+
+        return context
+
+
+class CutterInstallationRecordView(LoginRequiredMixin, TemplateView):
+    """
+    Record actual cutters installed during build or repair
+    Supports position-by-position recording with deviation tracking
+    """
+    template_name = 'production/cutter_installation_record.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        work_order_id = self.kwargs.get('work_order_id')
+        context['work_order'] = models.WorkOrder.objects.get(pk=work_order_id)
+
+        # Get design layout positions
+        design_revision = context['work_order'].design_revision
+        context['layout_positions'] = models.CutterLayoutPosition.objects.filter(
+            design_revision=design_revision
+        ).order_by('blade_number', 'row_number', 'position_in_row')
+
+        # Get existing installations for this work order
+        existing_installations = models.ActualCutterInstallation.objects.filter(
+            work_order_id=work_order_id
+        )
+
+        # Create dict for easy lookup
+        installations_dict = {
+            inst.layout_position_id: inst
+            for inst in existing_installations
+        }
+        context['installations_dict'] = installations_dict
+
+        # Get available BOM items (cutters only)
+        context['available_cutters'] = models.BOMItem.objects.filter(
+            design_revision=design_revision,
+            item_type='CUTTER'
+        ).order_by('part_number')
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handle cutter installation recording
+        """
+        work_order_id = kwargs.get('work_order_id')
+        work_order = models.WorkOrder.objects.get(pk=work_order_id)
+
+        # Get position being recorded
+        position_id = request.POST.get('layout_position_id')
+        layout_position = models.CutterLayoutPosition.objects.get(pk=position_id)
+
+        # Get or create installation record
+        installation, created = models.ActualCutterInstallation.objects.get_or_create(
+            work_order=work_order,
+            layout_position=layout_position,
+            defaults={
+                'actual_cutter_size_mm': layout_position.cutter_size_mm,
+                'actual_cutter_type': layout_position.cutter_type,
+                'actual_bom_item': layout_position.bom_item,
+                'status': 'INSTALLED',
+            }
+        )
+
+        # Update with actual data
+        installation.actual_cutter_size_mm = request.POST.get('actual_cutter_size_mm')
+        installation.actual_cutter_type = request.POST.get('actual_cutter_type')
+        installation.actual_bom_item_id = request.POST.get('actual_bom_item_id')
+        installation.cutter_serial_number = request.POST.get('cutter_serial_number', '')
+        installation.cutter_lot_number = request.POST.get('cutter_lot_number', '')
+
+        # Check if substitution
+        if (str(installation.actual_cutter_size_mm) != str(layout_position.cutter_size_mm) or
+            installation.actual_cutter_type != layout_position.cutter_type):
+            installation.is_substitution = True
+            installation.substitution_reason = request.POST.get('substitution_reason', '')
+
+            # Require approval for substitutions
+            if not installation.approved_by_id:
+                messages.warning(
+                    request,
+                    f'Cutter substitution recorded at {layout_position.get_position_code()}. '
+                    'Supervisor approval required.'
+                )
+
+        installation.braze_quality_check = request.POST.get('braze_quality_check', 'PENDING')
+        installation.installation_date = timezone.now()
+        installation.installed_by_name = request.user.username
+
+        installation.save()
+
+        messages.success(
+            request,
+            f'Cutter installation recorded: {layout_position.get_position_code()}'
+        )
+
+        # Redirect back to recording page
+        return redirect('production:cutter-installation-record',
+                       work_order_id=work_order_id)
+
+
+class CutterInstallationListView(LoginRequiredMixin, ListView):
+    """
+    View all cutter installations for a work order
+    Shows as-built layout with deviations highlighted
+    """
+    model = models.ActualCutterInstallation
+    template_name = 'production/cutter_installation_list.html'
+    context_object_name = 'installations'
+    paginate_by = 200
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related(
+            'work_order', 'layout_position', 'actual_bom_item', 'approved_by'
+        )
+
+        # Filter by work order
+        work_order_id = self.request.GET.get('work_order')
+        if work_order_id:
+            queryset = queryset.filter(work_order_id=work_order_id)
+
+        return queryset.order_by(
+            'layout_position__blade_number',
+            'layout_position__row_number',
+            'layout_position__position_in_row'
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        work_order_id = self.request.GET.get('work_order')
+        if work_order_id:
+            context['work_order'] = models.WorkOrder.objects.get(pk=work_order_id)
+
+            # Calculate statistics
+            total_positions = models.CutterLayoutPosition.objects.filter(
+                design_revision=context['work_order'].design_revision
+            ).count()
+
+            installed_count = self.get_queryset().filter(
+                status='INSTALLED'
+            ).count()
+
+            substitution_count = self.get_queryset().filter(
+                is_substitution=True
+            ).count()
+
+            context['stats'] = {
+                'total_positions': total_positions,
+                'installed': installed_count,
+                'remaining': total_positions - installed_count,
+                'substitutions': substitution_count,
+            }
+
+        return context

@@ -85,4 +85,21 @@ urlpatterns = [
 
     # Execution Logs
     path('execution-logs/', views.ProcessExecutionLogListView.as_view(), name='execution-log-list'),
+
+    # Repair Workflow - Repair History
+    path('repair-history/', views.RepairHistoryListView.as_view(), name='repair-history-list'),
+    path('repair-history/<int:pk>/', views.RepairHistoryDetailView.as_view(), name='repair-history-detail'),
+
+    # Repair Workflow - Repair Decisions
+    path('repair-decisions/create/', views.RepairDecisionCreateView.as_view(), name='repair-decision-create'),
+    path('repair-decisions/<int:pk>/', views.RepairDecisionDetailView.as_view(), name='repair-decision-detail'),
+
+    # Repair Workflow - BOM Tracking
+    path('actual-bom/', views.ActualBOMListView.as_view(), name='actual-bom-list'),
+    path('actual-bom/<int:pk>/edit/', views.ActualBOMUpdateView.as_view(), name='actual-bom-edit'),
+
+    # Repair Workflow - Cutter Layout & Installation
+    path('designs/<int:pk>/cutter-layout/', views.CutterLayoutView.as_view(), name='cutter-layout'),
+    path('workorders/<int:work_order_id>/cutter-installation/', views.CutterInstallationRecordView.as_view(), name='cutter-installation-record'),
+    path('cutter-installations/', views.CutterInstallationListView.as_view(), name='cutter-installation-list'),
 ]
