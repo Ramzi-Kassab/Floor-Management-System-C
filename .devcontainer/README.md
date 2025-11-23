@@ -1,69 +1,140 @@
-# Codespaces Setup
+# GitHub Codespaces Configuration
 
-## What This Does
+This directory contains the configuration for GitHub Codespaces to automatically set up your development environment.
 
-When you create a GitHub Codespace for this project:
+## What Gets Installed
 
-1. ✅ **Python 3.10** installed and configured
-2. ✅ **PostgreSQL 15** running automatically
-3. ✅ **All dependencies** installed (Django, etc.)
-4. ✅ **Database created** (floor_management_c)
-5. ✅ **Migrations run** automatically
-6. ✅ **VS Code extensions** for Django development
-7. ✅ **Ports forwarded** (8000 for Django, 5432 for PostgreSQL)
+### Services
+- **PostgreSQL 15** - Production database
+- **Python 3.11** - Application runtime
+- **Node.js 18** - For frontend tooling
 
-## How to Use
+### VS Code Extensions
+- Python (with Pylance)
+- Django support
+- Jinja template syntax
+- Docker support
+- GitLens
+- Black formatter
+- ESLint & Prettier
 
-### Create Codespace
-1. Push this project to GitHub
-2. Go to your repository
-3. Click **Code** → **Codespaces** → **Create codespace on master**
-4. Wait 2-3 minutes for setup
+## Automatic Setup
 
-### Once Codespace Opens
+When you create a Codespace, it will automatically:
 
-Everything is ready! Just:
+1. ✅ Start PostgreSQL database
+2. ✅ Install Python dependencies
+3. ✅ Create `.env` file with database credentials
+4. ✅ Run database migrations
+5. ✅ Collect static files
+6. ✅ Load sample data
+7. ✅ Create admin superuser
+8. ✅ Start Django development server
 
-```bash
-# Activate virtual environment (if not auto-activated)
-source venv/bin/activate
+## Access Information
 
-# Create admin user
-python manage.py createsuperuser
+### Application URLs
+- **Main App**: http://localhost:8000
+- **Admin Panel**: http://localhost:8000/admin
+- **Inventory**: http://localhost:8000/inventory/
+- **Purchasing**: http://localhost:8000/purchasing/
+- **REST API**: http://localhost:8000/api/inventory/
 
-# Start Django
-python manage.py runserver
+### Default Credentials
+```
+Username: admin
+Password: admin123
 ```
 
-Click the popup to open the app in your browser!
-
 ### Database Connection
+```
+Host: localhost
+Port: 5432
+Database: logistics_db
+User: logistics_user
+Password: logistics_pass
+```
 
-PostgreSQL is already running and connected:
-- **Host**: db (internal container name)
-- **Database**: floor_management_c
-- **User**: postgres
-- **Password**: postgres
+## Manual Commands
 
-### For Claude Code Web
+If you need to run commands manually:
 
-Claude Code Web can:
-- Read and write all files
-- Run Django commands (makemigrations, migrate, check)
-- Start/stop the server
-- Access the database
-- Make commits and push
+```bash
+# Run migrations
+python manage.py migrate
 
-This makes incremental app migration super smooth!
+# Create superuser
+python manage.py createsuperuser
 
-## No Docker Knowledge Required
+# Load sample data
+python manage.py load_sample_data
 
-You don't need Docker installed on your local machine. GitHub Codespaces handles everything in the cloud.
+# Start development server
+python manage.py runserver 0.0.0.0:8000
 
-## Benefits
+# Access Django shell
+python manage.py shell
 
-- ✅ Consistent environment (no "works on my machine")
-- ✅ PostgreSQL already configured
-- ✅ No local setup needed
-- ✅ Works from any computer (even Chromebook)
-- ✅ Free tier: 120 core-hours/month
+# Run tests
+python manage.py test
+```
+
+## Files
+
+- **devcontainer.json** - Main configuration
+- **docker-compose.yml** - Services definition (app + PostgreSQL)
+- **Dockerfile** - Custom Python image with dependencies
+- **setup.sh** - Post-create setup script
+
+## Features
+
+### VS Code Settings
+- Auto-formatting with Black
+- Linting with Pylint
+- Django template support
+- Git integration
+
+### Port Forwarding
+- Port 8000: Django application (auto-forwarded)
+- Port 5432: PostgreSQL (silent forwarding)
+
+### Environment Variables
+All necessary environment variables are automatically configured in the container.
+
+## Troubleshooting
+
+### Database Connection Issues
+```bash
+# Check if PostgreSQL is running
+pg_isready -h localhost -p 5432 -U logistics_user
+
+# Restart PostgreSQL
+sudo service postgresql restart
+```
+
+### Server Not Starting
+```bash
+# Check for port conflicts
+lsof -i :8000
+
+# Manually start server
+python manage.py runserver 0.0.0.0:8000
+```
+
+### Reset Everything
+```bash
+# Drop and recreate database
+python manage.py flush
+python manage.py migrate
+python manage.py load_sample_data
+```
+
+## Development Workflow
+
+1. **Create Codespace** from your branch
+2. **Wait for setup** (2-3 minutes)
+3. **Open forwarded port 8000** in browser
+4. **Login** with admin credentials
+5. **Start developing!**
+
+The server runs automatically and will reload on code changes.

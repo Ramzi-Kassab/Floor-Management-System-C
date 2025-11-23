@@ -1,78 +1,74 @@
 #!/bin/bash
-set -e  # Exit on error
+set -e
 
-# This script runs automatically when Codespace is created
+echo "🚀 Starting Floor Management System Setup..."
 
-echo "🚀 Setting up Floor Management System..."
-
-# Create virtual environment
-echo "📦 Creating virtual environment..."
-python -m venv venv
-source venv/bin/activate
-
-# Verify venv activated
-if [ -z "$VIRTUAL_ENV" ]; then
-    echo "❌ Failed to activate virtual environment"
-    exit 1
-fi
-
-echo "✅ Virtual environment activated: $VIRTUAL_ENV"
-
-# Install dependencies
-echo "📚 Installing dependencies..."
-pip install --upgrade pip --quiet
-pip install -r requirements.txt --quiet
-
-echo "✅ Dependencies installed"
-
-# Create .env file if it doesn't exist
-if [ ! -f .env ]; then
-    echo "⚙️  Creating .env file..."
-    cat > .env << EOL
-SECRET_KEY=dev-secret-key-change-in-production
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-DB_NAME=floor_management_c
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_HOST=db
-DB_PORT=5432
-EOL
-fi
-
-# Wait for PostgreSQL to be ready (with timeout)
-echo "⏳ Waiting for PostgreSQL (max 60 seconds)..."
-COUNTER=0
-until PGPASSWORD=postgres psql -h db -U postgres -c '\q' 2>/dev/null; do
-  COUNTER=$((COUNTER+1))
-  if [ $COUNTER -gt 60 ]; then
-    echo "❌ PostgreSQL failed to start within 60 seconds"
-    echo "💡 Try running setup manually: bash .devcontainer/setup.sh"
-    exit 1
-  fi
-  echo "   ... attempt $COUNTER/60"
-  sleep 1
+echo "⏳ Waiting for PostgreSQL to be ready..."
+until pg_isready -h localhost -p 5432 -U logistics_user; do
+  echo "PostgreSQL is unavailable - sleeping"
+  sleep 2
 done
-
 echo "✅ PostgreSQL is ready!"
 
-# Run Django system check
-echo "🔍 Running Django system check..."
-python manage.py check
+cd /workspaces/Floor-Management-System-C
 
-# Run migrations
-echo "🔄 Running migrations..."
+echo "📦 Installing Python dependencies..."
+pip install --no-cache-dir -r requirements.txt
+
+if [ ! -f .env ]; then
+  echo "📝 Creating .env file..."
+  cat > .env << 'ENVEOF'
+DATABASE_URL=postgresql://logistics_user:logistics_pass@localhost:5432/logistics_db
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=logistics_db
+POSTGRES_USER=logistics_user
+POSTGRES_PASSWORD=logistics_pass
+DEBUG=True
+SECRET_KEY=django-insecure-codespace-development-key-change-in-production
+ALLOWED_HOSTS=localhost,127.0.0.1,*.githubpreview.dev,*.app.github.dev
+STATIC_URL=/static/
+STATIC_ROOT=/workspaces/Floor-Management-System-C/staticfiles/
+ENVEOF
+  echo "✅ .env file created!"
+fi
+
+echo "🗄️  Running database migrations..."
+python manage.py makemigrations
 python manage.py migrate
 
+echo "📁 Collecting static files..."
+python manage.py collectstatic --noinput --clear
+
+echo "📊 Loading sample data..."
+python manage.py load_sample_data || echo "⚠️  Sample data loading skipped"
+
+echo "👤 Creating superuser..."
+python manage.py shell << 'PYEOF'
+from django.contrib.auth import get_user_model
+User = get_user_model()
+if not User.objects.filter(username='admin').exists():
+    User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
+    print("✅ Superuser created: username='admin', password='admin123'")
+else:
+    print("ℹ️  Superuser already exists")
+PYEOF
+
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✨ Setup complete!"
-echo ""
-echo "Next steps:"
-echo "  1. Create admin user: python manage.py createsuperuser"
-echo "  2. Start server:      python manage.py runserver"
-echo ""
-echo "📝 Activate venv if needed: source venv/bin/activate"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║          🎉 Setup Complete! 🎉                             ║"
+echo "╠════════════════════════════════════════════════════════════╣"
+echo "║  Your Floor Management System is ready to use!            ║"
+echo "║                                                            ║"
+echo "║  🌐 Application: http://localhost:8000                     ║"
+echo "║  🔧 Admin Panel: http://localhost:8000/admin               ║"
+echo "║  📊 Inventory:   http://localhost:8000/inventory/          ║"
+echo "║  🛒 Purchasing:  http://localhost:8000/purchasing/         ║"
+echo "║                                                            ║"
+echo "║  👤 Admin Login:                                           ║"
+echo "║     Username: admin                                        ║"
+echo "║     Password: admin123                                     ║"
+echo "║                                                            ║"
+echo "║  💡 The server will start automatically!                  ║"
+echo "╚════════════════════════════════════════════════════════════╝"
 echo ""

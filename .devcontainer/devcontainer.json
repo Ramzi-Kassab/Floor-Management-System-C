@@ -1,19 +1,20 @@
 {
-  "name": "Floor Management System C",
+  "name": "Floor Management System - Logistics",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces/Floor-Management-System-C",
 
-  // Features to add to the dev container
   "features": {
     "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.10"
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
     },
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  // Configure tool-specific properties
   "customizations": {
     "vscode": {
       "extensions": [
@@ -21,12 +22,14 @@
         "ms-python.vscode-pylance",
         "ms-python.black-formatter",
         "batisteo.vscode-django",
-        "mtxr.sqltools",
-        "mtxr.sqltools-driver-pg",
-        "GitHub.copilot"
+        "wholroyd.jinja",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/workspace/venv/bin/python",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": true,
         "python.formatting.provider": "black",
@@ -39,22 +42,28 @@
     }
   },
 
-  // Use 'forwardPorts' to make a list of ports inside the container available locally
   "forwardPorts": [8000, 5432],
   "portsAttributes": {
     "8000": {
-      "label": "Django Dev Server",
+      "label": "Django Application",
       "onAutoForward": "notify"
     },
     "5432": {
-      "label": "PostgreSQL",
+      "label": "PostgreSQL Database",
       "onAutoForward": "silent"
     }
   },
 
-  // Use 'postCreateCommand' to run commands after the container is created
+  "containerEnv": {
+    "DATABASE_URL": "postgresql://logistics_user:logistics_pass@localhost:5432/logistics_db",
+    "DJANGO_SETTINGS_MODULE": "floor_project.settings",
+    "DEBUG": "True",
+    "PYTHONUNBUFFERED": "1"
+  },
+
   "postCreateCommand": "bash .devcontainer/setup.sh",
 
-  // Comment out to connect as root instead
+  "postStartCommand": "python manage.py runserver 0.0.0.0:8000",
+
   "remoteUser": "vscode"
 }
