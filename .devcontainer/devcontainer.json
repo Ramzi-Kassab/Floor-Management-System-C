@@ -1,19 +1,17 @@
 {
-  "name": "Floor Management System C",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspace",
+  "name": "Floor Management System - Production Department",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
 
-  // Features to add to the dev container
   "features": {
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.10"
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
     },
     "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {
+      "version": "16"
+    }
   },
 
-  // Configure tool-specific properties
   "customizations": {
     "vscode": {
       "extensions": [
@@ -21,25 +19,27 @@
         "ms-python.vscode-pylance",
         "ms-python.black-formatter",
         "batisteo.vscode-django",
+        "wholroyd.jinja",
         "mtxr.sqltools",
-        "mtxr.sqltools-driver-pg",
-        "GitHub.copilot"
+        "mtxr.sqltools-driver-pg"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/workspace/venv/bin/python",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
+        "python.linting.pylintEnabled": false,
         "python.formatting.provider": "black",
-        "editor.formatOnSave": true,
+        "python.languageServer": "Pylance",
         "files.exclude": {
-          "**/__pycache__": true,
-          "**/*.pyc": true
+          "**/*.pyc": true,
+          "**/__pycache__": true
+        },
+        "emmet.includeLanguages": {
+          "django-html": "html"
         }
       }
     }
   },
 
-  // Use 'forwardPorts' to make a list of ports inside the container available locally
   "forwardPorts": [8000, 5432],
   "portsAttributes": {
     "8000": {
@@ -47,14 +47,16 @@
       "onAutoForward": "notify"
     },
     "5432": {
-      "label": "PostgreSQL",
-      "onAutoForward": "silent"
+      "label": "PostgreSQL"
     }
   },
 
-  // Use 'postCreateCommand' to run commands after the container is created
   "postCreateCommand": "bash .devcontainer/setup.sh",
 
-  // Comment out to connect as root instead
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+
+  "containerEnv": {
+    "DJANGO_SETTINGS_MODULE": "floor_project.settings",
+    "PYTHONUNBUFFERED": "1"
+  }
 }
