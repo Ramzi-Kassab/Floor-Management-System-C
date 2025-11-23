@@ -145,6 +145,10 @@ USE_I18N = True  # Enable internationalization
 USE_L10N = True  # Enable localized formatting
 USE_TZ = True
 
+# Character encoding
+DEFAULT_CHARSET = 'utf-8'
+FILE_CHARSET = 'utf-8'
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
