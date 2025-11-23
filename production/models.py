@@ -945,3 +945,529 @@ class QRCode(models.Model):
         elif self.route_step:
             return self.route_step
         return None
+
+
+# ============================================================================
+# NON-CONFORMANCE & QUALITY MANAGEMENT
+# ============================================================================
+
+class NCRSeverity(models.TextChoices):
+    """Non-conformance severity levels"""
+    MINOR = 'MINOR', 'Minor'
+    MAJOR = 'MAJOR', 'Major'
+    CRITICAL = 'CRITICAL', 'Critical'
+
+
+class NCRStatus(models.TextChoices):
+    """Non-conformance report status"""
+    OPEN = 'OPEN', 'Open'
+    UNDER_REVIEW = 'UNDER_REVIEW', 'Under Review'
+    PENDING_MRB = 'PENDING_MRB', 'Pending MRB Decision'
+    CLOSED = 'CLOSED', 'Closed'
+    CANCELLED = 'CANCELLED', 'Cancelled'
+
+
+class DispositionType(models.TextChoices):
+    """Material Review Board disposition decisions"""
+    USE_AS_IS = 'USE_AS_IS', 'Use As-Is'
+    USE_AS_IS_WITH_DEVIATION = 'USE_AS_IS_DEVIATION', 'Use As-Is with Deviation'
+    REWORK = 'REWORK', 'Rework'
+    REPAIR = 'REPAIR', 'Repair'
+    SCRAP = 'SCRAP', 'Scrap'
+    RETURN_TO_SUPPLIER = 'RETURN_SUPPLIER', 'Return to Supplier'
+    DOWNGRADE = 'DOWNGRADE', 'Downgrade'
+
+
+class ScrapReason(models.TextChoices):
+    """Reasons for scrapping"""
+    QUALITY_FAILURE = 'QUALITY_FAILURE', 'Quality Failure'
+    MATERIAL_DEFECT = 'MATERIAL_DEFECT', 'Material Defect'
+    MANUFACTURING_ERROR = 'MFG_ERROR', 'Manufacturing Error'
+    DAMAGE_IN_PROCESS = 'DAMAGE_PROCESS', 'Damage in Process'
+    DESIGN_OBSOLETE = 'DESIGN_OBSOLETE', 'Design Obsolete'
+    CUSTOMER_REJECTION = 'CUSTOMER_REJECT', 'Customer Rejection'
+    EXCESSIVE_WEAR = 'EXCESSIVE_WEAR', 'Excessive Wear (Repair not economical)'
+    INFILTRATION_FAILURE = 'INFILTRATION_FAIL', 'Infiltration Failure'
+    BRAZE_FAILURE = 'BRAZE_FAILURE', 'Brazing Failure'
+    CRACK_DETECTED = 'CRACK_DETECTED', 'Crack Detected (NDT)'
+    OTHER = 'OTHER', 'Other'
+
+
+class ReworkReason(models.TextChoices):
+    """Reasons for rework"""
+    DIMENSION_OUT_SPEC = 'DIM_OUT_SPEC', 'Dimension Out of Specification'
+    SURFACE_FINISH = 'SURFACE_FINISH', 'Surface Finish Issues'
+    THREAD_ISSUES = 'THREAD_ISSUES', 'Thread Quality Issues'
+    INCOMPLETE_BRAZING = 'INCOMPLETE_BRAZE', 'Incomplete Brazing'
+    HARDFACING_DEFECT = 'HARDFACING_DEFECT', 'Hardfacing Defect'
+    WELDING_DEFECT = 'WELD_DEFECT', 'Welding Defect'
+    CONTAMINATION = 'CONTAMINATION', 'Contamination'
+    INCOMPLETE_PROCESS = 'INCOMPLETE_PROC', 'Incomplete Process Step'
+    COSMETIC = 'COSMETIC', 'Cosmetic (Customer Requirement)'
+    OTHER = 'OTHER', 'Other'
+
+
+class HoldReason(models.TextChoices):
+    """Reasons for production holds"""
+    WAITING_MATERIAL = 'WAIT_MATERIAL', 'Waiting for Material'
+    WAITING_QC = 'WAIT_QC', 'Waiting for QC/Inspection'
+    WAITING_ENGINEERING = 'WAIT_ENG', 'Waiting for Engineering Decision'
+    MACHINE_BREAKDOWN = 'MACHINE_DOWN', 'Machine Breakdown'
+    TOOL_UNAVAILABLE = 'TOOL_UNAVAIL', 'Tool/Fixture Unavailable'
+    CUSTOMER_HOLD = 'CUSTOMER_HOLD', 'Customer Hold'
+    QUALITY_ISSUE = 'QUALITY_ISSUE', 'Quality Issue Under Investigation'
+    DESIGN_CHANGE = 'DESIGN_CHANGE', 'Design Change Pending'
+    OPERATOR_UNAVAILABLE = 'NO_OPERATOR', 'Operator Unavailable'
+    FURNACE_UNAVAILABLE = 'FURNACE_UNAVAIL', 'Furnace Unavailable'
+    POWER_OUTAGE = 'POWER_OUTAGE', 'Power Outage'
+    OTHER = 'OTHER', 'Other'
+
+
+class NonConformanceReport(models.Model):
+    """
+    NCR - Track quality issues, defects, and non-conformances
+    """
+    ncr_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique NCR number (e.g., NCR-2025-001)"
+    )
+    job_card = models.ForeignKey(
+        JobCard,
+        on_delete=models.CASCADE,
+        related_name='ncrs',
+        blank=True,
+        null=True,
+        help_text="Related job card (if applicable)"
+    )
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name='ncrs',
+        blank=True,
+        null=True,
+        help_text="Related work order"
+    )
+    bit_instance = models.ForeignKey(
+        BitInstance,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='ncrs',
+        help_text="Affected bit instance"
+    )
+    severity = models.CharField(
+        max_length=20,
+        choices=NCRSeverity.choices,
+        default=NCRSeverity.MINOR
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=NCRStatus.choices,
+        default=NCRStatus.OPEN,
+        db_index=True
+    )
+    detected_at_process = models.CharField(
+        max_length=100,
+        help_text="Process where issue was detected (e.g., BRAZING, NDT_INSPECTION)"
+    )
+    detected_by = models.CharField(max_length=100)
+    detected_date = models.DateTimeField(default=timezone.now)
+    
+    description = models.TextField(
+        help_text="Detailed description of the non-conformance"
+    )
+    root_cause = models.TextField(
+        blank=True,
+        help_text="Root cause analysis (filled after investigation)"
+    )
+    corrective_action = models.TextField(
+        blank=True,
+        help_text="Corrective action taken or planned"
+    )
+    preventive_action = models.TextField(
+        blank=True,
+        help_text="Preventive action to avoid recurrence"
+    )
+    
+    # Disposition (MRB decision)
+    disposition = models.CharField(
+        max_length=30,
+        choices=DispositionType.choices,
+        blank=True,
+        help_text="MRB disposition decision"
+    )
+    disposition_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Date of MRB decision"
+    )
+    disposition_by = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Person who made disposition decision"
+    )
+    disposition_notes = models.TextField(
+        blank=True,
+        help_text="Disposition justification and notes"
+    )
+    
+    # Closure
+    closed_date = models.DateTimeField(blank=True, null=True)
+    closed_by = models.CharField(max_length=100, blank=True)
+    
+    # Costs
+    estimated_cost_impact = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Estimated cost impact (USD)"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'severity']),
+            models.Index(fields=['detected_date']),
+        ]
+        verbose_name = 'Non-Conformance Report'
+        verbose_name_plural = 'Non-Conformance Reports'
+
+    def __str__(self):
+        return f"{self.ncr_number} - {self.get_severity_display()}"
+
+
+class ScrapRecord(models.Model):
+    """
+    Track scrapped bits and components with reasons and costs
+    """
+    scrap_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique scrap record number"
+    )
+    bit_instance = models.ForeignKey(
+        BitInstance,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='scrap_records',
+        help_text="Scrapped bit instance"
+    )
+    job_card = models.ForeignKey(
+        JobCard,
+        on_delete=models.CASCADE,
+        related_name='scrap_records',
+        blank=True,
+        null=True
+    )
+    ncr = models.ForeignKey(
+        NonConformanceReport,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='scrap_records',
+        help_text="Related NCR if applicable"
+    )
+    
+    scrap_reason = models.CharField(
+        max_length=30,
+        choices=ScrapReason.choices,
+        db_index=True
+    )
+    scrap_date = models.DateTimeField(default=timezone.now)
+    
+    item_description = models.CharField(
+        max_length=200,
+        help_text="What was scrapped (e.g., 'Complete bit', 'Matrix body', '12 PDC cutters')"
+    )
+    quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=1.0,
+        help_text="Quantity scrapped"
+    )
+    unit = models.CharField(
+        max_length=20,
+        default='EA',
+        help_text="Unit of measure (EA, KG, etc.)"
+    )
+    
+    # Cost tracking
+    material_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Material cost lost (USD)"
+    )
+    labor_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Labor cost invested (USD)"
+    )
+    total_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Total cost impact (USD)"
+    )
+    
+    # Approval
+    approved_by = models.CharField(
+        max_length=100,
+        help_text="Manager/supervisor who approved scrap"
+    )
+    approval_date = models.DateTimeField(default=timezone.now)
+    
+    # Recovery
+    salvage_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Salvage/recovery value (USD)"
+    )
+    salvage_notes = models.TextField(
+        blank=True,
+        help_text="Notes on material recovery (e.g., cutters salvaged, metal recycled)"
+    )
+    
+    remarks = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-scrap_date']
+        indexes = [
+            models.Index(fields=['scrap_date']),
+            models.Index(fields=['scrap_reason']),
+        ]
+        verbose_name = 'Scrap Record'
+        verbose_name_plural = 'Scrap Records'
+
+    def __str__(self):
+        return f"{self.scrap_number} - {self.item_description}"
+
+
+class ReworkRecord(models.Model):
+    """
+    Track rework operations with reasons, costs, and history
+    """
+    rework_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique rework record number"
+    )
+    job_card = models.ForeignKey(
+        JobCard,
+        on_delete=models.CASCADE,
+        related_name='rework_records'
+    )
+    ncr = models.ForeignKey(
+        NonConformanceReport,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='rework_records'
+    )
+    
+    rework_reason = models.CharField(
+        max_length=30,
+        choices=ReworkReason.choices,
+        db_index=True
+    )
+    original_process = models.CharField(
+        max_length=100,
+        help_text="Original process that needs rework (e.g., BRAZING, THREAD_CUTTING)"
+    )
+    
+    rework_description = models.TextField(
+        help_text="Detailed description of rework required"
+    )
+    rework_instructions = models.TextField(
+        help_text="Specific rework instructions"
+    )
+    
+    # Scheduling
+    planned_start = models.DateTimeField(blank=True, null=True)
+    planned_end = models.DateTimeField(blank=True, null=True)
+    actual_start = models.DateTimeField(blank=True, null=True)
+    actual_end = models.DateTimeField(blank=True, null=True)
+    
+    # Assignment
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='rework_assignments'
+    )
+    assigned_to_name = models.CharField(max_length=100, blank=True)
+    
+    # Status
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDING', 'Pending'),
+            ('IN_PROGRESS', 'In Progress'),
+            ('COMPLETED', 'Completed'),
+            ('FAILED', 'Failed (Re-scrap)'),
+            ('CANCELLED', 'Cancelled'),
+        ],
+        default='PENDING',
+        db_index=True
+    )
+    
+    # Verification
+    verified_by = models.CharField(max_length=100, blank=True)
+    verified_date = models.DateTimeField(blank=True, null=True)
+    verification_notes = models.TextField(blank=True)
+    
+    # Costs
+    labor_hours = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Labor hours spent on rework"
+    )
+    material_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Additional material cost for rework (USD)"
+    )
+    total_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Total rework cost (USD)"
+    )
+    
+    remarks = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'rework_reason']),
+            models.Index(fields=['actual_start']),
+        ]
+        verbose_name = 'Rework Record'
+        verbose_name_plural = 'Rework Records'
+
+    def __str__(self):
+        return f"{self.rework_number} - {self.get_rework_reason_display()}"
+
+
+class ProductionHold(models.Model):
+    """
+    Enhanced production hold tracking with detailed reasons and approvals
+    """
+    hold_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        help_text="Unique hold identifier"
+    )
+    job_card = models.ForeignKey(
+        JobCard,
+        on_delete=models.CASCADE,
+        related_name='production_holds'
+    )
+    work_order = models.ForeignKey(
+        WorkOrder,
+        on_delete=models.CASCADE,
+        related_name='production_holds',
+        blank=True,
+        null=True
+    )
+    
+    hold_reason = models.CharField(
+        max_length=30,
+        choices=HoldReason.choices,
+        db_index=True
+    )
+    hold_initiated_by = models.CharField(max_length=100)
+    hold_start = models.DateTimeField(default=timezone.now)
+    hold_end = models.DateTimeField(blank=True, null=True)
+    
+    description = models.TextField(
+        help_text="Detailed description of hold reason"
+    )
+    resolution = models.TextField(
+        blank=True,
+        help_text="How the hold was resolved"
+    )
+    
+    # For customer holds or design changes - require approval to release
+    requires_approval = models.BooleanField(
+        default=False,
+        help_text="Does this hold require management approval to release?"
+    )
+    approved_for_release_by = models.CharField(max_length=100, blank=True)
+    approval_date = models.DateTimeField(blank=True, null=True)
+    
+    # Impact tracking
+    estimated_delay_hours = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Estimated production delay in hours"
+    )
+    cost_impact = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Estimated cost impact (USD)"
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('ACTIVE', 'Active'),
+            ('RELEASED', 'Released'),
+            ('CANCELLED', 'Cancelled'),
+        ],
+        default='ACTIVE',
+        db_index=True
+    )
+    
+    remarks = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-hold_start']
+        indexes = [
+            models.Index(fields=['status', 'hold_reason']),
+            models.Index(fields=['hold_start']),
+        ]
+        verbose_name = 'Production Hold'
+        verbose_name_plural = 'Production Holds'
+
+    def __str__(self):
+        duration = "ongoing" if not self.hold_end else f"{(self.hold_end - self.hold_start).total_seconds() / 3600:.1f}h"
+        return f"{self.hold_number} - {self.get_hold_reason_display()} ({duration})"
+
+    def get_duration_hours(self):
+        """Calculate hold duration in hours"""
+        if self.hold_end:
+            return (self.hold_end - self.hold_start).total_seconds() / 3600
+        else:
+            return (timezone.now() - self.hold_start).total_seconds() / 3600

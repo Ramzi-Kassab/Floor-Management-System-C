@@ -407,3 +407,148 @@ BitDesignAdmin.search_fields = ['design_code', 'description']
 BitDesignRevisionAdmin.search_fields = ['mat_number', 'design__design_code']
 WorkOrderAdmin.search_fields = ['wo_number', 'customer_name']
 JobCardAdmin.search_fields = ['jobcard_code', 'work_order__wo_number']
+
+
+# ============================================================================
+# QUALITY MANAGEMENT & NCR
+# ============================================================================
+
+@admin.register(models.NonConformanceReport)
+class NonConformanceReportAdmin(admin.ModelAdmin):
+    list_display = ['ncr_number', 'severity', 'status', 'detected_at_process',
+                    'detected_by', 'detected_date', 'disposition']
+    list_filter = ['severity', 'status', 'disposition', 'detected_date']
+    search_fields = ['ncr_number', 'description', 'detected_by', 'job_card__jobcard_code']
+    date_hierarchy = 'detected_date'
+    list_per_page = 50
+    autocomplete_fields = ['job_card', 'work_order', 'bit_instance']
+    
+    fieldsets = (
+        ('NCR Information', {
+            'fields': ('ncr_number', 'severity', 'status')
+        }),
+        ('Detection', {
+            'fields': ('detected_at_process', 'detected_by', 'detected_date',
+                      'job_card', 'work_order', 'bit_instance')
+        }),
+        ('Description & Analysis', {
+            'fields': ('description', 'root_cause', 'corrective_action', 'preventive_action')
+        }),
+        ('Disposition (MRB Decision)', {
+            'fields': ('disposition', 'disposition_date', 'disposition_by', 'disposition_notes')
+        }),
+        ('Closure', {
+            'fields': ('closed_date', 'closed_by')
+        }),
+        ('Cost Impact', {
+            'fields': ('estimated_cost_impact',)
+        }),
+    )
+
+
+@admin.register(models.ScrapRecord)
+class ScrapRecordAdmin(admin.ModelAdmin):
+    list_display = ['scrap_number', 'item_description', 'scrap_reason',
+                    'quantity', 'total_cost', 'scrap_date', 'approved_by']
+    list_filter = ['scrap_reason', 'scrap_date', 'unit']
+    search_fields = ['scrap_number', 'item_description', 'approved_by',
+                    'bit_instance__serial_number']
+    date_hierarchy = 'scrap_date'
+    list_per_page = 50
+    autocomplete_fields = ['bit_instance', 'job_card', 'ncr']
+    
+    fieldsets = (
+        ('Scrap Information', {
+            'fields': ('scrap_number', 'scrap_reason', 'scrap_date')
+        }),
+        ('Item Details', {
+            'fields': ('item_description', 'quantity', 'unit',
+                      'bit_instance', 'job_card', 'ncr')
+        }),
+        ('Cost Tracking', {
+            'fields': ('material_cost', 'labor_cost', 'total_cost')
+        }),
+        ('Approval', {
+            'fields': ('approved_by', 'approval_date')
+        }),
+        ('Recovery/Salvage', {
+            'fields': ('salvage_value', 'salvage_notes')
+        }),
+        ('Additional Notes', {
+            'fields': ('remarks',)
+        }),
+    )
+
+
+@admin.register(models.ReworkRecord)
+class ReworkRecordAdmin(admin.ModelAdmin):
+    list_display = ['rework_number', 'job_card', 'rework_reason', 'status',
+                    'actual_start', 'actual_end', 'total_cost']
+    list_filter = ['status', 'rework_reason', 'actual_start']
+    search_fields = ['rework_number', 'job_card__jobcard_code', 'rework_description',
+                    'assigned_to_name']
+    date_hierarchy = 'actual_start'
+    list_per_page = 50
+    autocomplete_fields = ['job_card', 'ncr', 'assigned_to']
+    
+    fieldsets = (
+        ('Rework Information', {
+            'fields': ('rework_number', 'job_card', 'ncr', 'rework_reason', 'status')
+        }),
+        ('Description', {
+            'fields': ('original_process', 'rework_description', 'rework_instructions')
+        }),
+        ('Scheduling', {
+            'fields': ('planned_start', 'planned_end', 'actual_start', 'actual_end')
+        }),
+        ('Assignment', {
+            'fields': ('assigned_to', 'assigned_to_name')
+        }),
+        ('Verification', {
+            'fields': ('verified_by', 'verified_date', 'verification_notes')
+        }),
+        ('Cost Tracking', {
+            'fields': ('labor_hours', 'material_cost', 'total_cost')
+        }),
+        ('Additional Notes', {
+            'fields': ('remarks',)
+        }),
+    )
+
+
+@admin.register(models.ProductionHold)
+class ProductionHoldAdmin(admin.ModelAdmin):
+    list_display = ['hold_number', 'job_card', 'hold_reason', 'status',
+                    'hold_start', 'hold_end', 'get_duration_display', 'cost_impact']
+    list_filter = ['status', 'hold_reason', 'requires_approval', 'hold_start']
+    search_fields = ['hold_number', 'job_card__jobcard_code', 'description',
+                    'hold_initiated_by']
+    date_hierarchy = 'hold_start'
+    list_per_page = 50
+    autocomplete_fields = ['job_card', 'work_order']
+    
+    def get_duration_display(self, obj):
+        hours = obj.get_duration_hours()
+        return f"{hours:.1f}h"
+    get_duration_display.short_description = 'Duration'
+    
+    fieldsets = (
+        ('Hold Information', {
+            'fields': ('hold_number', 'job_card', 'work_order', 'status')
+        }),
+        ('Hold Details', {
+            'fields': ('hold_reason', 'hold_initiated_by', 'hold_start', 'hold_end')
+        }),
+        ('Description & Resolution', {
+            'fields': ('description', 'resolution')
+        }),
+        ('Approval (if required)', {
+            'fields': ('requires_approval', 'approved_for_release_by', 'approval_date')
+        }),
+        ('Impact Assessment', {
+            'fields': ('estimated_delay_hours', 'cost_impact')
+        }),
+        ('Additional Notes', {
+            'fields': ('remarks',)
+        }),
+    )
