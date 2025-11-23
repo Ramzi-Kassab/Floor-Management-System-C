@@ -1,0 +1,207 @@
+# Arabic translations for Production Department
+# Copyright (C) 2025
+# This file is distributed under the same license as the Floor Management System package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-23 00:00+0000\n"
+"PO-Revision-Date: 2025-11-23 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+
+#: templates/production/base.html
+msgid "Production Department"
+msgstr "قسم الإنتاج"
+
+msgid "Floor Management System"
+msgstr "نظام إدارة الورشة"
+
+msgid "Change Language"
+msgstr "تغيير اللغة"
+
+msgid "Dashboard"
+msgstr "لوحة التحكم"
+
+msgid "WIP Floor"
+msgstr "أرضية العمل"
+
+msgid "Analytics"
+msgstr "التحليلات"
+
+msgid "Process Times"
+msgstr "أوقات العمليات"
+
+msgid "Department KPIs"
+msgstr "مؤشرات أداء الأقسام"
+
+msgid "Work Orders"
+msgstr "أوامر العمل"
+
+msgid "All Work Orders"
+msgstr "جميع أوامر العمل"
+
+msgid "Create New"
+msgstr "إنشاء جديد"
+
+msgid "Job Cards"
+msgstr "بطاقات العمل"
+
+msgid "All Job Cards"
+msgstr "جميع بطاقات العمل"
+
+msgid "Bit Management"
+msgstr "إدارة الحفار"
+
+msgid "Bit Designs"
+msgstr "تصاميم الحفار"
+
+msgid "Bit Instances"
+msgstr "أمثلة الحفار"
+
+msgid "Create Design"
+msgstr "إنشاء تصميم"
+
+msgid "Quality"
+msgstr "الجودة"
+
+msgid "Evaluations"
+msgstr "التقييمات"
+
+msgid "NCRs"
+msgstr "تقارير عدم المطابقة"
+
+msgid "Holds"
+msgstr "الإيقافات"
+
+msgid "Correction Requests"
+msgstr "طلبات التصحيح"
+
+msgid "Execution Logs"
+msgstr "سجلات التنفيذ"
+
+msgid "New Evaluation"
+msgstr "تقييم جديد"
+
+msgid "New NCR"
+msgstr "تقرير عدم مطابقة جديد"
+
+msgid "Infiltration"
+msgstr "التشريب"
+
+msgid "Maintenance"
+msgstr "الصيانة"
+
+msgid "Equipment"
+msgstr "المعدات"
+
+msgid "Requests"
+msgstr "الطلبات"
+
+msgid "Report Issue"
+msgstr "الإبلاغ عن مشكلة"
+
+msgid "Admin"
+msgstr "الإدارة"
+
+msgid "Logout"
+msgstr "تسجيل الخروج"
+
+msgid "Login"
+msgstr "تسجيل الدخول"
+
+# Common words
+msgid "Search"
+msgstr "بحث"
+
+msgid "Filter"
+msgstr "تصفية"
+
+msgid "Save"
+msgstr "حفظ"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Delete"
+msgstr "حذف"
+
+msgid "Edit"
+msgstr "تعديل"
+
+msgid "View"
+msgstr "عرض"
+
+msgid "Create"
+msgstr "إنشاء"
+
+msgid "Update"
+msgstr "تحديث"
+
+msgid "Submit"
+msgstr "إرسال"
+
+msgid "Approve"
+msgstr "موافقة"
+
+msgid "Reject"
+msgstr "رفض"
+
+msgid "Status"
+msgstr "الحالة"
+
+msgid "Priority"
+msgstr "الأولوية"
+
+msgid "Date"
+msgstr "التاريخ"
+
+msgid "Time"
+msgstr "الوقت"
+
+msgid "Notes"
+msgstr "ملاحظات"
+
+msgid "Description"
+msgstr "الوصف"
+
+msgid "Actions"
+msgstr "الإجراءات"
+
+# Status values
+msgid "Pending"
+msgstr "قيد الانتظار"
+
+msgid "In Progress"
+msgstr "قيد التنفيذ"
+
+msgid "Completed"
+msgstr "مكتمل"
+
+msgid "Cancelled"
+msgstr "ملغى"
+
+msgid "Approved"
+msgstr "موافق عليه"
+
+msgid "Rejected"
+msgstr "مرفوض"
+
+# Priority values
+msgid "Low"
+msgstr "منخفضة"
+
+msgid "Normal"
+msgstr "عادية"
+
+msgid "High"
+msgstr "عالية"
+
+msgid "Urgent"
+msgstr "عاجل"

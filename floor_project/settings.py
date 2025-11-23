@@ -58,6 +58,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',  # Language selection
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -79,6 +80,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.media',
+                'django.template.context_processors.i18n',  # Internationalization
             ],
         },
     },
@@ -124,12 +126,23 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en'  # Default language
 
-TIME_ZONE = 'UTC'
+# Supported languages
+LANGUAGES = [
+    ('en', 'English'),
+    ('ar', 'العربية'),  # Arabic
+]
 
-USE_I18N = True
+# Translation files location
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
 
+TIME_ZONE = 'Asia/Riyadh'  # Saudi Arabia timezone
+
+USE_I18N = True  # Enable internationalization
+USE_L10N = True  # Enable localized formatting
 USE_TZ = True
 
 

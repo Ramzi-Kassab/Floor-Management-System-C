@@ -1,14 +1,50 @@
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% get_current_language as LANGUAGE_CODE %}{{ LANGUAGE_CODE }}" dir="{% if LANGUAGE_CODE == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Production Department{% endblock %} - Floor Management System</title>
+    <title>{% block title %}{% trans "Production Department" %}{% endblock %} - {% trans "Floor Management System" %}</title>
 
     <!-- Bootstrap 5 CSS -->
+    {% get_current_language as LANGUAGE_CODE %}
+    {% if LANGUAGE_CODE == 'ar' %}
+    <!-- Bootstrap RTL for Arabic -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    {% else %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    {% endif %}
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <!-- Custom RTL Styles for Arabic -->
+    {% if LANGUAGE_CODE == 'ar' %}
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            text-align: right;
+        }
+        .navbar-brand {
+            margin-right: 0;
+            margin-left: 1rem;
+        }
+        .dropdown-menu {
+            text-align: right;
+        }
+        .table {
+            text-align: right;
+        }
+        .form-check {
+            padding-right: 1.5em;
+            padding-left: 0;
+        }
+        .form-check-input {
+            float: right;
+            margin-right: -1.5em;
+            margin-left: 0;
+        }
+    </style>
+    {% endif %}
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -137,6 +173,39 @@
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
+                    <!-- Language Switcher -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" title="{% trans 'Change Language' %}">
+                            <i class="bi bi-translate"></i>
+                            {% get_current_language as LANGUAGE_CODE %}
+                            {% if LANGUAGE_CODE == 'ar' %}العربية{% else %}English{% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form action="{% url 'set_language' %}" method="post" class="px-3 py-2">
+                                    {% csrf_token %}
+                                    <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="language" value="en"
+                                               id="lang_en" {% if LANGUAGE_CODE == 'en' %}checked{% endif %}
+                                               onchange="this.form.submit()">
+                                        <label class="form-check-label" for="lang_en">
+                                            English
+                                        </label>
+                                    </div>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="radio" name="language" value="ar"
+                                               id="lang_ar" {% if LANGUAGE_CODE == 'ar' %}checked{% endif %}
+                                               onchange="this.form.submit()">
+                                        <label class="form-check-label" for="lang_ar">
+                                            العربية
+                                        </label>
+                                    </div>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+
                     {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
