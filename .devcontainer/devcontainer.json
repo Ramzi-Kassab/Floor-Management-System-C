@@ -6,10 +6,7 @@
     "ghcr.io/devcontainers/features/node:1": {
       "version": "18"
     },
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {
-      "version": "16"
-    }
+    "ghcr.io/devcontainers/features/git:1": {}
   },
 
   "customizations": {

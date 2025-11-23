@@ -3,6 +3,12 @@
 echo "🚀 Setting up Floor Management System - Production Department"
 echo "============================================================="
 
+# Install system dependencies
+echo ""
+echo "📦 Installing system dependencies..."
+sudo apt-get update
+sudo apt-get install -y postgresql postgresql-contrib libpq-dev
+
 # Install Python dependencies
 echo ""
 echo "📦 Installing Python dependencies..."
