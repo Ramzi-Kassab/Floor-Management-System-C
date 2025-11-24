@@ -15,7 +15,7 @@ This module contains comprehensive models for:
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 import uuid
 
@@ -170,47 +170,155 @@ class BitInstanceStatus(models.TextChoices):
 
 class BitDesign(models.Model):
     """
-    Core bit design/blueprint (e.g., HD75WF)
-    Represents the engineering design of a bit type
+    Core bit design/blueprint for Fixed Cutter (PDC) bits
+
+    Represents the engineering design of a bit. For PDC bits, includes
+    comprehensive design parameters. For Roller Cone, basic fields only
+    (detailed RC fields will be in separate model later).
+
+    Field Order (for forms):
+    1. Bit Category (bit_type)
+    2. Size (size_inch)
+    3. Current SMI Name (current_smi_name)
+    4. HDBS Name (hdbs_name)
+    5. IADC Code (iadc_code)
+    6. Body Material
+    7. Blade Count
+    8. Cutter Size Category
+    9. Gauge Length
+    10. Nozzle Count
+    11. Port Count
+    12. Connection Type
+    13. Description (auto-generated)
+    14. Remarks (free text notes)
     """
+    # 1. Bit Category - FIRST FIELD
+    bit_type = models.CharField(
+        max_length=20,
+        choices=BitType.choices,
+        help_text="Bit Category: Fixed Cutter (PDC) or Roller Cone",
+        verbose_name="Bit Category (Bit Cat)"
+    )
+
+    # 2. Size
+    size_inch = models.DecimalField(
+        max_digits=5,
+        decimal_places=3,
+        validators=[MinValueValidator(0)],
+        help_text="Bit diameter in inches (e.g., 8.5, 12.25)"
+    )
+
+    # 3. Current SMI Name
+    current_smi_name = models.CharField(
+        max_length=50,
+        blank=True,
+        db_index=True,
+        help_text="ARDT / SMI type (e.g., HD75WF, MMD53DH-2)",
+        verbose_name="Current SMI Name"
+    )
+
+    # 4. HDBS Name
+    hdbs_name = models.CharField(
+        max_length=50,
+        blank=True,
+        db_index=True,
+        help_text="Halliburton design name (e.g., MMD53DH, SF53, EQH12R)",
+        verbose_name="HDBS Name"
+    )
+
+    # 5. IADC Code
+    iadc_code = models.CharField(
+        max_length=10,
+        blank=True,
+        db_index=True,
+        help_text="IADC bit code (e.g., S334, M223, 437, 111)",
+        verbose_name="IADC Code"
+    )
+
+    # Legacy design_code (keep for backward compatibility)
     design_code = models.CharField(
         max_length=50,
         unique=True,
         db_index=True,
-        help_text="Unique design code (e.g., HD75WF)"
+        help_text="Unique design code (typically same as current_smi_name or hdbs_name)"
     )
-    bit_type = models.CharField(
-        max_length=20,
-        choices=BitType.choices,
-        help_text="Type of bit: PDC or Roller Cone"
-    )
+
+    # 6. Body Material
     body_material = models.CharField(
         max_length=20,
         choices=BodyMaterial.choices,
         blank=True,
         null=True,
-        help_text="Body material (relevant for PDC bits)"
+        help_text="Body material (Matrix or Steel) - auto-derived from name if empty"
     )
-    size_inch = models.DecimalField(
-        max_digits=5,
-        decimal_places=3,
-        validators=[MinValueValidator(0)],
-        help_text="Bit diameter in inches (e.g., 12.25)"
-    )
+
+    # 7. Blade Count
     blade_count = models.PositiveIntegerField(
         blank=True,
         null=True,
-        help_text="Number of blades (for PDC bits)"
+        help_text="Number of blades (for PDC bits) - auto-derived from name if empty"
     )
+
+    # 8. Cutter Size Category
+    cutter_size_category = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(3), MaxValueValidator(8)],
+        help_text="Cutter size category (3-8) - auto-derived from name if empty"
+    )
+
+    # 9. Gauge Length
+    gauge_length_inch = models.DecimalField(
+        max_digits=5,
+        decimal_places=3,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Gauge length in inches",
+        verbose_name="Gauge Length (inch)"
+    )
+
+    # 10. Nozzle Count
     nozzle_count = models.PositiveIntegerField(
         blank=True,
         null=True,
         help_text="Number of nozzles"
     )
+
+    # 11. Port Count (NEW)
+    port_count = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="Number of ports (can differ from nozzle count)"
+    )
+
+    # 12. Connection Type
+    connection_type = models.CharField(
+        max_length=30,
+        blank=True,
+        choices=[
+            ('REGULAR', 'Regular'),
+            ('CEREBRO', 'Cerebro'),
+            ('WITH_EROSION_SLEEVE', 'With Erosion Sleeve'),
+            ('SHANKLESS', 'Shankless'),
+            ('OTHER', 'Other'),
+        ],
+        help_text="Type of connection"
+    )
+
+    # 13. Description (auto-generated)
     description = models.TextField(
         blank=True,
-        help_text="Detailed design description"
+        help_text="Auto-generated: {size}-{name}-{iadc}. Can be edited manually."
     )
+
+    # 14. Remarks (NEW - free text notes)
+    remarks = models.TextField(
+        blank=True,
+        help_text="Free-text human comments and notes about the design"
+    )
+
+    # Metadata
     active = models.BooleanField(
         default=True,
         db_index=True,
@@ -220,14 +328,69 @@ class BitDesign(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['design_code']
+        ordering = ['bit_type', 'size_inch', 'current_smi_name']
         indexes = [
             models.Index(fields=['bit_type', 'active']),
             models.Index(fields=['size_inch']),
+            models.Index(fields=['current_smi_name']),
+            models.Index(fields=['hdbs_name']),
+            models.Index(fields=['iadc_code']),
         ]
 
     def __str__(self):
-        return f"{self.design_code} ({self.get_bit_type_display()}, {self.size_inch}\")"
+        name = self.current_smi_name or self.hdbs_name or self.design_code
+        return f"{self.size_inch}\" - {name} ({self.get_bit_type_display()})"
+
+    def save(self, *args, **kwargs):
+        """
+        Auto-fill logic for PDC/Fixed Cutter bits:
+        1. Derive body material, blades, cutter size from design name
+        2. Auto-generate description
+        """
+        # Only auto-fill for PDC bits
+        if self.bit_type == BitType.PDC:
+            # Get the design name (prefer current_smi_name, fallback to hdbs_name)
+            design_name = self.current_smi_name or self.hdbs_name or ''
+
+            if design_name:
+                # 1. Auto-derive body material if empty
+                if not self.body_material:
+                    # If name starts or ends with 'S', default to Steel
+                    if design_name.upper().startswith('S') or design_name.upper().endswith('S'):
+                        self.body_material = BodyMaterial.STEEL
+                    else:
+                        self.body_material = BodyMaterial.MATRIX
+
+                # 2. Auto-derive blade count from first digit (if empty)
+                if not self.blade_count and design_name:
+                    # Find first digit in name
+                    for char in design_name:
+                        if char.isdigit():
+                            self.blade_count = int(char)
+                            break
+
+                # 3. Auto-derive cutter size category from second digit (if empty)
+                if not self.cutter_size_category and design_name:
+                    # Find second digit in name
+                    digit_count = 0
+                    for char in design_name:
+                        if char.isdigit():
+                            digit_count += 1
+                            if digit_count == 2:
+                                cutter_cat = int(char)
+                                # Validate range 3-8
+                                if 3 <= cutter_cat <= 8:
+                                    self.cutter_size_category = cutter_cat
+                                break
+
+            # 4. Auto-generate description if empty
+            if not self.description:
+                name = self.current_smi_name or self.hdbs_name or self.design_code
+                iadc = self.iadc_code or ''
+                self.description = f"{self.size_inch}-{name}-{iadc}".rstrip('-')
+
+        # Call parent save
+        super().save(*args, **kwargs)
 
 
 class BitDesignRevision(models.Model):
