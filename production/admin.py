@@ -14,22 +14,48 @@ from . import models
 
 @admin.register(models.BitDesign)
 class BitDesignAdmin(admin.ModelAdmin):
-    list_display = ['design_code', 'bit_type', 'body_material', 'size_inch', 'blade_count', 'active', 'created_at']
-    list_filter = ['bit_type', 'body_material', 'active', 'created_at']
-    search_fields = ['design_code', 'description']
+    list_display = ['bit_type', 'size_inch', 'current_smi_name', 'hdbs_name', 'iadc_code',
+                    'body_material', 'blade_count', 'active', 'created_at']
+    list_filter = ['bit_type', 'body_material', 'connection_type', 'active', 'created_at']
+    search_fields = ['design_code', 'current_smi_name', 'hdbs_name', 'iadc_code',
+                     'description', 'remarks']
     date_hierarchy = 'created_at'
     list_per_page = 50
+
+    # Field order as specified: Bit Cat, Size, SMI Name, HDBS, IADC, Body, Blades, etc.
     fieldsets = (
-        ('Basic Information', {
-            'fields': ('design_code', 'bit_type', 'body_material', 'size_inch')
+        ('Bit Category & Identification', {
+            'fields': ('bit_type', 'size_inch', 'design_code'),
+            'description': 'Bit Category (FC/RC) and basic identification'
         }),
-        ('Design Details', {
-            'fields': ('blade_count', 'nozzle_count', 'description')
+        ('Design Names & Codes', {
+            'fields': ('current_smi_name', 'hdbs_name', 'iadc_code'),
+            'description': 'ARDT/SMI name, Halliburton name, and IADC code'
+        }),
+        ('Fixed Cutter (PDC) Specifications', {
+            'fields': ('body_material', 'blade_count', 'cutter_size_category',
+                      'gauge_length_inch'),
+            'description': 'Auto-filled from design name if empty. Matrix/Steel, blade count (1st digit), cutter size (2nd digit)'
+        }),
+        ('Hydraulics & Connection', {
+            'fields': ('nozzle_count', 'port_count', 'connection_type'),
+            'description': 'Nozzles, ports, and connection type (Regular, Cerebro, etc.)'
+        }),
+        ('Description & Notes', {
+            'fields': ('description', 'remarks'),
+            'description': 'Description is auto-generated ({size}-{name}-{iadc}). Use Remarks for manual notes.'
         }),
         ('Status', {
-            'fields': ('active',)
+            'fields': ('active',),
+            'classes': ('collapse',)
         }),
     )
+
+    def get_readonly_fields(self, request, obj=None):
+        # Show description as readonly if it's auto-generated
+        if obj and obj.description and not request.GET.get('force_edit_description'):
+            return ['description']
+        return []
 
 
 @admin.register(models.BitDesignRevision)
