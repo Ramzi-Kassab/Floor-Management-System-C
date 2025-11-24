@@ -3,7 +3,12 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-6"><h1>Bit Design: {{ design.design_code }}</h1></div>
-    <div class="col-md-6 text-end"><a href="{% url 'production:bitdesign-edit' design.pk %}" class="btn btn-warning">Edit</a></div>
+    <div class="col-md-6 text-end">
+        <a href="{% url 'production:bitdesign-mat-levels' design.pk %}" class="btn btn-info">
+            <i class="bi bi-layers"></i> MAT Levels
+        </a>
+        <a href="{% url 'production:bitdesign-edit' design.pk %}" class="btn btn-warning">Edit</a>
+    </div>
 </div>
 <div class="card">
     <div class="card-body">

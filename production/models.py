@@ -395,8 +395,48 @@ class BitDesign(models.Model):
 
 class BitDesignRevision(models.Model):
     """
-    Design revisions with MAT numbers (Level 3/4/5)
+    Design revisions with MAT numbers (Levels 2–6)
     Tracks engineering changes and material specifications
+
+    MAT Levels represent the physical manufacturing stages of a bit:
+
+    Level 2 – Mold + inserts & tooling:
+        - Assemblies and components required to form the head
+        - Mold parts, patterns, mold hardware
+        - Displacement inserts, dummy pieces, gauge inserts, and similar tooling
+        - Represents the tooling configuration used for infiltration or forming
+        - Matrix powders and steel blanks/slugs are NOT part of Level-2 BOM
+          (they belong to Level 3 BOM as they become part of the head itself)
+
+    Level 3 – Finished head only:
+        - Bit head (crown) alone, without upper section and without cutters
+        - Fully machined blades, junk slots, nozzle ports, and gauge pads
+        - For matrix-body: infiltrated and machined matrix crown ready for welding
+        - For steel-body: machined crown shape from forged/steel slug
+        - Ready for welding to upper section and for cutter pocket machining/drilling
+
+    Level 4 – Head + upper section welded, no cutters:
+        - Finished bit head welded/attached to the upper section/pin
+        - No cutters installed yet (cutter pockets may be drilled or pre-machined)
+        - Ports and basic hydraulics are in place
+        - Used before brazing cutters and before final finishing
+
+    Level 5 – Head + upper section, cutters brazed:
+        - Bit head welded to upper section/pin (connection) as per design
+        - All PDC cutters are brazed in place
+        - Design hardfacing is applied
+        - Hydraulic ports and internal flow paths are machined
+        - Nozzles may NOT be installed yet, final paint/packaging may be pending
+        - This is the "functional bit" before final finishing
+
+    Level 6 – Ready-to-run bit (field-ready):
+        - Completed bit as delivered to customer or warehouse
+        - Fully assembled bit, all cutters brazed, nozzles installed
+        - Paint and markings applied
+        - Breaker slot/breaker plate preparation done
+        - Box/can/packaging, labels, nameplates
+        - For Fixed Cutter: all blades, gauge pads, junk slots, ports are final
+        - Ready to run in the hole
     """
     design = models.ForeignKey(
         BitDesign,
@@ -409,8 +449,16 @@ class BitDesignRevision(models.Model):
         db_index=True,
         help_text="Material/Manufacturing number (MAT number)"
     )
-    level = models.PositiveIntegerField(
-        help_text="MAT level (3, 4, 5, etc.)"
+    level = models.PositiveSmallIntegerField(
+        help_text="Physical bit level (2–6: mold → finished bit)"
+    )
+    previous_level = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='next_levels',
+        help_text="Immediately lower-level MAT for the same design (e.g., Level 4 → Level 3)"
     )
     effective_from = models.DateField(
         help_text="Date this revision becomes effective"
@@ -435,6 +483,7 @@ class BitDesignRevision(models.Model):
         ordering = ['-effective_from', 'mat_number']
         indexes = [
             models.Index(fields=['design', 'active']),
+            models.Index(fields=['design', 'level']),
             models.Index(fields=['effective_from', 'effective_to']),
         ]
         verbose_name_plural = 'Bit design revisions'

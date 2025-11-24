@@ -185,6 +185,85 @@ class BitDesignUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
+class BitMatLevelListView(LoginRequiredMixin, ListView):
+    """
+    MAT Levels (BitDesignRevision) for a specific BitDesign
+    Shows all levels (2-6) with comprehensive filtering
+    """
+    model = models.BitDesignRevision
+    template_name = 'production/bitdesign_mat_levels.html'
+    context_object_name = 'revisions'
+    paginate_by = 50
+
+    def get_queryset(self):
+        design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
+
+        queryset = self.model.objects.filter(
+            design=design
+        ).select_related('design', 'previous_level')
+
+        # --- Filters ---
+
+        # Free-text search across MAT number and remarks
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(mat_number__icontains=search) |
+                Q(remarks__icontains=search)
+            )
+
+        # Filter by level (single or multiple, e.g. ?level=3 or ?level=3,4)
+        level_param = self.request.GET.get('level')
+        if level_param:
+            levels = [int(l) for l in level_param.split(',') if l.strip().isdigit()]
+            if levels:
+                queryset = queryset.filter(level__in=levels)
+
+        # Filter by body material (from parent design)
+        body_material = self.request.GET.get('body_material')
+        if body_material:
+            queryset = queryset.filter(design__body_material=body_material)
+
+        # Filter by previous_level MAT number (e.g. ?prev_mat=2016920)
+        prev_mat = self.request.GET.get('prev_mat')
+        if prev_mat:
+            queryset = queryset.filter(previous_level__mat_number__icontains=prev_mat)
+
+        # Filter by effective_from date range
+        eff_from_start = self.request.GET.get('effective_from_start')
+        eff_from_end = self.request.GET.get('effective_from_end')
+        if eff_from_start:
+            queryset = queryset.filter(effective_from__gte=eff_from_start)
+        if eff_from_end:
+            queryset = queryset.filter(effective_from__lte=eff_from_end)
+
+        # Filter by effective_to date range
+        eff_to_start = self.request.GET.get('effective_to_start')
+        eff_to_end = self.request.GET.get('effective_to_end')
+        if eff_to_start:
+            queryset = queryset.filter(effective_to__gte=eff_to_start)
+        if eff_to_end:
+            queryset = queryset.filter(effective_to__lte=eff_to_end)
+
+        # Filter by active flag (?active=true / false)
+        active = self.request.GET.get('active')
+        if active is not None and active != '':
+            if active.lower() in ['true', '1', 'yes']:
+                queryset = queryset.filter(active=True)
+            elif active.lower() in ['false', '0', 'no']:
+                queryset = queryset.filter(active=False)
+
+        # Default ordering: by level then MAT number
+        queryset = queryset.order_by('level', 'mat_number')
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
+        context['design'] = design
+        return context
+
+
 class BitInstanceListView(LoginRequiredMixin, ListView):
     model = models.BitInstance
     template_name = 'production/bitinstance_list.html'

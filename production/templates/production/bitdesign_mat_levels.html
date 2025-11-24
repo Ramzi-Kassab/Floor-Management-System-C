@@ -1,0 +1,254 @@
+{% extends 'production/base.html' %}
+{% block title %}MAT Levels - {{ design.design_code }}{% endblock %}
+{% block content %}
+
+<!-- Design Header -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="bi bi-layers"></i> MAT Levels - {{ design.design_code }}</h1>
+        <div class="card mt-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <p class="mb-1"><strong>Bit Cat:</strong> {{ design.get_bit_type_display }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <p class="mb-1"><strong>Size:</strong> {{ design.size_inch }}"</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="mb-1"><strong>SMI Name:</strong> {{ design.current_smi_name|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <p class="mb-1"><strong>HDBS:</strong> {{ design.hdbs_name|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <p class="mb-1"><strong>IADC:</strong> {{ design.iadc_code|default:"—" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'production:bitdesign-detail' design.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Design
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="bi bi-funnel"></i> Filters</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <!-- Search -->
+            <div class="col-md-4">
+                <label class="form-label">Search (MAT # or Remarks)</label>
+                <input type="text" class="form-control" name="search"
+                       value="{{ request.GET.search }}"
+                       placeholder="Search...">
+            </div>
+
+            <!-- Level -->
+            <div class="col-md-2">
+                <label class="form-label">Level</label>
+                <input type="text" class="form-control" name="level"
+                       value="{{ request.GET.level }}"
+                       placeholder="e.g. 3 or 3,4,5">
+                <small class="text-muted">Comma-separated</small>
+            </div>
+
+            <!-- Body Material -->
+            <div class="col-md-2">
+                <label class="form-label">Body Material</label>
+                <select class="form-select" name="body_material">
+                    <option value="">All</option>
+                    <option value="MATRIX" {% if request.GET.body_material == 'MATRIX' %}selected{% endif %}>Matrix</option>
+                    <option value="STEEL" {% if request.GET.body_material == 'STEEL' %}selected{% endif %}>Steel</option>
+                </select>
+            </div>
+
+            <!-- Previous Level MAT -->
+            <div class="col-md-4">
+                <label class="form-label">Previous Level MAT #</label>
+                <input type="text" class="form-control" name="prev_mat"
+                       value="{{ request.GET.prev_mat }}"
+                       placeholder="e.g. 2016920">
+            </div>
+
+            <!-- Effective From Range -->
+            <div class="col-md-3">
+                <label class="form-label">Effective From (Start)</label>
+                <input type="date" class="form-control" name="effective_from_start"
+                       value="{{ request.GET.effective_from_start }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Effective From (End)</label>
+                <input type="date" class="form-control" name="effective_from_end"
+                       value="{{ request.GET.effective_from_end }}">
+            </div>
+
+            <!-- Effective To Range -->
+            <div class="col-md-3">
+                <label class="form-label">Effective To (Start)</label>
+                <input type="date" class="form-control" name="effective_to_start"
+                       value="{{ request.GET.effective_to_start }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Effective To (End)</label>
+                <input type="date" class="form-control" name="effective_to_end"
+                       value="{{ request.GET.effective_to_end }}">
+            </div>
+
+            <!-- Active -->
+            <div class="col-md-2">
+                <label class="form-label">Active</label>
+                <select class="form-select" name="active">
+                    <option value="">All</option>
+                    <option value="true" {% if request.GET.active == 'true' %}selected{% endif %}>Active</option>
+                    <option value="false" {% if request.GET.active == 'false' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Apply Filters
+                </button>
+                <a href="{% url 'production:bitdesign-mat-levels' design.pk %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Table -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="bi bi-table"></i> MAT Levels ({{ revisions|length }} results)</h5>
+    </div>
+    <div class="card-body">
+        {% if revisions %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>MAT Number</th>
+                        <th>Level</th>
+                        <th>Body Material</th>
+                        <th>Previous Level MAT</th>
+                        <th>Effective From</th>
+                        <th>Effective To</th>
+                        <th>Active</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rev in revisions %}
+                    <tr>
+                        <td><strong>{{ rev.mat_number }}</strong></td>
+                        <td>
+                            <span class="badge bg-info">Level {{ rev.level }}</span>
+                            {% if rev.level == 2 %}
+                                <small class="text-muted d-block">Mold + Tooling</small>
+                            {% elif rev.level == 3 %}
+                                <small class="text-muted d-block">Head Only</small>
+                            {% elif rev.level == 4 %}
+                                <small class="text-muted d-block">Head + Upper</small>
+                            {% elif rev.level == 5 %}
+                                <small class="text-muted d-block">With Cutters</small>
+                            {% elif rev.level == 6 %}
+                                <small class="text-muted d-block">Ready to Run</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ rev.design.get_body_material_display|default:"—" }}</td>
+                        <td>
+                            {% if rev.previous_level %}
+                                {{ rev.previous_level.mat_number }}
+                                <small class="text-muted">(L{{ rev.previous_level.level }})</small>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ rev.effective_from|date:"Y-m-d" }}</td>
+                        <td>{{ rev.effective_to|date:"Y-m-d"|default:"Current" }}</td>
+                        <td>
+                            {% if rev.active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rev.remarks %}
+                                {{ rev.remarks|truncatewords:10 }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <p class="text-muted">No MAT levels found for this design.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Level Legend -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5><i class="bi bi-info-circle"></i> Level Reference</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <p><span class="badge bg-info">Level 2</span> <strong>Mold + Tooling:</strong> Mold parts, patterns, displacement inserts</p>
+                <p><span class="badge bg-info">Level 3</span> <strong>Finished Head Only:</strong> Crown alone, without upper section/cutters</p>
+            </div>
+            <div class="col-md-4">
+                <p><span class="badge bg-info">Level 4</span> <strong>Head + Upper Section:</strong> Welded, no cutters installed yet</p>
+                <p><span class="badge bg-info">Level 5</span> <strong>With Cutters Brazed:</strong> Functional bit before final finishing</p>
+            </div>
+            <div class="col-md-4">
+                <p><span class="badge bg-info">Level 6</span> <strong>Ready to Run:</strong> Completed bit, field-ready with nozzles, paint, packaging</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
