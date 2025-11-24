@@ -7,14 +7,45 @@
 </div>
 <div class="card">
     <div class="card-body">
-        <p><strong>Design Code:</strong> {{ design.design_code }}</p>
-        <p><strong>Type:</strong> {{ design.get_bit_type_display }}</p>
-        <p><strong>Material:</strong> {{ design.get_body_material_display|default:"—" }}</p>
-        <p><strong>Size:</strong> {{ design.size_inch }}"</p>
-        <p><strong>Blade Count:</strong> {{ design.blade_count|default:"—" }}</p>
-        <p><strong>Nozzle Count:</strong> {{ design.nozzle_count|default:"—" }}</p>
-        <p><strong>Active:</strong> {% if design.active %}Yes{% else %}No{% endif %}</p>
-        {% if design.description %}<p><strong>Description:</strong> {{ design.description }}</p>{% endif %}
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">Bit Category & Identification</h6>
+                <p><strong>Design Code:</strong> {{ design.design_code }}</p>
+                <p><strong>Bit Category (Bit Cat):</strong> {{ design.get_bit_type_display }}</p>
+                <p><strong>Size:</strong> {{ design.size_inch }}"</p>
+                <p><strong>Active:</strong> {% if design.active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">Design Names & Codes</h6>
+                <p><strong>Current SMI Name:</strong> {{ design.current_smi_name|default:"—" }}</p>
+                <p><strong>HDBS Name:</strong> {{ design.hdbs_name|default:"—" }}</p>
+                <p><strong>IADC Code:</strong> {{ design.iadc_code|default:"—" }}</p>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">Fixed Cutter (PDC) Specifications</h6>
+                <p><strong>Body Material:</strong> {{ design.get_body_material_display|default:"—" }}</p>
+                <p><strong>Blade Count:</strong> {{ design.blade_count|default:"—" }}</p>
+                <p><strong>Cutter Size Category:</strong> {{ design.cutter_size_category|default:"—" }}</p>
+                <p><strong>Gauge Length (inch):</strong> {{ design.gauge_length_inch|default:"—" }}</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">Hydraulics & Connection</h6>
+                <p><strong>Nozzle Count:</strong> {{ design.nozzle_count|default:"—" }}</p>
+                <p><strong>Port Count:</strong> {{ design.port_count|default:"—" }}</p>
+                <p><strong>Connection Type:</strong> {{ design.get_connection_type_display|default:"—" }}</p>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-12">
+                <h6 class="text-muted mb-3">Description & Notes</h6>
+                {% if design.description %}<p><strong>Description:</strong> <span class="text-muted">(Auto-generated)</span><br>{{ design.description }}</p>{% endif %}
+                {% if design.remarks %}<p><strong>Remarks:</strong><br><span class="text-muted">{{ design.remarks|linebreaks }}</span></p>{% endif %}
+            </div>
+        </div>
     </div>
 </div>
 {% if revisions %}

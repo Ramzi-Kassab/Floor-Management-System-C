@@ -9,15 +9,18 @@
     <div class="card-body">
         {% if designs %}
         <table class="table table-striped">
-            <thead><tr><th>Design Code</th><th>Type</th><th>Material</th><th>Size</th><th>Blades</th><th>Active</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Bit Cat</th><th>Size</th><th>SMI Name</th><th>HDBS Name</th><th>IADC Code</th><th>Body</th><th>Blades</th><th>Cutter Size</th><th>Active</th><th>Actions</th></tr></thead>
             <tbody>
                 {% for design in designs %}
                 <tr>
-                    <td><strong>{{ design.design_code }}</strong></td>
                     <td>{{ design.get_bit_type_display }}</td>
-                    <td>{{ design.get_body_material_display|default:"—" }}</td>
                     <td>{{ design.size_inch }}"</td>
+                    <td>{{ design.current_smi_name|default:"—" }}</td>
+                    <td>{{ design.hdbs_name|default:"—" }}</td>
+                    <td>{{ design.iadc_code|default:"—" }}</td>
+                    <td>{{ design.get_body_material_display|default:"—" }}</td>
                     <td>{{ design.blade_count|default:"—" }}</td>
+                    <td>{{ design.cutter_size_category|default:"—" }}</td>
                     <td>{% if design.active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
                     <td><a href="{% url 'production:bitdesign-detail' design.pk %}" class="btn btn-sm btn-primary">View</a></td>
                 </tr>

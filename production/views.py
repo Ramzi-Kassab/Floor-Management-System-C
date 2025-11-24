@@ -81,25 +81,37 @@ class BitDesignListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # Search functionality
+        # Extended search functionality - search across all key fields
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(
                 Q(design_code__icontains=search) |
-                Q(description__icontains=search)
+                Q(current_smi_name__icontains=search) |
+                Q(hdbs_name__icontains=search) |
+                Q(iadc_code__icontains=search) |
+                Q(description__icontains=search) |
+                Q(remarks__icontains=search)
             )
 
-        # Filter by bit type
+        # Filter by bit type (Bit Category)
         bit_type = self.request.GET.get('bit_type')
         if bit_type:
             queryset = queryset.filter(bit_type=bit_type)
+
+        # Filter by body material
+        body_material = self.request.GET.get('body_material')
+        if body_material:
+            queryset = queryset.filter(body_material=body_material)
 
         # Filter by active status
         active = self.request.GET.get('active')
         if active == 'true':
             queryset = queryset.filter(active=True)
+        elif active == 'false':
+            queryset = queryset.filter(active=False)
 
-        return queryset.order_by('design_code')
+        # Order by: bit_type → size_inch → current_smi_name
+        return queryset.order_by('bit_type', 'size_inch', 'current_smi_name')
 
 
 class BitDesignDetailView(LoginRequiredMixin, DetailView):
@@ -116,24 +128,60 @@ class BitDesignDetailView(LoginRequiredMixin, DetailView):
 class BitDesignCreateView(LoginRequiredMixin, CreateView):
     model = models.BitDesign
     template_name = 'production/bitdesign_form.html'
-    fields = ['design_code', 'bit_type', 'body_material', 'size_inch',
-              'blade_count', 'nozzle_count', 'description', 'active']
+    # Field order as specified: Bit Cat, Size, SMI, HDBS, IADC, Body, Blades, etc.
+    fields = [
+        'bit_type',  # Bit Category (Bit Cat)
+        'size_inch',
+        'current_smi_name',
+        'hdbs_name',
+        'iadc_code',
+        'design_code',  # For backward compatibility
+        'body_material',
+        'blade_count',
+        'cutter_size_category',
+        'gauge_length_inch',
+        'nozzle_count',
+        'port_count',
+        'connection_type',
+        'description',
+        'remarks',
+        'active'
+    ]
     success_url = reverse_lazy('production:bitdesign-list')
 
     def form_valid(self, form):
-        messages.success(self.request, f'Bit Design {form.instance.design_code} created successfully.')
+        name = form.instance.current_smi_name or form.instance.hdbs_name or form.instance.design_code
+        messages.success(self.request, f'Bit Design {name} created successfully.')
         return super().form_valid(form)
 
 
 class BitDesignUpdateView(LoginRequiredMixin, UpdateView):
     model = models.BitDesign
     template_name = 'production/bitdesign_form.html'
-    fields = ['design_code', 'bit_type', 'body_material', 'size_inch',
-              'blade_count', 'nozzle_count', 'description', 'active']
+    # Same field order as create
+    fields = [
+        'bit_type',
+        'size_inch',
+        'current_smi_name',
+        'hdbs_name',
+        'iadc_code',
+        'design_code',
+        'body_material',
+        'blade_count',
+        'cutter_size_category',
+        'gauge_length_inch',
+        'nozzle_count',
+        'port_count',
+        'connection_type',
+        'description',
+        'remarks',
+        'active'
+    ]
     success_url = reverse_lazy('production:bitdesign-list')
 
     def form_valid(self, form):
-        messages.success(self.request, f'Bit Design {form.instance.design_code} updated successfully.')
+        name = form.instance.current_smi_name or form.instance.hdbs_name or form.instance.design_code
+        messages.success(self.request, f'Bit Design {name} updated successfully.')
         return super().form_valid(form)
 
 

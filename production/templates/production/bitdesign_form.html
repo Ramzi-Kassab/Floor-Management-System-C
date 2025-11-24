@@ -11,8 +11,39 @@
                     {% csrf_token %}
                     {% for field in form %}
                     <div class="mb-3">
-                        <label class="form-label">{{ field.label }}</label>
-                        {{ field|add_class:"form-control" }}
+                        <label class="form-label">
+                            {% if field.name == 'bit_type' %}
+                                Bit Category (Bit Cat)
+                            {% elif field.name == 'current_smi_name' %}
+                                Current SMI Name
+                            {% elif field.name == 'hdbs_name' %}
+                                HDBS Name
+                            {% elif field.name == 'iadc_code' %}
+                                IADC Code
+                            {% elif field.name == 'cutter_size_category' %}
+                                Cutter Size Category
+                            {% elif field.name == 'gauge_length_inch' %}
+                                Gauge Length (inch)
+                            {% elif field.name == 'port_count' %}
+                                Port Count
+                            {% elif field.name == 'connection_type' %}
+                                Connection Type
+                            {% else %}
+                                {{ field.label }}
+                            {% endif %}
+                        </label>
+                        {% if field.name == 'description' %}
+                            {{ field|add_class:"form-control" }}
+                            <small class="form-text text-muted">Auto-generated as: {Size}-{SMI/HDBS Name}-{IADC Code}</small>
+                        {% elif field.name == 'remarks' %}
+                            {{ field|add_class:"form-control" }}
+                            <small class="form-text text-muted">Free-text comments and notes about the design</small>
+                        {% else %}
+                            {{ field|add_class:"form-control" }}
+                        {% endif %}
+                        {% if field.help_text %}
+                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                        {% endif %}
                     </div>
                     {% endfor %}
                     <button type="submit" class="btn btn-primary">Save</button>
