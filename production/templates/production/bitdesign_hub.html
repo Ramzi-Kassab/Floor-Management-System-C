@@ -1,13 +1,30 @@
 {% extends 'production/base.html' %}
 {% load bit_format %}
 {% block title %}Bit Design Hub{% endblock %}
+
+{% block extra_css %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<style>
+    .design-row { background-color: #cfe2ff !important; cursor: pointer; }
+    .design-row:hover { background-color: #b6d4fe !important; }
+    .level-row { background-color: #f8f9fa; }
+    .toggle-icon { transition: transform 0.2s; }
+    .toggle-icon.expanded { transform: rotate(90deg); }
+    table.dataTable thead th { padding: 12px 8px; }
+    table.dataTable tbody td { padding: 8px; vertical-align: middle; }
+    .dataTables_wrapper .dataTables_filter input { border-radius: 4px; }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<!-- Header -->
-<div class="row mb-4">
+<!-- Header with Search -->
+<div class="row mb-3">
     <div class="col-md-6">
         <h1><i class="bi bi-grid-3x3-gap"></i> Bit Design Hub</h1>
-        <p class="text-muted">Central junction for all bit designs (Levels 1-6)</p>
+        <p class="text-muted mb-0">Central junction for all bit designs (Levels 1-6) • {{ designs|length }} designs</p>
     </div>
     <div class="col-md-6 text-end">
         <a href="{% url 'production:bitdesign-create' %}" class="btn btn-primary">
@@ -19,140 +36,9 @@
     </div>
 </div>
 
-<!-- Filters -->
-<div class="card mb-4">
-    <div class="card-header">
-        <h5><i class="bi bi-funnel"></i> Filters</h5>
-    </div>
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <!-- Basic Filters -->
-            <div class="col-md-3">
-                <label class="form-label">Search</label>
-                <input type="text" class="form-control" name="search"
-                       value="{{ filters.search }}"
-                       placeholder="Design code, MAT, SMI, HDBS...">
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Bit Type</label>
-                <select class="form-select" name="bit_type">
-                    <option value="">All</option>
-                    <option value="PDC" {% if filters.bit_type == 'PDC' %}selected{% endif %}>Fixed Cutter (PDC)</option>
-                    <option value="RC" {% if filters.bit_type == 'RC' %}selected{% endif %}>Roller Cone (RC)</option>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Body Material</label>
-                <select class="form-select" name="body_material">
-                    <option value="">All</option>
-                    <option value="MATRIX" {% if filters.body_material == 'MATRIX' %}selected{% endif %}>Matrix</option>
-                    <option value="STEEL" {% if filters.body_material == 'STEEL' %}selected{% endif %}>Steel</option>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Size Min</label>
-                <input type="number" step="0.125" class="form-control" name="size_min"
-                       value="{{ filters.size_min }}" placeholder="e.g. 8.5">
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Size Max</label>
-                <input type="number" step="0.125" class="form-control" name="size_max"
-                       value="{{ filters.size_max }}" placeholder="e.g. 12.25">
-            </div>
-
-            <div class="col-md-1">
-                <label class="form-label">Active</label>
-                <select class="form-select" name="active_design">
-                    <option value="">All</option>
-                    <option value="true" {% if filters.active_design == 'true' %}selected{% endif %}>Yes</option>
-                    <option value="false" {% if filters.active_design == 'false' %}selected{% endif %}>No</option>
-                </select>
-            </div>
-
-            <!-- Advanced Filters (Collapsible) -->
-            <div class="col-md-12">
-                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
-                    <i class="bi bi-sliders"></i> Advanced Filters
-                </button>
-            </div>
-
-            <div class="collapse col-md-12" id="advancedFilters">
-                <div class="row g-3 border-top pt-3">
-                    <div class="col-md-2">
-                        <label class="form-label">Blade Count</label>
-                        <input type="number" class="form-control" name="blade_count"
-                               value="{{ filters.blade_count }}">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Cutter Size Category</label>
-                        <input type="number" class="form-control" name="cutter_size_category"
-                               value="{{ filters.cutter_size_category }}" placeholder="3-8">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Connection Type</label>
-                        <select class="form-select" name="connection_type">
-                            <option value="">All</option>
-                            <option value="REGULAR" {% if filters.connection_type == 'REGULAR' %}selected{% endif %}>Regular</option>
-                            <option value="CEREBRO" {% if filters.connection_type == 'CEREBRO' %}selected{% endif %}>Cerebro</option>
-                            <option value="WITH_EROSION_SLEEVE" {% if filters.connection_type == 'WITH_EROSION_SLEEVE' %}selected{% endif %}>With Erosion Sleeve</option>
-                            <option value="SHANKLESS" {% if filters.connection_type == 'SHANKLESS' %}selected{% endif %}>Shankless</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Level (2-6)</label>
-                        <input type="text" class="form-control" name="level"
-                               value="{{ filters.level }}" placeholder="e.g. 3 or 3,4,5">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">MAT Number</label>
-                        <input type="text" class="form-control" name="mat_number"
-                               value="{{ filters.mat_number }}">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Previous MAT</label>
-                        <input type="text" class="form-control" name="prev_mat"
-                               value="{{ filters.prev_mat }}">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Level Active</label>
-                        <select class="form-select" name="active_level">
-                            <option value="">All</option>
-                            <option value="true" {% if filters.active_level == 'true' %}selected{% endif %}>Yes</option>
-                            <option value="false" {% if filters.active_level == 'false' %}selected{% endif %}>No</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Buttons -->
-            <div class="col-md-12">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search"></i> Apply Filters
-                </button>
-                <a href="{% url 'production:bitdesign-hub' %}" class="btn btn-secondary">
-                    <i class="bi bi-x-circle"></i> Clear All
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Hub Table -->
 <div class="card">
-    <div class="card-header">
-        <h5><i class="bi bi-table"></i> Designs & Levels ({{ designs|length }} designs)</h5>
-    </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         {% if designs %}
         <div class="table-responsive">
             <table class="table table-sm table-hover" id="bitdesign-hub-table">
@@ -322,38 +208,135 @@
     </div>
 </div>
 
-<!-- JavaScript for collapsible rows -->
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery (required for DataTables) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Toggle design rows
-    document.querySelectorAll('.design-row').forEach(function(row) {
-        row.addEventListener('click', function(e) {
-            // Don't toggle if clicking on dropdown
-            if (e.target.closest('.dropdown')) return;
+$(document).ready(function() {
+    // Initialize DataTable with Excel-like features
+    var table = $('#bitdesign-hub-table').DataTable({
+        // Paging
+        paging: true,
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
 
-            const designId = this.dataset.designId;
-            const levelRows = document.querySelectorAll('.level-row-' + designId);
-            const icon = this.querySelector('.toggle-icon');
+        // Searching
+        searching: true,
+        search: {
+            smart: true,
+            regex: false
+        },
 
-            levelRows.forEach(function(levelRow) {
-                if (levelRow.style.display === 'none') {
-                    levelRow.style.display = '';
-                    icon.classList.remove('bi-caret-right-fill');
-                    icon.classList.add('bi-caret-down-fill');
-                } else {
-                    levelRow.style.display = 'none';
-                    icon.classList.remove('bi-caret-down-fill');
-                    icon.classList.add('bi-caret-right-fill');
-                }
-            });
-        });
+        // Ordering
+        ordering: true,
+        order: [[3, 'asc'], [4, 'asc']], // Type then Size
+
+        // Display
+        info: true,
+        autoWidth: false,
+        responsive: false,
+
+        // Buttons for export
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+
+        // Language
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search all columns...",
+            lengthMenu: "Show _MENU_ rows",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "No entries available",
+            infoFiltered: "(filtered from _TOTAL_ total entries)",
+            zeroRecords: "No matching designs found",
+            emptyTable: "No designs available"
+        },
+
+        // Column-specific settings
+        columnDefs: [
+            { orderable: false, targets: [0, -1] }, // Disable sorting on toggle icon and actions
+            { className: 'text-center', targets: [0, 2, 8, 9, 10, 15, 16, 22, 23] }, // Center align specific columns
+            { width: '30px', targets: 0 }, // Toggle icon
+            { width: '80px', targets: 1 }, // Level
+            { width: '60px', targets: 4 }, // Size
+            { width: '120px', targets: -1 } // Actions
+        ],
+
+        // Initialize with all level rows hidden
+        initComplete: function() {
+            // Hide all level rows initially
+            $('.level-row').hide();
+        }
     });
 
-    // Export button (placeholder)
-    document.getElementById('export-btn').addEventListener('click', function() {
-        alert('Export functionality coming soon!\n\nWill export current view with visible columns as CSV.');
+    // Toggle design rows to show/hide levels
+    $('#bitdesign-hub-table tbody').on('click', 'tr.design-row', function(e) {
+        // Don't toggle if clicking on dropdown or links
+        if ($(e.target).closest('.dropdown, a, button').length) return;
+
+        const designId = $(this).data('design-id');
+        const levelRows = $('.level-row-' + designId);
+        const icon = $(this).find('.toggle-icon');
+
+        if (levelRows.first().is(':visible')) {
+            // Collapse
+            levelRows.hide();
+            icon.removeClass('bi-caret-down-fill expanded').addClass('bi-caret-right-fill');
+        } else {
+            // Expand
+            levelRows.show();
+            icon.removeClass('bi-caret-right-fill').addClass('bi-caret-down-fill expanded');
+        }
+    });
+
+    // Export button functionality
+    $('#export-btn').on('click', function() {
+        // Get visible data
+        var data = table.rows({ search: 'applied' }).data();
+        var headers = table.columns().header();
+
+        // Create CSV content
+        var csv = [];
+        var headerRow = [];
+        $(headers).each(function() {
+            headerRow.push('"' + $(this).text().trim() + '"');
+        });
+        csv.push(headerRow.join(','));
+
+        // Add data rows
+        data.each(function(row, index) {
+            var dataRow = [];
+            for (var i = 0; i < row.length; i++) {
+                var cell = $('<div>').html(row[i]).text().trim();
+                dataRow.push('"' + cell.replace(/"/g, '""') + '"');
+            }
+            csv.push(dataRow.join(','));
+        });
+
+        // Download CSV
+        var csvContent = csv.join('\n');
+        var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        var url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'bit_design_hub_' + new Date().toISOString().slice(0,10) + '.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 });
 </script>
-
 {% endblock %}
