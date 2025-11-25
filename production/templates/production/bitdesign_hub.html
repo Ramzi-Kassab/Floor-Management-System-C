@@ -1,0 +1,343 @@
+{% extends 'production/base.html' %}
+{% block title %}Bit Design Hub{% endblock %}
+{% block content %}
+
+<!-- Header -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h1><i class="bi bi-grid-3x3-gap"></i> Bit Design Hub</h1>
+        <p class="text-muted">Central junction for all bit designs (Levels 1-6)</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{% url 'production:bitdesign-create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Design
+        </a>
+        <button class="btn btn-success" id="export-btn">
+            <i class="bi bi-download"></i> Export
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="bi bi-funnel"></i> Filters</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <!-- Basic Filters -->
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" name="search"
+                       value="{{ filters.search }}"
+                       placeholder="Design code, MAT, SMI, HDBS...">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Bit Type</label>
+                <select class="form-select" name="bit_type">
+                    <option value="">All</option>
+                    <option value="PDC" {% if filters.bit_type == 'PDC' %}selected{% endif %}>Fixed Cutter (PDC)</option>
+                    <option value="RC" {% if filters.bit_type == 'RC' %}selected{% endif %}>Roller Cone (RC)</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Body Material</label>
+                <select class="form-select" name="body_material">
+                    <option value="">All</option>
+                    <option value="MATRIX" {% if filters.body_material == 'MATRIX' %}selected{% endif %}>Matrix</option>
+                    <option value="STEEL" {% if filters.body_material == 'STEEL' %}selected{% endif %}>Steel</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Size Min</label>
+                <input type="number" step="0.125" class="form-control" name="size_min"
+                       value="{{ filters.size_min }}" placeholder="e.g. 8.5">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Size Max</label>
+                <input type="number" step="0.125" class="form-control" name="size_max"
+                       value="{{ filters.size_max }}" placeholder="e.g. 12.25">
+            </div>
+
+            <div class="col-md-1">
+                <label class="form-label">Active</label>
+                <select class="form-select" name="active_design">
+                    <option value="">All</option>
+                    <option value="true" {% if filters.active_design == 'true' %}selected{% endif %}>Yes</option>
+                    <option value="false" {% if filters.active_design == 'false' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+
+            <!-- Advanced Filters (Collapsible) -->
+            <div class="col-md-12">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                    <i class="bi bi-sliders"></i> Advanced Filters
+                </button>
+            </div>
+
+            <div class="collapse col-md-12" id="advancedFilters">
+                <div class="row g-3 border-top pt-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Blade Count</label>
+                        <input type="number" class="form-control" name="blade_count"
+                               value="{{ filters.blade_count }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Cutter Size Category</label>
+                        <input type="number" class="form-control" name="cutter_size_category"
+                               value="{{ filters.cutter_size_category }}" placeholder="3-8">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Connection Type</label>
+                        <select class="form-select" name="connection_type">
+                            <option value="">All</option>
+                            <option value="REGULAR" {% if filters.connection_type == 'REGULAR' %}selected{% endif %}>Regular</option>
+                            <option value="CEREBRO" {% if filters.connection_type == 'CEREBRO' %}selected{% endif %}>Cerebro</option>
+                            <option value="WITH_EROSION_SLEEVE" {% if filters.connection_type == 'WITH_EROSION_SLEEVE' %}selected{% endif %}>With Erosion Sleeve</option>
+                            <option value="SHANKLESS" {% if filters.connection_type == 'SHANKLESS' %}selected{% endif %}>Shankless</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Level (2-6)</label>
+                        <input type="text" class="form-control" name="level"
+                               value="{{ filters.level }}" placeholder="e.g. 3 or 3,4,5">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">MAT Number</label>
+                        <input type="text" class="form-control" name="mat_number"
+                               value="{{ filters.mat_number }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Previous MAT</label>
+                        <input type="text" class="form-control" name="prev_mat"
+                               value="{{ filters.prev_mat }}">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Level Active</label>
+                        <select class="form-select" name="active_level">
+                            <option value="">All</option>
+                            <option value="true" {% if filters.active_level == 'true' %}selected{% endif %}>Yes</option>
+                            <option value="false" {% if filters.active_level == 'false' %}selected{% endif %}>No</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Apply Filters
+                </button>
+                <a href="{% url 'production:bitdesign-hub' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Clear All
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Hub Table -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="bi bi-table"></i> Designs & Levels ({{ designs|length }} designs)</h5>
+    </div>
+    <div class="card-body">
+        {% if designs %}
+        <div class="table-responsive">
+            <table class="table table-sm table-hover" id="bitdesign-hub-table">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:30px;"></th>
+                        <th>Level</th>
+                        <th>MAT</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>SMI Name</th>
+                        <th>HDBS</th>
+                        <th>IADC</th>
+                        <th>Body</th>
+                        <th>Blades</th>
+                        <th>Cutter Cat</th>
+                        <th>Gauge L.</th>
+                        <th>Nozzles</th>
+                        <th>Ports</th>
+                        <th>Conn.</th>
+                        <th>Breaker W.</th>
+                        <th>Breaker H.</th>
+                        <th>Shank Dia.</th>
+                        <th>Gauge Relief</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for design in designs %}
+                    <!-- Design Row (Level 1) -->
+                    <tr class="design-row table-primary" data-design-id="{{ design.pk }}" style="cursor: pointer;">
+                        <td>
+                            <i class="bi bi-caret-right-fill toggle-icon"></i>
+                        </td>
+                        <td><strong>L1</strong> <small class="text-muted">Design root</small></td>
+                        <td>{{ design.design_mat_number|default:"—" }}</td>
+                        <td>{{ design.get_bit_type_display }}</td>
+                        <td>{{ design.size_inch }}"</td>
+                        <td>{{ design.current_smi_name|default:"—" }}</td>
+                        <td>{{ design.hdbs_name|default:"—" }}</td>
+                        <td>{{ design.iadc_code|default:"—" }}</td>
+                        <td>{{ design.get_body_material_display|default:"—" }}</td>
+                        <td>{{ design.blade_count|default:"—" }}</td>
+                        <td>{{ design.cutter_size_category|default:"—" }}</td>
+                        <td>{{ design.gauge_length_inch|default:"—" }}</td>
+                        <td>{{ design.nozzle_count|default:"—" }}</td>
+                        <td>{{ design.port_count|default:"—" }}</td>
+                        <td>{{ design.get_connection_type_display|default:"—" }}</td>
+                        <td>{{ design.breaker_slot_width_inch|default:"—" }}</td>
+                        <td>{{ design.breaker_slot_height_inch|default:"—" }}</td>
+                        <td>{{ design.shank_diameter_inch|default:"—" }}</td>
+                        <td>{{ design.gauge_relief_thou|default:"—" }}</td>
+                        <td>
+                            {% if design.active %}
+                                <span class="badge bg-success">Yes</span>
+                            {% else %}
+                                <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                        <td onclick="event.stopPropagation();">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'production:bitdesign-detail' design.pk %}">
+                                        <i class="bi bi-eye"></i> Open Design
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'production:bitdesign-edit' design.pk %}">
+                                        <i class="bi bi-pencil"></i> Edit Design
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'production:bitdesign-mat-levels' design.pk %}">
+                                        <i class="bi bi-layers"></i> MAT Levels
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Level Rows (2-6) -->
+                    {% for rev in design.hub_revisions %}
+                    <tr class="level-row level-row-{{ design.pk }}" style="display:none;">
+                        <td></td>
+                        <td>
+                            <strong>L{{ rev.level }}</strong>
+                            {% if rev.level == 2 %}
+                                <small class="text-muted d-block">Tooling</small>
+                            {% elif rev.level == 3 %}
+                                <small class="text-muted d-block">Head + Upper Kit</small>
+                            {% elif rev.level == 4 %}
+                                <small class="text-muted d-block">Welded, No Cutters</small>
+                            {% elif rev.level == 5 %}
+                                <small class="text-muted d-block">With Cutters</small>
+                            {% elif rev.level == 6 %}
+                                <small class="text-muted d-block">Ready to Run</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ rev.mat_number }}
+                            {% if rev.child_count >= 2 %}
+                                <i class="bi bi-diagram-3 text-warning" title="Branch point ({{ rev.child_count }} children)"></i>
+                            {% endif %}
+                        </td>
+                        <td colspan="6" class="text-muted small">
+                            {% if rev.previous_level %}
+                                <strong>Prev:</strong> {{ rev.previous_level.mat_number }} (L{{ rev.previous_level.level }})
+                            {% endif %}
+                            {% if rev.upper_welded is not None %}
+                                | <strong>Upper:</strong> {% if rev.upper_welded %}Welded{% else %}Loose{% endif %}
+                            {% endif %}
+                            {% if rev.remarks %}
+                                | {{ rev.remarks|truncatewords:15 }}
+                            {% endif %}
+                        </td>
+                        <td colspan="10"></td>
+                        <td>{{ rev.effective_from|date:"Y-m-d" }}</td>
+                        <td>
+                            {% if rev.active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'production:bitdesign-mat-levels' design.pk %}">
+                                        <i class="bi bi-eye"></i> View Level Details
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#">
+                                        <i class="bi bi-list-ul"></i> View BOM
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#">
+                                        <i class="bi bi-files"></i> Clone Level
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No designs found matching your filters.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- JavaScript for collapsible rows -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle design rows
+    document.querySelectorAll('.design-row').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't toggle if clicking on dropdown
+            if (e.target.closest('.dropdown')) return;
+
+            const designId = this.dataset.designId;
+            const levelRows = document.querySelectorAll('.level-row-' + designId);
+            const icon = this.querySelector('.toggle-icon');
+
+            levelRows.forEach(function(levelRow) {
+                if (levelRow.style.display === 'none') {
+                    levelRow.style.display = '';
+                    icon.classList.remove('bi-caret-right-fill');
+                    icon.classList.add('bi-caret-down-fill');
+                } else {
+                    levelRow.style.display = 'none';
+                    icon.classList.remove('bi-caret-down-fill');
+                    icon.classList.add('bi-caret-right-fill');
+                }
+            });
+        });
+    });
+
+    // Export button (placeholder)
+    document.getElementById('export-btn').addEventListener('click', function() {
+        alert('Export functionality coming soon!\n\nWill export current view with visible columns as CSV.');
+    });
+});
+</script>
+
+{% endblock %}

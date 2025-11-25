@@ -14,6 +14,7 @@ urlpatterns = [
 
     # Bit Designs
     path('designs/', views.BitDesignListView.as_view(), name='bitdesign-list'),
+    path('designs/hub/', views.BitDesignHubView.as_view(), name='bitdesign-hub'),
     path('designs/<int:pk>/', views.BitDesignDetailView.as_view(), name='bitdesign-detail'),
     path('designs/create/', views.BitDesignCreateView.as_view(), name='bitdesign-create'),
     path('designs/<int:pk>/edit/', views.BitDesignUpdateView.as_view(), name='bitdesign-edit'),

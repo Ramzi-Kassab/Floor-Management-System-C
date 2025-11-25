@@ -14,6 +14,8 @@
                         <label class="form-label">
                             {% if field.name == 'bit_type' %}
                                 Bit Category (Bit Cat)
+                            {% elif field.name == 'design_mat_number' %}
+                                Level-1 Design MAT
                             {% elif field.name == 'current_smi_name' %}
                                 Current SMI Name
                             {% elif field.name == 'hdbs_name' %}
@@ -28,6 +30,14 @@
                                 Port Count
                             {% elif field.name == 'connection_type' %}
                                 Connection Type
+                            {% elif field.name == 'shank_diameter_inch' %}
+                                Shank Diameter (inch)
+                            {% elif field.name == 'gauge_relief_thou' %}
+                                Gauge Relief (thou)
+                            {% elif field.name == 'breaker_slot_width_inch' %}
+                                Breaker Open Width (inch)
+                            {% elif field.name == 'breaker_slot_height_inch' %}
+                                Breaker Thickness (inch)
                             {% else %}
                                 {{ field.label }}
                             {% endif %}

@@ -25,8 +25,8 @@ class BitDesignAdmin(admin.ModelAdmin):
     # Field order as specified: Bit Cat, Size, SMI Name, HDBS, IADC, Body, Blades, etc.
     fieldsets = (
         ('Bit Category & Identification', {
-            'fields': ('bit_type', 'size_inch', 'design_code'),
-            'description': 'Bit Category (FC/RC) and basic identification'
+            'fields': ('bit_type', 'size_inch', 'design_code', 'design_mat_number'),
+            'description': 'Bit Category (FC/RC), basic identification, and Level-1 MAT'
         }),
         ('Design Names & Codes', {
             'fields': ('current_smi_name', 'hdbs_name', 'iadc_code'),
@@ -37,9 +37,14 @@ class BitDesignAdmin(admin.ModelAdmin):
                       'gauge_length_inch'),
             'description': 'Auto-filled from design name if empty. Matrix/Steel, blade count (1st digit), cutter size (2nd digit)'
         }),
-        ('Hydraulics & Connection', {
-            'fields': ('nozzle_count', 'port_count', 'connection_type'),
-            'description': 'Nozzles, ports, and connection type (Regular, Cerebro, etc.)'
+        ('Connection & Gauge Geometry', {
+            'fields': ('connection_type', 'shank_diameter_inch', 'gauge_relief_thou',
+                      'breaker_slot_width_inch', 'breaker_slot_height_inch'),
+            'description': 'Connection details, shank diameter, gauge relief, and breaker slot dimensions'
+        }),
+        ('Hydraulics', {
+            'fields': ('nozzle_count', 'port_count'),
+            'description': 'Nozzles and ports'
         }),
         ('Description & Notes', {
             'fields': ('description', 'remarks'),
@@ -60,15 +65,15 @@ class BitDesignAdmin(admin.ModelAdmin):
 
 @admin.register(models.BitDesignRevision)
 class BitDesignRevisionAdmin(admin.ModelAdmin):
-    list_display = ['mat_number', 'design', 'level', 'effective_from', 'effective_to', 'active']
-    list_filter = ['active', 'level', 'effective_from']
+    list_display = ['mat_number', 'design', 'level', 'previous_level', 'upper_welded', 'effective_from', 'effective_to', 'active']
+    list_filter = ['active', 'level', 'upper_welded', 'effective_from']
     search_fields = ['mat_number', 'design__design_code', 'remarks']
     date_hierarchy = 'effective_from'
     list_per_page = 50
-    autocomplete_fields = ['design']
+    autocomplete_fields = ['design', 'previous_level']
     fieldsets = (
         ('Revision Information', {
-            'fields': ('design', 'mat_number', 'level')
+            'fields': ('design', 'mat_number', 'level', 'previous_level', 'upper_welded')
         }),
         ('Effective Dates', {
             'fields': ('effective_from', 'effective_to', 'active')

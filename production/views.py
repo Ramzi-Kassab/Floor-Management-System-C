@@ -132,6 +132,7 @@ class BitDesignCreateView(LoginRequiredMixin, CreateView):
     fields = [
         'bit_type',  # Bit Category (Bit Cat)
         'size_inch',
+        'design_mat_number',  # Level-1 MAT
         'current_smi_name',
         'hdbs_name',
         'iadc_code',
@@ -143,6 +144,10 @@ class BitDesignCreateView(LoginRequiredMixin, CreateView):
         'nozzle_count',
         'port_count',
         'connection_type',
+        'shank_diameter_inch',
+        'gauge_relief_thou',
+        'breaker_slot_width_inch',
+        'breaker_slot_height_inch',
         'description',
         'remarks',
         'active'
@@ -162,6 +167,7 @@ class BitDesignUpdateView(LoginRequiredMixin, UpdateView):
     fields = [
         'bit_type',
         'size_inch',
+        'design_mat_number',
         'current_smi_name',
         'hdbs_name',
         'iadc_code',
@@ -173,6 +179,10 @@ class BitDesignUpdateView(LoginRequiredMixin, UpdateView):
         'nozzle_count',
         'port_count',
         'connection_type',
+        'shank_diameter_inch',
+        'gauge_relief_thou',
+        'breaker_slot_width_inch',
+        'breaker_slot_height_inch',
         'description',
         'remarks',
         'active'
@@ -261,6 +271,111 @@ class BitMatLevelListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
         context['design'] = design
+        return context
+
+
+class BitDesignHubView(LoginRequiredMixin, TemplateView):
+    """
+    Bit Design Hub - Central junction for all bit designs
+    Shows collapsible table with design + all levels (2-6)
+    """
+    template_name = 'production/bitdesign_hub.html'
+
+    def get_queryset(self):
+        from django.db.models import Prefetch, Count
+
+        qs = models.BitDesign.objects.all()
+
+        # ---- Filters on BitDesign (design-level) ----
+        search = self.request.GET.get('search')
+        bit_type = self.request.GET.get('bit_type')
+        body_material = self.request.GET.get('body_material')
+        size_min = self.request.GET.get('size_min')
+        size_max = self.request.GET.get('size_max')
+        blade_count = self.request.GET.get('blade_count')
+        cutter_cat = self.request.GET.get('cutter_size_category')
+        connection_type = self.request.GET.get('connection_type')
+        active_design = self.request.GET.get('active_design')
+
+        if search:
+            qs = qs.filter(
+                Q(current_smi_name__icontains=search) |
+                Q(hdbs_name__icontains=search) |
+                Q(iadc_code__icontains=search) |
+                Q(design_code__icontains=search) |
+                Q(design_mat_number__icontains=search) |
+                Q(description__icontains=search) |
+                Q(remarks__icontains=search)
+            )
+
+        if bit_type:
+            qs = qs.filter(bit_type=bit_type)
+
+        if body_material:
+            qs = qs.filter(body_material=body_material)
+
+        if size_min:
+            qs = qs.filter(size_inch__gte=size_min)
+
+        if size_max:
+            qs = qs.filter(size_inch__lte=size_max)
+
+        if blade_count:
+            qs = qs.filter(blade_count=blade_count)
+
+        if cutter_cat:
+            qs = qs.filter(cutter_size_category=cutter_cat)
+
+        if connection_type:
+            qs = qs.filter(connection_type=connection_type)
+
+        if active_design in ['true', 'false']:
+            qs = qs.filter(active=(active_design == 'true'))
+
+        # ---- Filters involving BitDesignRevision (levels) ----
+        level_param = self.request.GET.get('level')
+        mat_number = self.request.GET.get('mat_number')
+        prev_mat = self.request.GET.get('prev_mat')
+        active_level = self.request.GET.get('active_level')
+
+        level_filter = {}
+        if level_param:
+            levels = [int(v) for v in level_param.split(',') if v.strip().isdigit()]
+            if levels:
+                level_filter['level__in'] = levels
+
+        # Build Revision queryset with annotations
+        rev_qs = models.BitDesignRevision.objects.all().select_related('previous_level')
+        if level_filter:
+            rev_qs = rev_qs.filter(**level_filter)
+        if mat_number:
+            rev_qs = rev_qs.filter(mat_number__icontains=mat_number)
+        if prev_mat:
+            rev_qs = rev_qs.filter(previous_level__mat_number__icontains=prev_mat)
+        if active_level in ['true', 'false']:
+            rev_qs = rev_qs.filter(active=(active_level == 'true'))
+
+        rev_qs = rev_qs.annotate(child_count=Count('next_levels')).order_by('level', 'mat_number')
+
+        # Prefetch revisions into each design
+        qs = (
+            qs
+            .prefetch_related(
+                Prefetch(
+                    'revisions',
+                    queryset=rev_qs,
+                    to_attr='hub_revisions'
+                )
+            )
+            .order_by('bit_type', 'size_inch', 'current_smi_name')
+        )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['designs'] = self.get_queryset()
+        # Expose current filters to template (for sticky filter form)
+        context['filters'] = self.request.GET
         return context
 
 

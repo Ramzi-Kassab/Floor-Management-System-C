@@ -312,10 +312,54 @@ class BitDesign(models.Model):
         help_text="Auto-generated: {size}-{name}-{iadc}. Can be edited manually."
     )
 
-    # 14. Remarks (NEW - free text notes)
+    # 14. Remarks (free text notes)
     remarks = models.TextField(
         blank=True,
         help_text="Free-text human comments and notes about the design"
+    )
+
+    # 15. Level-1 Design MAT (Design Identifier)
+    design_mat_number = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Level-1 MAT number used as the design identifier for this bit family."
+    )
+
+    # 16. Breaker Slot Width
+    breaker_slot_width_inch = models.DecimalField(
+        max_digits=5,
+        decimal_places=3,
+        blank=True,
+        null=True,
+        verbose_name="Breaker open width (inch)",
+        help_text="Breaker open width in inches (how thick the breaker key is)."
+    )
+
+    # 17. Breaker Slot Height
+    breaker_slot_height_inch = models.DecimalField(
+        max_digits=5,
+        decimal_places=3,
+        blank=True,
+        null=True,
+        verbose_name="Breaker thickness (inch)",
+        help_text="Breaker thickness / axial engagement height in inches."
+    )
+
+    # 18. Shank Diameter
+    shank_diameter_inch = models.DecimalField(
+        max_digits=5,
+        decimal_places=3,
+        blank=True,
+        null=True,
+        help_text="Shank / connection diameter in inches."
+    )
+
+    # 19. Gauge Relief
+    gauge_relief_thou = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="Gauge relief on diameter in thou (0 means no relief)."
     )
 
     # Metadata
@@ -398,43 +442,56 @@ class BitDesignRevision(models.Model):
     Design revisions with MAT numbers (Levels 2–6)
     Tracks engineering changes and material specifications
 
+    IMPORTANT: Levels describe the PHYSICAL STATE of the bit or bit kit,
+    independent of factory or origin. Differences like "imported from USA vs
+    built in KSA" are tracked on work orders/serial numbers, not in design/MAT structure.
+    Multiple MATs per level are allowed (different variants/routes for same design).
+
     MAT Levels represent the physical manufacturing stages of a bit:
 
-    Level 2 – Mold + inserts & tooling:
-        - Assemblies and components required to form the head
-        - Mold parts, patterns, mold hardware
-        - Displacement inserts, dummy pieces, gauge inserts, and similar tooling
-        - Represents the tooling configuration used for infiltration or forming
+    Level 2 – Molds + inserts & tooling:
+        - Tooling to create the head:
+          * Mold parts, patterns, mold hardware
+          * Displacement inserts, dummy pieces, gauge inserts, and similar tooling
+        - Represents the tooling configuration for infiltration/forming
         - Matrix powders and steel blanks/slugs are NOT part of Level-2 BOM
           (they belong to Level 3 BOM as they become part of the head itself)
 
-    Level 3 – Finished head only:
-        - Bit head (crown) alone, without upper section and without cutters
-        - Fully machined blades, junk slots, nozzle ports, and gauge pads
+    Level 3 – Head + upper section kit (unwelded), no cutters:
+        - Finished head (crown) for that design
+        - Matching upper section/pin for that design
+        - Both are ready to weld together but still separate pieces
+        - No cutters installed
         - For matrix-body: infiltrated and machined matrix crown ready for welding
         - For steel-body: machined crown shape from forged/steel slug
-        - Ready for welding to upper section and for cutter pocket machining/drilling
+        - Multiple Level-3 MATs may exist for same BitDesign (different upper
+          section variants, different geometry) - factory origin tracked elsewhere
 
-    Level 4 – Head + upper section welded, no cutters:
-        - Finished bit head welded/attached to the upper section/pin
+    Level 4 – Welded head + upper, no cutters:
+        - Head and upper section welded together and fully machined
         - No cutters installed yet (cutter pockets may be drilled or pre-machined)
         - Ports and basic hydraulics are in place
         - Used before brazing cutters and before final finishing
 
-    Level 5 – Head + upper section, cutters brazed:
-        - Bit head welded to upper section/pin (connection) as per design
-        - All PDC cutters are brazed in place
+    Level 5 – With cutters brazed:
+        - All PDC cutters installed as per design
+        - Matching upper section is part of the configuration
+        - The upper may be:
+          * Already welded (standard case), or
+          * Still loose/unwelded (kit shipped as "head + cutters + loose upper")
+        - In both cases this remains level=5 (use upper_welded field to distinguish)
         - Design hardfacing is applied
         - Hydraulic ports and internal flow paths are machined
         - Nozzles may NOT be installed yet, final paint/packaging may be pending
         - This is the "functional bit" before final finishing
 
     Level 6 – Ready-to-run bit (field-ready):
+        - Level-5 configuration plus final finishing:
+          * Paint, markings/stencils, labels/nameplates
+          * Breaker slot machining details (geometry defined at design level)
+          * Packaging/can, etc.
         - Completed bit as delivered to customer or warehouse
         - Fully assembled bit, all cutters brazed, nozzles installed
-        - Paint and markings applied
-        - Breaker slot/breaker plate preparation done
-        - Box/can/packaging, labels, nameplates
         - For Fixed Cutter: all blades, gauge pads, junk slots, ports are final
         - Ready to run in the hole
     """
@@ -471,6 +528,11 @@ class BitDesignRevision(models.Model):
     active = models.BooleanField(
         default=True,
         db_index=True
+    )
+    upper_welded = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="For Level-5: whether the upper section is already welded (True) or shipped loose (False). Leave blank when not applicable."
     )
     remarks = models.TextField(
         blank=True,
