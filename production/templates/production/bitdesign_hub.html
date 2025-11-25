@@ -6,6 +6,9 @@
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.7.0/css/colReorder.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/select/1.7.0/css/select.bootstrap5.min.css">
 <style>
     .design-row { background-color: #cfe2ff !important; cursor: pointer; }
     .design-row:hover { background-color: #b6d4fe !important; }
@@ -15,6 +18,17 @@
     table.dataTable thead th { padding: 12px 8px; }
     table.dataTable tbody td { padding: 8px; vertical-align: middle; }
     .dataTables_wrapper .dataTables_filter input { border-radius: 4px; }
+
+    /* Professional toolbar styling */
+    .dt-buttons { margin-bottom: 0.75rem; }
+    .dt-button { border-radius: 4px !important; margin-right: 4px; }
+
+    /* Fixed columns styling */
+    table.dataTable.fixedColumns-left { border-right: 2px solid #dee2e6; }
+
+    /* Compact mode */
+    table.table-compact tbody td { padding: 4px 6px; font-size: 0.875rem; }
+    table.table-compact thead th { padding: 8px 6px; font-size: 0.875rem; }
 </style>
 {% endblock %}
 
@@ -30,9 +44,6 @@
         <a href="{% url 'production:bitdesign-create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> New Design
         </a>
-        <button class="btn btn-success" id="export-btn">
-            <i class="bi bi-download"></i> Export
-        </button>
     </div>
 </div>
 
@@ -220,7 +231,13 @@
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
+<script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
+<script src="https://cdn.datatables.net/colreorder/1.7.0/js/dataTables.colReorder.min.js"></script>
+<script src="https://cdn.datatables.net/select/1.7.0/js/dataTables.select.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
 <script>
 $(document).ready(function() {
@@ -247,10 +264,55 @@ $(document).ready(function() {
         autoWidth: false,
         responsive: false,
 
-        // Buttons for export
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+        // Professional features
+        colReorder: true,  // Drag-drop column reordering
+        fixedColumns: {
+            leftColumns: 3  // Freeze toggle, level, and MAT columns
+        },
+        select: {
+            style: 'multi',
+            selector: 'td:not(:last-child)'  // Select rows (except actions column)
+        },
+
+        // Buttons toolbar
+        buttons: [
+            {
+                extend: 'colvis',
+                text: '<i class="bi bi-layout-three-columns"></i> Columns',
+                titleAttr: 'Show/hide columns'
+            },
+            {
+                extend: 'excel',
+                text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                titleAttr: 'Export to Excel',
+                exportOptions: {
+                    columns: ':visible:not(:first-child):not(:last-child)'  // Exclude toggle icon and actions
+                }
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                titleAttr: 'Export to PDF',
+                orientation: 'landscape',
+                pageSize: 'A3',
+                exportOptions: {
+                    columns: ':visible:not(:first-child):not(:last-child)'
+                }
+            },
+            {
+                extend: 'copy',
+                text: '<i class="bi bi-clipboard"></i> Copy',
+                titleAttr: 'Copy to clipboard',
+                exportOptions: {
+                    columns: ':visible:not(:first-child):not(:last-child)'
+                }
+            }
+        ],
+
+        // Layout with buttons
+        dom: '<"row mb-3"<"col-sm-12 col-md-4"l><"col-sm-12 col-md-4 text-center"B><"col-sm-12 col-md-4"f>>' +
              '<"row"<"col-sm-12"tr>>' +
-             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+             '<"row mt-2"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
 
         // Language
         language: {
@@ -261,7 +323,11 @@ $(document).ready(function() {
             infoEmpty: "No entries available",
             infoFiltered: "(filtered from _TOTAL_ total entries)",
             zeroRecords: "No matching designs found",
-            emptyTable: "No designs available"
+            emptyTable: "No designs available",
+            buttons: {
+                colvis: 'Column Visibility',
+                colvisRestore: 'Restore columns'
+            }
         },
 
         // Column-specific settings
@@ -299,43 +365,6 @@ $(document).ready(function() {
             levelRows.show();
             icon.removeClass('bi-caret-right-fill').addClass('bi-caret-down-fill expanded');
         }
-    });
-
-    // Export button functionality
-    $('#export-btn').on('click', function() {
-        // Get visible data
-        var data = table.rows({ search: 'applied' }).data();
-        var headers = table.columns().header();
-
-        // Create CSV content
-        var csv = [];
-        var headerRow = [];
-        $(headers).each(function() {
-            headerRow.push('"' + $(this).text().trim() + '"');
-        });
-        csv.push(headerRow.join(','));
-
-        // Add data rows
-        data.each(function(row, index) {
-            var dataRow = [];
-            for (var i = 0; i < row.length; i++) {
-                var cell = $('<div>').html(row[i]).text().trim();
-                dataRow.push('"' + cell.replace(/"/g, '""') + '"');
-            }
-            csv.push(dataRow.join(','));
-        });
-
-        // Download CSV
-        var csvContent = csv.join('\n');
-        var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        var link = document.createElement('a');
-        var url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'bit_design_hub_' + new Date().toISOString().slice(0,10) + '.csv');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     });
 });
 </script>
