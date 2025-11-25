@@ -3,61 +3,231 @@
 {% block title %}{% if object %}Edit{% else %}Create{% endif %} Bit Design{% endblock %}
 {% block content %}
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-md-10 offset-md-1">
         <div class="card">
-            <div class="card-header"><h5>{% if object %}Edit{% else %}Create{% endif %} Bit Design</h5></div>
+            <div class="card-header bg-primary text-white">
+                <h4>{% if object %}Edit{% else %}Create{% endif %} Bit Design</h4>
+                <p class="mb-0 small">Note: design_code is auto-filled from SMI/HDBS name</p>
+            </div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label class="form-label">
-                            {% if field.name == 'bit_type' %}
-                                Bit Category (Bit Cat)
-                            {% elif field.name == 'design_mat_number' %}
-                                Level-1 Design MAT
-                            {% elif field.name == 'current_smi_name' %}
-                                Current SMI Name
-                            {% elif field.name == 'hdbs_name' %}
-                                HDBS Name
-                            {% elif field.name == 'iadc_code' %}
-                                IADC Code
-                            {% elif field.name == 'cutter_size_category' %}
-                                Cutter Size Category
-                            {% elif field.name == 'gauge_length_inch' %}
-                                Gauge Length (inch)
-                            {% elif field.name == 'port_count' %}
-                                Port Count
-                            {% elif field.name == 'connection_type' %}
-                                Connection Type
-                            {% elif field.name == 'shank_diameter_inch' %}
-                                Shank Diameter (inch)
-                            {% elif field.name == 'gauge_relief_thou' %}
-                                Gauge Relief (thou)
-                            {% elif field.name == 'breaker_slot_width_inch' %}
-                                Breaker Open Width (inch)
-                            {% elif field.name == 'breaker_slot_height_inch' %}
-                                Breaker Thickness (inch)
-                            {% else %}
-                                {{ field.label }}
-                            {% endif %}
-                        </label>
-                        {% if field.name == 'description' %}
-                            {{ field|add_class:"form-control" }}
-                            <small class="form-text text-muted">Auto-generated as: {Size}-{SMI/HDBS Name}-{IADC Code}</small>
-                        {% elif field.name == 'remarks' %}
-                            {{ field|add_class:"form-control" }}
-                            <small class="form-text text-muted">Free-text comments and notes about the design</small>
-                        {% else %}
-                            {{ field|add_class:"form-control" }}
-                        {% endif %}
-                        {% if field.help_text %}
-                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                        {% endif %}
+
+                    <!-- Section 1: Bit Category & Identification -->
+                    <div class="mb-4">
+                        <h5 class="text-primary border-bottom pb-2">
+                            <i class="bi bi-tag"></i> Bit Category & Identification
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Bit Category</label>
+                                {{ form.bit_type|add_class:"form-select" }}
+                                {% if form.bit_type.help_text %}<small class="form-text text-muted">{{ form.bit_type.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Bit Subcategory</label>
+                                {{ form.bit_subcategory|add_class:"form-select" }}
+                                {% if form.bit_subcategory.help_text %}<small class="form-text text-muted">{{ form.bit_subcategory.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Size (inch)</label>
+                                {{ form.size_inch|add_class:"form-select" }}
+                                {% if form.size_inch.help_text %}<small class="form-text text-muted">{{ form.size_inch.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Level-1 Design MAT</label>
+                                {{ form.design_mat_number|add_class:"form-control" }}
+                                {% if form.design_mat_number.help_text %}<small class="form-text text-muted">{{ form.design_mat_number.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
                     </div>
-                    {% endfor %}
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <a href="{% url 'production:bitdesign-list' %}" class="btn btn-secondary">Cancel</a>
+
+                    <!-- Section 2: Design Names & Codes -->
+                    <div class="mb-4">
+                        <h5 class="text-primary border-bottom pb-2">
+                            <i class="bi bi-card-text"></i> Design Names & Codes
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Current SMI Name</label>
+                                {{ form.current_smi_name|add_class:"form-control" }}
+                                {% if form.current_smi_name.help_text %}<small class="form-text text-muted">{{ form.current_smi_name.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">HDBS Name</label>
+                                {{ form.hdbs_name|add_class:"form-control" }}
+                                {% if form.hdbs_name.help_text %}<small class="form-text text-muted">{{ form.hdbs_name.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">IADC Code</label>
+                                {{ form.iadc_code|add_class:"form-control" }}
+                                {% if form.iadc_code.help_text %}<small class="form-text text-muted">{{ form.iadc_code.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Fixed Cutter (PDC) Specifications -->
+                    <div class="mb-4">
+                        <h5 class="text-primary border-bottom pb-2">
+                            <i class="bi bi-gear"></i> Fixed Cutter (PDC) Specifications
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Body Material</label>
+                                {{ form.body_material|add_class:"form-select" }}
+                                {% if form.body_material.help_text %}<small class="form-text text-muted">{{ form.body_material.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Blade Count</label>
+                                {{ form.blade_count|add_class:"form-control" }}
+                                {% if form.blade_count.help_text %}<small class="form-text text-muted">{{ form.blade_count.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Cutter Size Category</label>
+                                {{ form.cutter_size_category|add_class:"form-control" }}
+                                {% if form.cutter_size_category.help_text %}<small class="form-text text-muted">{{ form.cutter_size_category.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Gauge Length (inch)</label>
+                                {{ form.gauge_length_inch|add_class:"form-control" }}
+                                {% if form.gauge_length_inch.help_text %}<small class="form-text text-muted">{{ form.gauge_length_inch.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Connection & Geometry -->
+                    <div class="mb-4">
+                        <h5 class="text-primary border-bottom pb-2">
+                            <i class="bi bi-link-45deg"></i> Connection & Geometry
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Connection Type</label>
+                                {{ form.connection_type|add_class:"form-select" }}
+                                {% if form.connection_type.help_text %}<small class="form-text text-muted">{{ form.connection_type.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Connection Size</label>
+                                {{ form.connection_size|add_class:"form-select" }}
+                                {% if form.connection_size.help_text %}<small class="form-text text-muted">{{ form.connection_size.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Connection End Type</label>
+                                {{ form.connection_end_type|add_class:"form-select" }}
+                                {% if form.connection_end_type.help_text %}<small class="form-text text-muted">{{ form.connection_end_type.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Drift Type</label>
+                                {{ form.drift_type|add_class:"form-select" }}
+                                {% if form.drift_type.help_text %}<small class="form-text text-muted">{{ form.drift_type.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Shank Diameter (inch)</label>
+                                {{ form.shank_diameter_inch|add_class:"form-control" }}
+                                {% if form.shank_diameter_inch.help_text %}<small class="form-text text-muted">{{ form.shank_diameter_inch.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Gauge Relief (thou)</label>
+                                {{ form.gauge_relief_thou|add_class:"form-control" }}
+                                {% if form.gauge_relief_thou.help_text %}<small class="form-text text-muted">{{ form.gauge_relief_thou.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Breaker Open Width (inch)</label>
+                                {{ form.breaker_slot_width_inch|add_class:"form-control" }}
+                                {% if form.breaker_slot_width_inch.help_text %}<small class="form-text text-muted">{{ form.breaker_slot_width_inch.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Breaker Thickness (inch)</label>
+                                {{ form.breaker_slot_height_inch|add_class:"form-control" }}
+                                {% if form.breaker_slot_height_inch.help_text %}<small class="form-text text-muted">{{ form.breaker_slot_height_inch.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Hydraulics -->
+                    <div class="mb-4">
+                        <h5 class="text-primary border-bottom pb-2">
+                            <i class="bi bi-droplet"></i> Hydraulics
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Nozzle Count</label>
+                                {{ form.nozzle_count|add_class:"form-control" }}
+                                {% if form.nozzle_count.help_text %}<small class="form-text text-muted">{{ form.nozzle_count.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Nozzle Size</label>
+                                {{ form.nozzle_size|add_class:"form-control" }}
+                                {% if form.nozzle_size.help_text %}<small class="form-text text-muted">{{ form.nozzle_size.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Port Count</label>
+                                {{ form.port_count|add_class:"form-control" }}
+                                {% if form.port_count.help_text %}<small class="form-text text-muted">{{ form.port_count.help_text }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Nozzle Port Size</label>
+                                {{ form.nozzle_port_size|add_class:"form-control" }}
+                                {% if form.nozzle_port_size.help_text %}<small class="form-text text-muted">{{ form.nozzle_port_size.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nozzle Bore Sleeve</label>
+                                <div class="form-check">
+                                    {{ form.nozzle_bore_sleeve }}
+                                    <label class="form-check-label">Used</label>
+                                </div>
+                                {% if form.nozzle_bore_sleeve.help_text %}<small class="form-text text-muted">{{ form.nozzle_bore_sleeve.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 6: Description & Notes -->
+                    <div class="mb-4">
+                        <h5 class="text-primary border-bottom pb-2">
+                            <i class="bi bi-journal-text"></i> Description & Notes
+                        </h5>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            {{ form.description|add_class:"form-control" }}
+                            <small class="form-text text-muted">Auto-generated as: {Size}-{SMI/HDBS Name}-{IADC Code}</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Remarks</label>
+                            {{ form.remarks|add_class:"form-control" }}
+                            <small class="form-text text-muted">Free-text comments and notes about the design</small>
+                        </div>
+                    </div>
+
+                    <!-- Section 7: Status -->
+                    <div class="mb-4">
+                        <h5 class="text-primary border-bottom pb-2">
+                            <i class="bi bi-check-circle"></i> Status
+                        </h5>
+                        <div class="form-check mb-3">
+                            {{ form.active }}
+                            <label class="form-check-label">Active Design</label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="mt-4 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-save"></i> Save Bit Design
+                        </button>
+                        <a href="{% url 'production:bitdesign-list' %}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>
