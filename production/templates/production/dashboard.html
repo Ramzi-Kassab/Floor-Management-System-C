@@ -46,7 +46,7 @@
     </div>
 </div>
 
-<!-- Infiltration Status -->
+<!-- Infiltration Status & Quick Links -->
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card">
@@ -55,6 +55,19 @@
             </div>
             <div class="card-body">
                 <h2 class="text-center">{{ infiltration_in_progress }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-grid-3x3-gap"></i> Bit Design Hub
+            </div>
+            <div class="card-body">
+                <p class="card-text text-muted">Central junction for all bit designs & MAT levels (1–6)</p>
+                <a href="{% url 'production:bitdesign-hub' %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-arrow-right-circle"></i> Open Hub
+                </a>
             </div>
         </div>
     </div>

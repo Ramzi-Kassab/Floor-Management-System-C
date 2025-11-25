@@ -26,14 +26,14 @@ import uuid
 
 class BitType(models.TextChoices):
     """Types of drilling bits manufactured"""
-    PDC = 'PDC', 'PDC (Fixed Cutter)'
-    ROLLER_CONE = 'ROLLER_CONE', 'Roller Cone'
+    PDC = 'PDC', 'FC'  # Fixed Cutter
+    ROLLER_CONE = 'RC', 'RC'  # Roller Cone
 
 
 class BodyMaterial(models.TextChoices):
     """Body material types for PDC bits"""
-    MATRIX = 'MATRIX', 'Matrix (Infiltrated Powder)'
-    STEEL = 'STEEL', 'Steel (Forged/Machined)'
+    MATRIX = 'MATRIX', 'Matrix'
+    STEEL = 'STEEL', 'Steel'
 
 
 class ManufacturingSource(models.TextChoices):
@@ -162,6 +162,79 @@ class BitInstanceStatus(models.TextChoices):
     IN_REPAIR = 'IN_REPAIR', 'In Repair'
     SCRAPPED = 'SCRAPPED', 'Scrapped'
     IN_PRODUCTION = 'IN_PRODUCTION', 'In Production'
+
+
+# ============================================================================
+# BIT DESIGN SPECIFIC CHOICES
+# ============================================================================
+
+# Bit subcategory choices
+BIT_SUBCATEGORY_CHOICES = [
+    ("STANDARD_FC", "Standard FC"),
+    ("CORE_HEAD_FC", "Core head (FC)"),
+    ("RC", "RC"),
+]
+
+# API connection size choices
+API_CONNECTION_SIZE_CHOICES = [
+    ("2 3/8 REG", "2 3/8 REG"),
+    ("2 7/8 REG", "2 7/8 REG"),
+    ("3 1/2 REG", "3 1/2 REG"),
+    ("4 1/2 REG", "4 1/2 REG"),
+    ("5 1/2 REG", "5 1/2 REG"),
+    ("6 5/8 REG", "6 5/8 REG"),
+    ("7 5/8 REG", "7 5/8 REG"),
+    ("8 5/8 REG", "8 5/8 REG"),
+    ("2 3/8 IF", "2 3/8 IF"),
+    ("2 7/8 IF", "2 7/8 IF"),
+    ("3 1/2 IF", "3 1/2 IF"),
+    ("4 IF", "4 IF"),
+    ("4 1/2 IF", "4 1/2 IF"),
+    ("5 IF", "5 IF"),
+    ("5 1/2 IF", "5 1/2 IF"),
+    ("2 7/8 FH", "2 7/8 FH"),
+    ("3 1/2 FH", "3 1/2 FH"),
+    ("4 1/2 FH", "4 1/2 FH"),
+    ("5 1/2 FH", "5 1/2 FH"),
+    ("6 5/8 FH", "6 5/8 FH"),
+]
+
+# Connection end type choices
+CONNECTION_END_TYPE_CHOICES = [
+    ("PIN", "Pin (external thread)"),
+    ("BOX", "Box (internal thread)"),
+]
+
+# Drift type choices
+DRIFT_TYPE_CHOICES = [
+    ("NORMAL", "Standard drift"),
+    ("FULL_DRIFT", "Full drift"),
+]
+
+# Bit size choices with fraction labels
+BIT_SIZE_CHOICES = [
+    ("3.625", '3 5/8"'),
+    ("3.75", '3 3/4"'),
+    ("3.875", '3 7/8"'),
+    ("5.5", '5 1/2"'),
+    ("5.875", '5 7/8"'),
+    ("6", '6"'),
+    ("6.125", '6 1/8"'),
+    ("6.25", '6 1/4"'),
+    ("8.375", '8 3/8"'),
+    ("8.5", '8 1/2"'),
+    ("12", '12"'),
+    ("12.25", '12 1/4"'),
+    ("14.5", '14 1/2"'),
+    ("16", '16"'),
+    ("17", '17"'),
+    ("17.5", '17 1/2"'),
+    ("22", '22"'),
+    ("24", '24"'),
+    ("27", '27"'),
+    ("28", '28"'),
+    ("34", '34"'),
+]
 
 
 # ============================================================================
