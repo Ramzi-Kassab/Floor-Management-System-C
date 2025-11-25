@@ -1,9 +1,16 @@
 {% extends 'production/base.html' %}
-{% block title %}{{ design.design_code }}{% endblock %}
+{% load bit_format %}
+{% block title %}{{ design.current_smi_name|default:design.hdbs_name }}{% endblock %}
 {% block content %}
 <div class="row mb-4">
-    <div class="col-md-6"><h1>Bit Design: {{ design.design_code }}</h1></div>
+    <div class="col-md-6">
+        <h1>Bit Design: {{ design.current_smi_name|default:design.hdbs_name }}</h1>
+        <p class="text-muted">{{ design.size_inch|bit_size_display }} {{ design.get_bit_type_display }}</p>
+    </div>
     <div class="col-md-6 text-end">
+        <a href="{% url 'production:bitdesign-hub' %}?search={{ design.design_code }}" class="btn btn-secondary">
+            <i class="bi bi-grid-3x3-gap"></i> Hub
+        </a>
         <a href="{% url 'production:bitdesign-mat-levels' design.pk %}" class="btn btn-info">
             <i class="bi bi-layers"></i> MAT Levels
         </a>
@@ -15,10 +22,10 @@
         <div class="row">
             <div class="col-md-6">
                 <h6 class="text-muted mb-3">Bit Category & Identification</h6>
-                <p><strong>Design Code:</strong> {{ design.design_code }}</p>
                 <p><strong>Level-1 Design MAT:</strong> {{ design.design_mat_number|default:"—" }}</p>
-                <p><strong>Bit Category (Bit Cat):</strong> {{ design.get_bit_type_display }}</p>
-                <p><strong>Size:</strong> {{ design.size_inch }}"</p>
+                <p><strong>Bit Category:</strong> {{ design.get_bit_type_display }}</p>
+                <p><strong>Bit Subcategory:</strong> {{ design.get_bit_subcategory_display|default:"—" }}</p>
+                <p><strong>Size:</strong> {{ design.size_inch|bit_size_display }}</p>
                 <p><strong>Active:</strong> {% if design.active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</p>
             </div>
             <div class="col-md-6">
@@ -35,26 +42,32 @@
                 <p><strong>Body Material:</strong> {{ design.get_body_material_display|default:"—" }}</p>
                 <p><strong>Blade Count:</strong> {{ design.blade_count|default:"—" }}</p>
                 <p><strong>Cutter Size Category:</strong> {{ design.cutter_size_category|default:"—" }}</p>
-                <p><strong>Gauge Length (inch):</strong> {{ design.gauge_length_inch|default:"—" }}</p>
+                <p><strong>Gauge Length:</strong> {{ design.gauge_length_inch|length_display }} in</p>
             </div>
             <div class="col-md-6">
                 <h6 class="text-muted mb-3">Hydraulics</h6>
                 <p><strong>Nozzle Count:</strong> {{ design.nozzle_count|default:"—" }}</p>
+                <p><strong>Nozzle Size:</strong> {{ design.nozzle_size|default:"—" }}</p>
                 <p><strong>Port Count:</strong> {{ design.port_count|default:"—" }}</p>
+                <p><strong>Nozzle Port Size:</strong> {{ design.nozzle_port_size|default:"—" }}</p>
+                <p><strong>Nozzle Bore Sleeve:</strong> {% if design.nozzle_bore_sleeve %}Yes{% elif design.nozzle_bore_sleeve == False %}No{% else %}—{% endif %}</p>
             </div>
         </div>
         <hr>
         <div class="row">
             <div class="col-md-6">
-                <h6 class="text-muted mb-3">Connection & Gauge Geometry</h6>
+                <h6 class="text-muted mb-3">Connection & Geometry</h6>
                 <p><strong>Connection Type:</strong> {{ design.get_connection_type_display|default:"—" }}</p>
-                <p><strong>Shank Diameter:</strong> {{ design.shank_diameter_inch|default:"—" }}"</p>
+                <p><strong>Connection Size:</strong> {{ design.connection_size|default:"—" }}</p>
+                <p><strong>Connection End Type:</strong> {{ design.get_connection_end_type_display|default:"—" }}</p>
+                <p><strong>Drift Type:</strong> {{ design.get_drift_type_display|default:"—" }}</p>
+                <p><strong>Shank Diameter:</strong> {{ design.shank_diameter_inch|length_display }} in</p>
                 <p><strong>Gauge Relief:</strong> {{ design.gauge_relief_thou|default:"—" }} thou</p>
             </div>
             <div class="col-md-6">
                 <h6 class="text-muted mb-3">Breaker Slot Dimensions</h6>
-                <p><strong>Breaker Open Width:</strong> {{ design.breaker_slot_width_inch|default:"—" }}"</p>
-                <p><strong>Breaker Thickness:</strong> {{ design.breaker_slot_height_inch|default:"—" }}"</p>
+                <p><strong>Breaker Open Width:</strong> {{ design.breaker_slot_width_inch|length_display }} in</p>
+                <p><strong>Breaker Thickness:</strong> {{ design.breaker_slot_height_inch|length_display }} in</p>
             </div>
         </div>
         <hr>
