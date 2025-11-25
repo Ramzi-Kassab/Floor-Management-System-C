@@ -25,8 +25,8 @@ class BitDesignAdmin(admin.ModelAdmin):
     # Field order as specified: Bit Cat, Size, SMI Name, HDBS, IADC, Body, Blades, etc.
     fieldsets = (
         ('Bit Category & Identification', {
-            'fields': ('bit_type', 'size_inch', 'design_code', 'design_mat_number'),
-            'description': 'Bit Category (FC/RC), basic identification, and Level-1 MAT'
+            'fields': ('bit_type', 'bit_subcategory', 'size_inch', 'design_mat_number'),
+            'description': 'Bit Category (FC/RC), subcategory, size, and Level-1 MAT. Note: design_code is auto-filled and hidden.'
         }),
         ('Design Names & Codes', {
             'fields': ('current_smi_name', 'hdbs_name', 'iadc_code'),
@@ -37,14 +37,16 @@ class BitDesignAdmin(admin.ModelAdmin):
                       'gauge_length_inch'),
             'description': 'Auto-filled from design name if empty. Matrix/Steel, blade count (1st digit), cutter size (2nd digit)'
         }),
-        ('Connection & Gauge Geometry', {
-            'fields': ('connection_type', 'shank_diameter_inch', 'gauge_relief_thou',
+        ('Connection & Geometry', {
+            'fields': ('connection_type', 'connection_size', 'connection_end_type',
+                      'drift_type', 'shank_diameter_inch', 'gauge_relief_thou',
                       'breaker_slot_width_inch', 'breaker_slot_height_inch'),
-            'description': 'Connection details, shank diameter, gauge relief, and breaker slot dimensions'
+            'description': 'Connection details, drift type, shank diameter, gauge relief, and breaker slot dimensions'
         }),
         ('Hydraulics', {
-            'fields': ('nozzle_count', 'port_count'),
-            'description': 'Nozzles and ports'
+            'fields': ('nozzle_count', 'port_count', 'nozzle_port_size',
+                      'nozzle_size', 'nozzle_bore_sleeve'),
+            'description': 'Nozzles, ports, and hydraulic specifications'
         }),
         ('Description & Notes', {
             'fields': ('description', 'remarks'),
@@ -65,15 +67,20 @@ class BitDesignAdmin(admin.ModelAdmin):
 
 @admin.register(models.BitDesignRevision)
 class BitDesignRevisionAdmin(admin.ModelAdmin):
-    list_display = ['mat_number', 'design', 'level', 'previous_level', 'upper_welded', 'effective_from', 'effective_to', 'active']
+    list_display = ['mat_number', 'design', 'level', 'variant_label', 'previous_level',
+                    'upper_welded', 'effective_from', 'effective_to', 'active']
     list_filter = ['active', 'level', 'upper_welded', 'effective_from']
-    search_fields = ['mat_number', 'design__design_code', 'remarks']
+    search_fields = ['mat_number', 'design__design_code', 'variant_label', 'variant_notes', 'remarks']
     date_hierarchy = 'effective_from'
     list_per_page = 50
     autocomplete_fields = ['design', 'previous_level']
     fieldsets = (
         ('Revision Information', {
             'fields': ('design', 'mat_number', 'level', 'previous_level', 'upper_welded')
+        }),
+        ('Variant Identification', {
+            'fields': ('variant_label', 'variant_notes'),
+            'description': 'Optional labels to distinguish this MAT from other variants at the same level'
         }),
         ('Effective Dates', {
             'fields': ('effective_from', 'effective_to', 'active')

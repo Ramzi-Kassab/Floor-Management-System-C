@@ -1,4 +1,5 @@
 {% extends 'production/base.html' %}
+{% load bit_format %}
 {% block title %}Bit Design Hub{% endblock %}
 {% block content %}
 
@@ -169,9 +170,13 @@
                         <th>Blades</th>
                         <th>Cutter Cat</th>
                         <th>Gauge L.</th>
+                        <th>Conn. Size</th>
+                        <th>Conn. End</th>
+                        <th>Drift</th>
                         <th>Nozzles</th>
                         <th>Ports</th>
-                        <th>Conn.</th>
+                        <th>Nozzle Size</th>
+                        <th>Conn. Type</th>
                         <th>Breaker W.</th>
                         <th>Breaker H.</th>
                         <th>Shank Dia.</th>
@@ -190,20 +195,24 @@
                         <td><strong>L1</strong> <small class="text-muted">Design root</small></td>
                         <td>{{ design.design_mat_number|default:"—" }}</td>
                         <td>{{ design.get_bit_type_display }}</td>
-                        <td>{{ design.size_inch }}"</td>
+                        <td>{{ design.size_inch|bit_size_display }}</td>
                         <td>{{ design.current_smi_name|default:"—" }}</td>
                         <td>{{ design.hdbs_name|default:"—" }}</td>
                         <td>{{ design.iadc_code|default:"—" }}</td>
                         <td>{{ design.get_body_material_display|default:"—" }}</td>
                         <td>{{ design.blade_count|default:"—" }}</td>
                         <td>{{ design.cutter_size_category|default:"—" }}</td>
-                        <td>{{ design.gauge_length_inch|default:"—" }}</td>
+                        <td>{{ design.gauge_length_inch|length_display }}</td>
+                        <td>{{ design.connection_size|default:"—" }}</td>
+                        <td>{{ design.get_connection_end_type_display|default:"—" }}</td>
+                        <td>{{ design.get_drift_type_display|default:"—" }}</td>
                         <td>{{ design.nozzle_count|default:"—" }}</td>
                         <td>{{ design.port_count|default:"—" }}</td>
+                        <td>{{ design.nozzle_size|default:"—" }}</td>
                         <td>{{ design.get_connection_type_display|default:"—" }}</td>
-                        <td>{{ design.breaker_slot_width_inch|default:"—" }}</td>
-                        <td>{{ design.breaker_slot_height_inch|default:"—" }}</td>
-                        <td>{{ design.shank_diameter_inch|default:"—" }}</td>
+                        <td>{{ design.breaker_slot_width_inch|length_display }}</td>
+                        <td>{{ design.breaker_slot_height_inch|length_display }}</td>
+                        <td>{{ design.shank_diameter_inch|length_display }}</td>
                         <td>{{ design.gauge_relief_thou|default:"—" }}</td>
                         <td>
                             {% if design.active %}
@@ -255,16 +264,22 @@
                             {% if rev.child_count >= 2 %}
                                 <i class="bi bi-diagram-3 text-warning" title="Branch point ({{ rev.child_count }} children)"></i>
                             {% endif %}
+                            {% if rev.variant_label %}
+                                <br><small class="badge bg-info">{{ rev.variant_label }}</small>
+                            {% endif %}
                         </td>
-                        <td colspan="6" class="text-muted small">
+                        <td colspan="9" class="text-muted small">
                             {% if rev.previous_level %}
                                 <strong>Prev:</strong> {{ rev.previous_level.mat_number }} (L{{ rev.previous_level.level }})
                             {% endif %}
                             {% if rev.upper_welded is not None %}
                                 | <strong>Upper:</strong> {% if rev.upper_welded %}Welded{% else %}Loose{% endif %}
                             {% endif %}
+                            {% if rev.variant_notes %}
+                                | <strong>Variant:</strong> {{ rev.variant_notes|truncatewords:10 }}
+                            {% endif %}
                             {% if rev.remarks %}
-                                | {{ rev.remarks|truncatewords:15 }}
+                                | {{ rev.remarks|truncatewords:10 }}
                             {% endif %}
                         </td>
                         <td colspan="10"></td>
@@ -288,8 +303,9 @@
                                     <li><a class="dropdown-item" href="#">
                                         <i class="bi bi-list-ul"></i> View BOM
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#">
-                                        <i class="bi bi-files"></i> Clone Level
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'production:mat-clone-branch' rev.pk %}">
+                                        <i class="bi bi-diagram-3"></i> Clone as Branch
                                     </a></li>
                                 </ul>
                             </div>

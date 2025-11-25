@@ -1,0 +1,51 @@
+{% extends 'production/base.html' %}
+{% block title %}Clone MAT as Branch{% endblock %}
+{% block content %}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="bi bi-diagram-3"></i> Clone MAT as Same-Level Branch</h4>
+            </div>
+            <div class="card-body">
+                <!-- Source MAT Info -->
+                <div class="alert alert-info">
+                    <h5>Source MAT:</h5>
+                    <p class="mb-1"><strong>MAT Number:</strong> {{ source_mat.mat_number }}</p>
+                    <p class="mb-1"><strong>Level:</strong> {{ source_mat.level }}</p>
+                    <p class="mb-1"><strong>Design:</strong> {{ source_mat.design }}</p>
+                    {% if source_mat.previous_level %}
+                    <p class="mb-1"><strong>Previous Level:</strong> {{ source_mat.previous_level.mat_number }} (L{{ source_mat.previous_level.level }})</p>
+                    {% endif %}
+                    {% if source_mat.variant_label %}
+                    <p class="mb-1"><strong>Variant Label:</strong> {{ source_mat.variant_label }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Note:</strong> The new MAT will be created at the same level ({{ source_mat.level }})
+                    with the same parent. Enter a unique MAT number and optional variant label.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Branch MAT
+                        </button>
+                        <a href="{% url 'production:bitdesign-hub' %}?search={{ source_mat.design.design_code }}"
+                           class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

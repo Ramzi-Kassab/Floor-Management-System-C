@@ -18,6 +18,7 @@ import qrcode
 import io
 
 from . import models
+from . import forms
 
 
 # ============================================================================
@@ -127,66 +128,20 @@ class BitDesignDetailView(LoginRequiredMixin, DetailView):
 
 class BitDesignCreateView(LoginRequiredMixin, CreateView):
     model = models.BitDesign
+    form_class = forms.BitDesignForm
     template_name = 'production/bitdesign_form.html'
-    # Field order as specified: Bit Cat, Size, SMI, HDBS, IADC, Body, Blades, etc.
-    fields = [
-        'bit_type',  # Bit Category (Bit Cat)
-        'size_inch',
-        'design_mat_number',  # Level-1 MAT
-        'current_smi_name',
-        'hdbs_name',
-        'iadc_code',
-        'design_code',  # For backward compatibility
-        'body_material',
-        'blade_count',
-        'cutter_size_category',
-        'gauge_length_inch',
-        'nozzle_count',
-        'port_count',
-        'connection_type',
-        'shank_diameter_inch',
-        'gauge_relief_thou',
-        'breaker_slot_width_inch',
-        'breaker_slot_height_inch',
-        'description',
-        'remarks',
-        'active'
-    ]
     success_url = reverse_lazy('production:bitdesign-list')
 
     def form_valid(self, form):
-        name = form.instance.current_smi_name or form.instance.hdbs_name or form.instance.design_code
+        name = form.instance.current_smi_name or form.instance.hdbs_name or 'New Design'
         messages.success(self.request, f'Bit Design {name} created successfully.')
         return super().form_valid(form)
 
 
 class BitDesignUpdateView(LoginRequiredMixin, UpdateView):
     model = models.BitDesign
+    form_class = forms.BitDesignForm
     template_name = 'production/bitdesign_form.html'
-    # Same field order as create
-    fields = [
-        'bit_type',
-        'size_inch',
-        'design_mat_number',
-        'current_smi_name',
-        'hdbs_name',
-        'iadc_code',
-        'design_code',
-        'body_material',
-        'blade_count',
-        'cutter_size_category',
-        'gauge_length_inch',
-        'nozzle_count',
-        'port_count',
-        'connection_type',
-        'shank_diameter_inch',
-        'gauge_relief_thou',
-        'breaker_slot_width_inch',
-        'breaker_slot_height_inch',
-        'description',
-        'remarks',
-        'active'
-    ]
     success_url = reverse_lazy('production:bitdesign-list')
 
     def form_valid(self, form):
@@ -272,6 +227,48 @@ class BitMatLevelListView(LoginRequiredMixin, ListView):
         design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
         context['design'] = design
         return context
+
+
+class BitMatCloneAsBranchView(LoginRequiredMixin, CreateView):
+    """
+    Clone a MAT level as a same-level branch (variant)
+    Creates a new MAT at the same level with the same previous_level parent
+    """
+    model = models.BitDesignRevision
+    template_name = 'production/bitmat_clone_form.html'
+    fields = ['mat_number', 'variant_label', 'variant_notes', 'upper_welded',
+              'effective_from', 'effective_to', 'active', 'remarks']
+
+    def get_initial(self):
+        """Pre-fill form with source MAT data"""
+        source = get_object_or_404(models.BitDesignRevision, pk=self.kwargs['pk'])
+        return {
+            'upper_welded': source.upper_welded,
+            'variant_label': source.variant_label,
+            'active': True,
+        }
+
+    def get_context_data(self, **kwargs):
+        """Add source MAT to context for display"""
+        context = super().get_context_data(**kwargs)
+        context['source_mat'] = get_object_or_404(models.BitDesignRevision, pk=self.kwargs['pk'])
+        return context
+
+    def form_valid(self, form):
+        """Set design, level, and previous_level from source MAT"""
+        source = get_object_or_404(models.BitDesignRevision, pk=self.kwargs['pk'])
+        form.instance.design = source.design
+        form.instance.level = source.level
+        form.instance.previous_level = source.previous_level
+        messages.success(
+            self.request,
+            f'Branch MAT {form.instance.mat_number} created at Level {source.level}'
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Return to hub filtered to this design"""
+        return reverse_lazy('production:bitdesign-hub') + f'?search={self.object.design.design_code}'
 
 
 class BitDesignHubView(LoginRequiredMixin, TemplateView):

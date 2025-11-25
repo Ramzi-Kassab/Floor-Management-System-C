@@ -313,7 +313,8 @@ class BitDesign(models.Model):
         max_length=50,
         unique=True,
         db_index=True,
-        help_text="Unique design code (typically same as current_smi_name or hdbs_name)"
+        editable=False,
+        help_text="Auto-filled from SMI/HDBS name"
     )
 
     # 6. Body Material
@@ -435,6 +436,64 @@ class BitDesign(models.Model):
         help_text="Gauge relief on diameter in thou (0 means no relief)."
     )
 
+    # 20. Bit Subcategory
+    bit_subcategory = models.CharField(
+        max_length=20,
+        choices=BIT_SUBCATEGORY_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Bit subcategory (Standard FC, Core head, RC)"
+    )
+
+    # 21. Connection Size
+    connection_size = models.CharField(
+        max_length=20,
+        choices=API_CONNECTION_SIZE_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Bit connection size (API REG/IF/FH, e.g. 4 1/2 REG)"
+    )
+
+    # 22. Connection End Type
+    connection_end_type = models.CharField(
+        max_length=3,
+        choices=CONNECTION_END_TYPE_CHOICES,
+        default="PIN",
+        help_text="Connection end type: pin (external) or box (internal)"
+    )
+
+    # 23. Drift Type
+    drift_type = models.CharField(
+        max_length=12,
+        choices=DRIFT_TYPE_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Internal bore type: standard or full drift"
+    )
+
+    # 24. Nozzle Port Size
+    nozzle_port_size = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Nozzle port/pocket size. Leave blank or N/A if port_count=0"
+    )
+
+    # 25. Nozzle Size
+    nozzle_size = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Nozzle orifice size (e.g. 12/32). Leave blank or N/A if nozzle_count=0"
+    )
+
+    # 26. Nozzle Bore Sleeve
+    nozzle_bore_sleeve = models.BooleanField(
+        blank=True,
+        null=True,
+        help_text="Nozzle bore sleeve used (Yes/No). Null/N/A if nozzle_count=0"
+    )
+
     # Metadata
     active = models.BooleanField(
         default=True,
@@ -461,9 +520,14 @@ class BitDesign(models.Model):
     def save(self, *args, **kwargs):
         """
         Auto-fill logic for PDC/Fixed Cutter bits:
-        1. Derive body material, blades, cutter size from design name
-        2. Auto-generate description
+        1. Auto-fill design_code from SMI/HDBS name
+        2. Derive body material, blades, cutter size from design name
+        3. Auto-generate description
         """
+        # Auto-fill design_code if empty
+        if not self.design_code:
+            self.design_code = self.current_smi_name or self.hdbs_name or f"DESIGN-{uuid.uuid4().hex[:8].upper()}"
+
         # Only auto-fill for PDC bits
         if self.bit_type == BitType.PDC:
             # Get the design name (prefer current_smi_name, fallback to hdbs_name)
@@ -606,6 +670,15 @@ class BitDesignRevision(models.Model):
         null=True,
         blank=True,
         help_text="For Level-5: whether the upper section is already welded (True) or shipped loose (False). Leave blank when not applicable."
+    )
+    variant_label = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Short label for this MAT variant (e.g. 'Texas L3 kit', 'ALT cutter set')"
+    )
+    variant_notes = models.TextField(
+        blank=True,
+        help_text="What distinguishes this MAT from other variants at the same level"
     )
     remarks = models.TextField(
         blank=True,

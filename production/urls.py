@@ -20,6 +20,9 @@ urlpatterns = [
     path('designs/<int:pk>/edit/', views.BitDesignUpdateView.as_view(), name='bitdesign-edit'),
     path('designs/<int:pk>/mat-levels/', views.BitMatLevelListView.as_view(), name='bitdesign-mat-levels'),
 
+    # MAT Level Operations
+    path('mats/<int:pk>/clone-branch/', views.BitMatCloneAsBranchView.as_view(), name='mat-clone-branch'),
+
     # Bit Instances
     path('instances/', views.BitInstanceListView.as_view(), name='bitinstance-list'),
     path('instances/<int:pk>/', views.BitInstanceDetailView.as_view(), name='bitinstance-detail'),
