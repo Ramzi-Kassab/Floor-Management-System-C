@@ -271,10 +271,52 @@ class BitMatCloneAsBranchView(LoginRequiredMixin, CreateView):
         return reverse_lazy('production:bitdesign-hub') + f'?search={self.object.design.design_code}'
 
 
+class BitMatCreateLevel2FromDesignView(LoginRequiredMixin, CreateView):
+    """
+    Create the first Level 2 MAT from a BitDesign (Level 1)
+    """
+    model = models.BitDesignRevision
+    template_name = 'production/bitmat_create_level2_form.html'
+    fields = ['mat_number', 'variant_label', 'variant_notes', 'upper_welded',
+              'effective_from', 'effective_to', 'active', 'remarks']
+
+    def get_initial(self):
+        """Pre-fill form with reasonable defaults"""
+        return {
+            'active': True,
+        }
+
+    def get_context_data(self, **kwargs):
+        """Add design to context"""
+        context = super().get_context_data(**kwargs)
+        design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
+        context['design'] = design
+        return context
+
+    def form_valid(self, form):
+        """Set design and level for the new Level 2 MAT"""
+        design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
+
+        # Set the new MAT's properties for Level 2
+        form.instance.design = design
+        form.instance.level = 2
+        form.instance.previous_level = None  # Level 2 has no previous_level (it's from design root)
+
+        messages.success(
+            self.request,
+            f'Level 2 MAT {form.instance.mat_number} created for design {design}'
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Return to MAT levels view for this design"""
+        return reverse_lazy('production:bitdesign-mat-levels', kwargs={'pk': self.object.design.pk})
+
+
 class BitMatCreateNextLevelView(LoginRequiredMixin, CreateView):
     """
     Create the next level MAT from a parent MAT
-    E.g., Create Level 2 from Level 1, Level 3 from Level 2, etc.
+    E.g., Create Level 3 from Level 2, Level 4 from Level 3, etc.
     """
     model = models.BitDesignRevision
     template_name = 'production/bitmat_create_next_level_form.html'

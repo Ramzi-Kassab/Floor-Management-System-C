@@ -1,0 +1,65 @@
+{% extends 'production/base.html' %}
+{% load bit_format %}
+{% block title %}Create Level 2 MAT{% endblock %}
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'production:dashboard' %}"><i class="bi bi-house"></i> Production</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-hub' %}">Bit Design Hub</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-detail' design.pk %}">{{ design }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Create Level 2</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4><i class="bi bi-arrow-up-circle"></i> Create Level 2 MAT (First Manufacturing Level)</h4>
+            </div>
+            <div class="card-body">
+                <!-- Design Info -->
+                <div class="alert alert-info">
+                    <h5>Design (Level 1):</h5>
+                    <p class="mb-1"><strong>Design MAT:</strong> {{ design.design_mat_number|default:"—" }}</p>
+                    <p class="mb-1"><strong>Type:</strong> {{ design.get_bit_type_display }}</p>
+                    <p class="mb-1"><strong>Size:</strong> {{ design.size_inch|bit_size_display }}</p>
+                    <p class="mb-1"><strong>SMI Name:</strong> {{ design.current_smi_name|default:"—" }}</p>
+                    <p class="mb-1"><strong>HDBS Name:</strong> {{ design.hdbs_name|default:"—" }}</p>
+                </div>
+
+                <div class="alert alert-success">
+                    <i class="bi bi-arrow-up-right-circle"></i>
+                    <strong>Creating:</strong> Level 2 MAT (Mold + Tooling)
+                    <br>
+                    <small class="text-muted">First manufacturing level - molds, inserts, patterns</small>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Note:</strong> This will create the first Level 2 MAT for this design. Level 2 represents the mold and tooling level.
+                    Enter a unique MAT number for this new level.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Create Level 2 MAT
+                        </button>
+                        <a href="{% url 'production:bitdesign-hub' %}?search={{ design.design_code }}"
+                           class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
