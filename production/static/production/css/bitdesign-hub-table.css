@@ -9,7 +9,7 @@
 
 .hub-table-wrapper {
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Allow dropdowns to overflow */
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     background: #ffffff;
@@ -18,7 +18,8 @@
 .hub-table-scroll-container {
     overflow-x: auto;
     overflow-y: auto;
-    max-height: 800px;
+    max-height: calc(100vh - 320px); /* Dynamic height based on viewport */
+    min-height: 500px;
     position: relative;
 }
 
@@ -311,7 +312,6 @@
 .sortable-header {
     cursor: pointer;
     user-select: none;
-    position: relative;
     padding-right: 24px !important;
 }
 
@@ -324,19 +324,30 @@
     right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 0.8em;
-    opacity: 0;
-    transition: opacity 150ms ease;
+    font-size: 0.75em;
+    opacity: 0.3;
+    transition: opacity 150ms ease, transform 150ms ease;
 }
 
-.sortable-header.sort-asc .sort-indicator,
-.sortable-header.sort-desc .sort-indicator {
+/* Default state - show subtle unsorted indicator */
+.sortable-header .sort-indicator::after {
+    content: '▲';
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Ascending - bright triangle up */
+.sortable-header.sort-asc .sort-indicator {
     opacity: 1;
 }
 
 .sortable-header.sort-asc .sort-indicator::after {
     content: '▲';
     color: #ffc107;
+}
+
+/* Descending - bright triangle down */
+.sortable-header.sort-desc .sort-indicator {
+    opacity: 1;
 }
 
 .sortable-header.sort-desc .sort-indicator::after {
@@ -383,15 +394,30 @@
 .filter-dropdown {
     position: absolute;
     top: 100%;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%); /* Center the dropdown */
+    margin-top: 4px; /* Space between header and dropdown */
     background: white;
-    border: 1px solid #dee2e6;
+    border: 2px solid #0d6efd; /* Stronger border */
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 12px;
-    min-width: 280px;
-    z-index: 1000;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25); /* Stronger shadow */
+    padding: 16px;
+    min-width: 300px;
+    max-width: 320px;
+    z-index: 1001; /* Higher than other elements */
     display: none;
+}
+
+/* Arrow pointing to header */
+.filter-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid #0d6efd;
 }
 
 .filter-dropdown.show {
@@ -499,7 +525,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
+    padding: 8px 12px; /* More compact */
     background: #f8f9fa;
     border-bottom: 1px solid #dee2e6;
 }
