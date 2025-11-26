@@ -57,15 +57,24 @@
 #bitdesign-hub-table tbody tr.design-row:nth-child(4n+1),
 #bitdesign-hub-table tbody tr.design-row:nth-child(4n+2) {
     background-color: #ffffff;
+    cursor: pointer;
 }
 
 #bitdesign-hub-table tbody tr.design-row:nth-child(4n+3),
 #bitdesign-hub-table tbody tr.design-row:nth-child(4n+4) {
     background-color: #f8f9fa;
+    cursor: pointer;
 }
 
-/* Level rows inherit parent design row background */
+/* Level rows - different background, no cursor pointer */
 #bitdesign-hub-table tbody tr.level-row {
+    background-color: #f0f8ff;
+    cursor: default;
+}
+
+/* Level row cells with colspan - no sticky positioning */
+#bitdesign-hub-table tbody tr.level-row td[colspan] {
+    position: static;
     background-color: #f0f8ff;
 }
 
@@ -95,49 +104,123 @@
    4. FROZEN COLUMNS (First 3 columns)
    ============================================== */
 
-/* Column 1: Toggle icon */
-#bitdesign-hub-table th:nth-child(1),
-#bitdesign-hub-table td:nth-child(1) {
+/* Column 1: Toggle icon - Design rows */
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+1) td:nth-child(1),
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+2) td:nth-child(1) {
     position: sticky;
     left: 0;
     z-index: 5;
-    background: inherit;
+    background-color: #ffffff;
     min-width: 40px;
     max-width: 40px;
     text-align: center;
 }
 
-#bitdesign-hub-table thead th:nth-child(1) {
-    z-index: 11;
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+3) td:nth-child(1),
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+4) td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background-color: #f8f9fa;
+    min-width: 40px;
+    max-width: 40px;
+    text-align: center;
 }
 
-/* Column 2: Design Code */
-#bitdesign-hub-table th:nth-child(2),
-#bitdesign-hub-table td:nth-child(2) {
+/* Column 1: Toggle icon - Level rows */
+#bitdesign-hub-table tbody tr.level-row td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background-color: #f0f8ff;
+    min-width: 40px;
+    max-width: 40px;
+    text-align: center;
+}
+
+/* Column 1: Toggle icon - Header */
+#bitdesign-hub-table thead th:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 11;
+    min-width: 40px;
+    max-width: 40px;
+    text-align: center;
+}
+
+/* Column 2: Level/Design Code - Design rows */
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+1) td:nth-child(2),
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+2) td:nth-child(2) {
     position: sticky;
     left: 40px;
     z-index: 5;
-    background: inherit;
+    background-color: #ffffff;
     min-width: 120px;
     font-weight: 600;
 }
 
-#bitdesign-hub-table thead th:nth-child(2) {
-    z-index: 11;
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+3) td:nth-child(2),
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+4) td:nth-child(2) {
+    position: sticky;
+    left: 40px;
+    z-index: 5;
+    background-color: #f8f9fa;
+    min-width: 120px;
+    font-weight: 600;
 }
 
-/* Column 3: Bit Type */
-#bitdesign-hub-table th:nth-child(3),
-#bitdesign-hub-table td:nth-child(3) {
+/* Column 2: Level/Design Code - Level rows */
+#bitdesign-hub-table tbody tr.level-row td:nth-child(2) {
+    position: sticky;
+    left: 40px;
+    z-index: 5;
+    background-color: #f0f8ff;
+    min-width: 120px;
+    font-weight: 600;
+}
+
+/* Column 2: Level/Design Code - Header */
+#bitdesign-hub-table thead th:nth-child(2) {
+    position: sticky;
+    left: 40px;
+    z-index: 11;
+    min-width: 120px;
+}
+
+/* Column 3: MAT - Design rows */
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+1) td:nth-child(3),
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+2) td:nth-child(3) {
     position: sticky;
     left: 160px;
     z-index: 5;
-    background: inherit;
+    background-color: #ffffff;
     min-width: 100px;
 }
 
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+3) td:nth-child(3),
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+4) td:nth-child(3) {
+    position: sticky;
+    left: 160px;
+    z-index: 5;
+    background-color: #f8f9fa;
+    min-width: 100px;
+}
+
+/* Column 3: MAT - Level rows */
+#bitdesign-hub-table tbody tr.level-row td:nth-child(3) {
+    position: sticky;
+    left: 160px;
+    z-index: 5;
+    background-color: #f0f8ff;
+    min-width: 100px;
+}
+
+/* Column 3: MAT - Header */
 #bitdesign-hub-table thead th:nth-child(3) {
+    position: sticky;
+    left: 160px;
     z-index: 11;
+    min-width: 100px;
 }
 
 /* Shadow effect for frozen columns */
@@ -152,15 +235,25 @@
 
 /* Individual cell hover - NOT row hover */
 #bitdesign-hub-table tbody td.cell-hoverable {
-    transition: background-color 150ms ease, border 150ms ease;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
     cursor: pointer;
 }
 
-#bitdesign-hub-table tbody td.cell-hoverable:hover {
+/* Cell hover for NON-FROZEN columns (4+) */
+#bitdesign-hub-table tbody td.cell-hoverable:nth-child(n+4):hover {
     background-color: #e8f4fc !important;
-    border: 1px solid #4a90d9 !important;
+    box-shadow: inset 0 0 0 1px #4a90d9;
     position: relative;
     z-index: 3;
+}
+
+/* Cell hover for FROZEN columns (1-3) - NO position change */
+#bitdesign-hub-table tbody tr.design-row td.cell-hoverable:nth-child(1):hover,
+#bitdesign-hub-table tbody tr.design-row td.cell-hoverable:nth-child(2):hover,
+#bitdesign-hub-table tbody tr.design-row td.cell-hoverable:nth-child(3):hover {
+    background-color: #d0e8f7 !important;
+    box-shadow: inset 0 0 0 1px #4a90d9;
+    /* DO NOT change position - already sticky */
 }
 
 /* Disable default row hover */
