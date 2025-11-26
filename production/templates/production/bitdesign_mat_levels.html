@@ -2,6 +2,16 @@
 {% block title %}MAT Levels - {{ design.design_code }}{% endblock %}
 {% block content %}
 
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'production:dashboard' %}"><i class="bi bi-house"></i> Production</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-hub' %}">Bit Design Hub</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-detail' design.pk %}">{{ design.current_smi_name|default:design.hdbs_name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">MAT Levels</li>
+    </ol>
+</nav>
+
 <!-- Design Header -->
 <div class="row mb-4">
     <div class="col-md-8">
@@ -143,6 +153,7 @@
                         <th>Effective To</th>
                         <th>Active</th>
                         <th>Remarks</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -187,6 +198,29 @@
                             {% else %}
                                 —
                             {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                {% if rev.level < 6 %}
+                                <a href="{% url 'production:mat-create-next-level' rev.pk %}"
+                                   class="btn btn-success"
+                                   title="Create Level {{ rev.level|add:1 }} from this MAT">
+                                    <i class="bi bi-arrow-up-circle"></i> Next Level
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'production:mat-clone-branch' rev.pk %}"
+                                   class="btn btn-primary"
+                                   title="Clone as same-level variant">
+                                    <i class="bi bi-diagram-3"></i> Branch
+                                </a>
+                                {% if rev.previous_level %}
+                                <a href="#" onclick="filterByMAT('{{ rev.previous_level.mat_number }}'); return false;"
+                                   class="btn btn-secondary"
+                                   title="View parent MAT {{ rev.previous_level.mat_number }}">
+                                    <i class="bi bi-arrow-up"></i> Parent
+                                </a>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -251,4 +285,17 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterByMAT(matNumber) {
+    // Set the search field to the parent MAT number and submit the form
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        searchInput.value = matNumber;
+        searchInput.form.submit();
+    }
+}
+</script>
 {% endblock %}

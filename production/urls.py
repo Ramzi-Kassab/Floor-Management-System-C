@@ -22,6 +22,7 @@ urlpatterns = [
 
     # MAT Level Operations
     path('mats/<int:pk>/clone-branch/', views.BitMatCloneAsBranchView.as_view(), name='mat-clone-branch'),
+    path('mats/<int:pk>/create-next-level/', views.BitMatCreateNextLevelView.as_view(), name='mat-create-next-level'),
 
     # Bit Instances
     path('instances/', views.BitInstanceListView.as_view(), name='bitinstance-list'),

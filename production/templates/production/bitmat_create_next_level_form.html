@@ -1,5 +1,5 @@
 {% extends 'production/base.html' %}
-{% block title %}Clone MAT as Branch{% endblock %}
+{% block title %}Create Next Level MAT{% endblock %}
 {% block content %}
 
 <!-- Breadcrumb -->
@@ -9,35 +9,41 @@
         <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-hub' %}">Bit Design Hub</a></li>
         <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-detail' source_mat.design.pk %}">{{ source_mat.design }}</a></li>
         <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-mat-levels' source_mat.design.pk %}">MAT Levels</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Clone as Branch</li>
+        <li class="breadcrumb-item active" aria-current="page">Create Level {{ next_level }}</li>
     </ol>
 </nav>
 
 <div class="row">
     <div class="col-md-8 offset-md-2">
         <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4><i class="bi bi-diagram-3"></i> Clone MAT as Same-Level Branch</h4>
+            <div class="card-header bg-success text-white">
+                <h4><i class="bi bi-arrow-up-circle"></i> Create Next Level MAT</h4>
             </div>
             <div class="card-body">
                 <!-- Source MAT Info -->
                 <div class="alert alert-info">
-                    <h5>Source MAT:</h5>
+                    <h5>Parent MAT (Level {{ source_mat.level }}):</h5>
                     <p class="mb-1"><strong>MAT Number:</strong> {{ source_mat.mat_number }}</p>
-                    <p class="mb-1"><strong>Level:</strong> {{ source_mat.level }}</p>
                     <p class="mb-1"><strong>Design:</strong> {{ source_mat.design }}</p>
-                    {% if source_mat.previous_level %}
-                    <p class="mb-1"><strong>Previous Level:</strong> {{ source_mat.previous_level.mat_number }} (L{{ source_mat.previous_level.level }})</p>
-                    {% endif %}
                     {% if source_mat.variant_label %}
-                    <p class="mb-1"><strong>Variant Label:</strong> {{ source_mat.variant_label }}</p>
+                    <p class="mb-1"><strong>Variant:</strong> {{ source_mat.variant_label }}</p>
                     {% endif %}
+                    {% if source_mat.remarks %}
+                    <p class="mb-1"><strong>Remarks:</strong> {{ source_mat.remarks|truncatewords:15 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-success">
+                    <i class="bi bi-arrow-up-right-circle"></i>
+                    <strong>Creating:</strong> Level {{ next_level }} MAT
+                    <br>
+                    <small class="text-muted">{{ next_level_description }}</small>
                 </div>
 
                 <div class="alert alert-warning">
                     <i class="bi bi-info-circle"></i>
-                    <strong>Note:</strong> The new MAT will be created at the same level ({{ source_mat.level }})
-                    with the same parent. Enter a unique MAT number and optional variant label.
+                    <strong>Note:</strong> The new MAT will be created at Level {{ next_level }} with MAT {{ source_mat.mat_number }} as its parent (previous_level).
+                    Enter a unique MAT number for this new level.
                 </div>
 
                 <form method="post">
@@ -45,10 +51,10 @@
                     {{ form.as_p }}
 
                     <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Create Branch MAT
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Create Level {{ next_level }} MAT
                         </button>
-                        <a href="{% url 'production:bitdesign-hub' %}?search={{ source_mat.design.design_code }}"
+                        <a href="{% url 'production:bitdesign-mat-levels' source_mat.design.pk %}"
                            class="btn btn-secondary">
                             <i class="bi bi-x-circle"></i> Cancel
                         </a>

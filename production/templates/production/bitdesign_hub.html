@@ -34,6 +34,14 @@
 
 {% block content %}
 
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'production:dashboard' %}"><i class="bi bi-house"></i> Production</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Bit Design Hub</li>
+    </ol>
+</nav>
+
 <!-- Header with Search -->
 <div class="row mb-3">
     <div class="col-md-6">
@@ -159,7 +167,17 @@
                         <td>
                             {{ rev.mat_number }}
                             {% if rev.child_count >= 2 %}
-                                <i class="bi bi-diagram-3 text-warning" title="Branch point ({{ rev.child_count }} children)"></i>
+                                <a href="{% url 'production:bitdesign-mat-levels' design.pk %}?prev_mat={{ rev.mat_number }}"
+                                   class="text-decoration-none text-warning"
+                                   title="View {{ rev.child_count }} child MATs">
+                                    <i class="bi bi-diagram-3"></i> {{ rev.child_count }}
+                                </a>
+                            {% elif rev.child_count == 1 %}
+                                <a href="{% url 'production:bitdesign-mat-levels' design.pk %}?prev_mat={{ rev.mat_number }}"
+                                   class="text-decoration-none text-muted"
+                                   title="View 1 child MAT">
+                                    <i class="bi bi-arrow-down-circle"></i> 1
+                                </a>
                             {% endif %}
                             {% if rev.variant_label %}
                                 <br><small class="badge bg-info">{{ rev.variant_label }}</small>
@@ -167,7 +185,12 @@
                         </td>
                         <td colspan="9" class="text-muted small">
                             {% if rev.previous_level %}
-                                <strong>Prev:</strong> {{ rev.previous_level.mat_number }} (L{{ rev.previous_level.level }})
+                                <strong>Prev:</strong>
+                                <a href="{% url 'production:bitdesign-mat-levels' design.pk %}?search={{ rev.previous_level.mat_number }}"
+                                   class="text-decoration-none"
+                                   title="View parent MAT {{ rev.previous_level.mat_number }}">
+                                    <i class="bi bi-arrow-up-circle"></i> {{ rev.previous_level.mat_number }} (L{{ rev.previous_level.level }})
+                                </a>
                             {% endif %}
                             {% if rev.upper_welded is not None %}
                                 | <strong>Upper:</strong> {% if rev.upper_welded %}Welded{% else %}Loose{% endif %}
@@ -201,6 +224,11 @@
                                         <i class="bi bi-list-ul"></i> View BOM
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
+                                    {% if rev.level < 6 %}
+                                    <li><a class="dropdown-item text-success" href="{% url 'production:mat-create-next-level' rev.pk %}">
+                                        <i class="bi bi-arrow-up-circle"></i> Create Level {{ rev.level|add:1 }}
+                                    </a></li>
+                                    {% endif %}
                                     <li><a class="dropdown-item" href="{% url 'production:mat-clone-branch' rev.pk %}">
                                         <i class="bi bi-diagram-3"></i> Clone as Branch
                                     </a></li>

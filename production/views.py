@@ -271,6 +271,68 @@ class BitMatCloneAsBranchView(LoginRequiredMixin, CreateView):
         return reverse_lazy('production:bitdesign-hub') + f'?search={self.object.design.design_code}'
 
 
+class BitMatCreateNextLevelView(LoginRequiredMixin, CreateView):
+    """
+    Create the next level MAT from a parent MAT
+    E.g., Create Level 2 from Level 1, Level 3 from Level 2, etc.
+    """
+    model = models.BitDesignRevision
+    template_name = 'production/bitmat_create_next_level_form.html'
+    fields = ['mat_number', 'variant_label', 'variant_notes', 'upper_welded',
+              'effective_from', 'effective_to', 'active', 'remarks']
+
+    def get_initial(self):
+        """Pre-fill form with reasonable defaults"""
+        source = get_object_or_404(models.BitDesignRevision, pk=self.kwargs['pk'])
+        return {
+            'upper_welded': source.upper_welded,
+            'active': True,
+        }
+
+    def get_context_data(self, **kwargs):
+        """Add source MAT and next level info to context"""
+        context = super().get_context_data(**kwargs)
+        source = get_object_or_404(models.BitDesignRevision, pk=self.kwargs['pk'])
+        context['source_mat'] = source
+        context['next_level'] = source.level + 1
+
+        # Level descriptions
+        level_descriptions = {
+            2: "Mold + Tooling (molds, inserts, patterns)",
+            3: "Head/Crown Kit (head + upper section, unwelded, no cutters)",
+            4: "Welded Assembly (head + upper welded, no cutters yet)",
+            5: "With Cutters (PDC cutters brazed on)",
+            6: "Ready to Run (field-ready bit with nozzles, paint, packaging)"
+        }
+        context['next_level_description'] = level_descriptions.get(source.level + 1, "Next manufacturing level")
+
+        return context
+
+    def form_valid(self, form):
+        """Set design, next level, and parent from source MAT"""
+        source = get_object_or_404(models.BitDesignRevision, pk=self.kwargs['pk'])
+
+        # Validation: Can't create beyond Level 6
+        if source.level >= 6:
+            messages.error(self.request, f'Cannot create level beyond Level 6. MAT {source.mat_number} is already at the highest level.')
+            return self.form_invalid(form)
+
+        # Set the new MAT's properties
+        form.instance.design = source.design
+        form.instance.level = source.level + 1
+        form.instance.previous_level = source
+
+        messages.success(
+            self.request,
+            f'Level {form.instance.level} MAT {form.instance.mat_number} created from Level {source.level} MAT {source.mat_number}'
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """Return to MAT levels view for this design"""
+        return reverse_lazy('production:bitdesign-mat-levels', kwargs={'pk': self.object.design.pk})
+
+
 class BitDesignHubView(LoginRequiredMixin, TemplateView):
     """
     Bit Design Hub - Central junction for all bit designs
