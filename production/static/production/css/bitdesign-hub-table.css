@@ -1,0 +1,664 @@
+/**
+ * Bit Design Hub - Professional Interactive Table Styles
+ * Enterprise-grade custom table with Excel-like features
+ */
+
+/* ==============================================
+   1. TABLE CONTAINER & LAYOUT
+   ============================================== */
+
+.hub-table-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: #ffffff;
+}
+
+.hub-table-scroll-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 800px;
+    position: relative;
+}
+
+/* Custom scrollbar styling */
+.hub-table-scroll-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.hub-table-scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 6px;
+}
+
+.hub-table-scroll-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 6px;
+}
+
+.hub-table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* ==============================================
+   2. TABLE STRUCTURE
+   ============================================== */
+
+#bitdesign-hub-table {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+/* Zebra striping for design rows */
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+1),
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+2) {
+    background-color: #ffffff;
+}
+
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+3),
+#bitdesign-hub-table tbody tr.design-row:nth-child(4n+4) {
+    background-color: #f8f9fa;
+}
+
+/* Level rows inherit parent design row background */
+#bitdesign-hub-table tbody tr.level-row {
+    background-color: #f0f8ff;
+}
+
+/* ==============================================
+   3. STICKY HEADER
+   ============================================== */
+
+#bitdesign-hub-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(to bottom, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    font-weight: 600;
+    padding: 12px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+}
+
+/* Header hover effect */
+#bitdesign-hub-table thead th:hover {
+    background: linear-gradient(to bottom, #0b5ed7 0%, #0a58ca 100%);
+}
+
+/* ==============================================
+   4. FROZEN COLUMNS (First 3 columns)
+   ============================================== */
+
+/* Column 1: Toggle icon */
+#bitdesign-hub-table th:nth-child(1),
+#bitdesign-hub-table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: inherit;
+    min-width: 40px;
+    max-width: 40px;
+    text-align: center;
+}
+
+#bitdesign-hub-table thead th:nth-child(1) {
+    z-index: 11;
+}
+
+/* Column 2: Design Code */
+#bitdesign-hub-table th:nth-child(2),
+#bitdesign-hub-table td:nth-child(2) {
+    position: sticky;
+    left: 40px;
+    z-index: 5;
+    background: inherit;
+    min-width: 120px;
+    font-weight: 600;
+}
+
+#bitdesign-hub-table thead th:nth-child(2) {
+    z-index: 11;
+}
+
+/* Column 3: Bit Type */
+#bitdesign-hub-table th:nth-child(3),
+#bitdesign-hub-table td:nth-child(3) {
+    position: sticky;
+    left: 160px;
+    z-index: 5;
+    background: inherit;
+    min-width: 100px;
+}
+
+#bitdesign-hub-table thead th:nth-child(3) {
+    z-index: 11;
+}
+
+/* Shadow effect for frozen columns */
+#bitdesign-hub-table td:nth-child(3),
+#bitdesign-hub-table th:nth-child(3) {
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ==============================================
+   5. EXCEL-STYLE CELL HOVER
+   ============================================== */
+
+/* Individual cell hover - NOT row hover */
+#bitdesign-hub-table tbody td.cell-hoverable {
+    transition: background-color 150ms ease, border 150ms ease;
+    cursor: pointer;
+}
+
+#bitdesign-hub-table tbody td.cell-hoverable:hover {
+    background-color: #e8f4fc !important;
+    border: 1px solid #4a90d9 !important;
+    position: relative;
+    z-index: 3;
+}
+
+/* Disable default row hover */
+#bitdesign-hub-table tbody tr.design-row:hover {
+    background-color: inherit !important;
+}
+
+/* ==============================================
+   6. ROW SELECTION HIGHLIGHT
+   ============================================== */
+
+#bitdesign-hub-table tbody tr.design-row.row-selected {
+    background-color: #cfe2ff !important;
+    border-left: 4px solid #0d6efd;
+}
+
+#bitdesign-hub-table tbody tr.design-row.row-selected td {
+    font-weight: 500;
+}
+
+/* ==============================================
+   7. EXPAND/COLLAPSE CHEVRON ANIMATION
+   ============================================== */
+
+.toggle-icon {
+    transition: transform 200ms ease;
+    display: inline-block;
+    color: #0d6efd;
+    font-size: 1.2em;
+}
+
+.toggle-icon.expanded {
+    transform: rotate(90deg);
+}
+
+/* ==============================================
+   8. LEVEL ROW STYLING
+   ============================================== */
+
+#bitdesign-hub-table tbody tr.level-row td {
+    padding: 8px 12px;
+    border-left: 4px solid #0dcaf0;
+    font-size: 0.9em;
+}
+
+/* Smooth expand/collapse animation */
+#bitdesign-hub-table tbody tr.level-row {
+    transition: all 300ms ease;
+}
+
+/* ==============================================
+   9. COLUMN SORTING INDICATORS
+   ============================================== */
+
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 24px !important;
+}
+
+.sortable-header:hover {
+    background: linear-gradient(to bottom, #0b5ed7 0%, #0a58ca 100%);
+}
+
+.sort-indicator {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8em;
+    opacity: 0;
+    transition: opacity 150ms ease;
+}
+
+.sortable-header.sort-asc .sort-indicator,
+.sortable-header.sort-desc .sort-indicator {
+    opacity: 1;
+}
+
+.sortable-header.sort-asc .sort-indicator::after {
+    content: '▲';
+    color: #ffc107;
+}
+
+.sortable-header.sort-desc .sort-indicator::after {
+    content: '▼';
+    color: #ffc107;
+}
+
+/* Multi-column sort priority badges */
+.sort-priority {
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    background: #ffc107;
+    color: #000;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* ==============================================
+   10. FILTER CONTROLS
+   ============================================== */
+
+.filter-icon {
+    cursor: pointer;
+    margin-left: 8px;
+    opacity: 0.7;
+    transition: opacity 150ms ease;
+}
+
+.filter-icon:hover {
+    opacity: 1;
+}
+
+.filter-icon.active {
+    color: #ffc107;
+    opacity: 1;
+}
+
+.filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    min-width: 280px;
+    z-index: 1000;
+    display: none;
+}
+
+.filter-dropdown.show {
+    display: block;
+}
+
+.filter-condition-select,
+.filter-value-input {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.filter-buttons button {
+    flex: 1;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.filter-apply-btn {
+    background: #0d6efd;
+    color: white;
+}
+
+.filter-apply-btn:hover {
+    background: #0b5ed7;
+}
+
+.filter-clear-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.filter-clear-btn:hover {
+    background: #5c636a;
+}
+
+/* ==============================================
+   11. FILTER CHIPS/TAGS
+   ============================================== */
+
+.active-filters-container {
+    padding: 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    display: none;
+}
+
+.active-filters-container.has-filters {
+    display: block;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #0d6efd;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 16px;
+    margin: 0 4px 4px 0;
+    font-size: 0.875rem;
+}
+
+.filter-chip-remove {
+    margin-left: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    opacity: 0.8;
+}
+
+.filter-chip-remove:hover {
+    opacity: 1;
+}
+
+.clear-all-filters-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.clear-all-filters-btn:hover {
+    background: #bb2d3b;
+}
+
+/* ==============================================
+   12. CONTROL TOOLBAR
+   ============================================== */
+
+.table-controls-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.table-controls-left,
+.table-controls-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.toolbar-btn {
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 150ms ease;
+}
+
+.toolbar-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.toolbar-btn i {
+    margin-right: 4px;
+}
+
+/* Expand/Collapse All buttons */
+.expand-all-btn {
+    background: #198754;
+    color: white;
+    border-color: #198754;
+}
+
+.expand-all-btn:hover {
+    background: #157347;
+    border-color: #146c43;
+}
+
+.collapse-all-btn {
+    background: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.collapse-all-btn:hover {
+    background: #5c636a;
+    border-color: #565e64;
+}
+
+/* Export buttons */
+.export-csv-btn,
+.export-excel-btn,
+.export-pdf-btn {
+    background: #0dcaf0;
+    color: #000;
+    border-color: #0dcaf0;
+}
+
+.export-csv-btn:hover,
+.export-excel-btn:hover,
+.export-pdf-btn:hover {
+    background: #31d2f2;
+    border-color: #3dd5f3;
+}
+
+/* ==============================================
+   13. COLUMN VISIBILITY DROPDOWN
+   ============================================== */
+
+.column-visibility-dropdown {
+    position: relative;
+}
+
+.column-visibility-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    min-width: 220px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.column-visibility-menu.show {
+    display: block;
+}
+
+.column-visibility-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.column-visibility-item:hover {
+    background: #f8f9fa;
+}
+
+.column-visibility-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* ==============================================
+   14. KEYBOARD NAVIGATION FOCUS
+   ============================================== */
+
+#bitdesign-hub-table tbody tr.design-row:focus,
+#bitdesign-hub-table tbody td:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: -2px;
+}
+
+/* ==============================================
+   15. LOADING & EMPTY STATES
+   ============================================== */
+
+.table-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.table-loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #0d6efd;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.table-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.table-empty-state i {
+    font-size: 3em;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+/* ==============================================
+   16. RESPONSIVE ADJUSTMENTS
+   ============================================== */
+
+@media (max-width: 1200px) {
+    .hub-table-scroll-container {
+        max-height: 600px;
+    }
+
+    #bitdesign-hub-table thead th {
+        font-size: 0.85rem;
+        padding: 10px 6px;
+    }
+
+    #bitdesign-hub-table tbody td {
+        font-size: 0.875rem;
+        padding: 8px 6px;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-controls-toolbar {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .table-controls-left,
+    .table-controls-right {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hub-table-scroll-container {
+        max-height: 500px;
+    }
+}
+
+/* ==============================================
+   17. ACCESSIBILITY ENHANCEMENTS
+   ============================================== */
+
+/* Focus visible for keyboard navigation */
+.design-row:focus-visible,
+.toolbar-btn:focus-visible,
+.sortable-header:focus-visible {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ==============================================
+   18. PRINT STYLES
+   ============================================== */
+
+@media print {
+    .table-controls-toolbar,
+    .active-filters-container,
+    .toolbar-btn,
+    .filter-icon {
+        display: none !important;
+    }
+
+    #bitdesign-hub-table {
+        border-collapse: collapse;
+    }
+
+    #bitdesign-hub-table thead th {
+        position: static;
+        background: #0d6efd !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    #bitdesign-hub-table tbody tr.level-row {
+        display: table-row !important;
+    }
+}

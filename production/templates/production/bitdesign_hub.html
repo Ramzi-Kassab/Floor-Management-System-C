@@ -3,27 +3,8 @@
 {% block title %}Bit Design Hub{% endblock %}
 
 {% block extra_css %}
-<style>
-    .design-row { background-color: #cfe2ff !important; cursor: pointer; }
-    .design-row:hover { background-color: #b6d4fe !important; }
-    .level-row { background-color: #f8f9fa; }
-    .toggle-icon { transition: transform 0.2s; }
-    .toggle-icon.expanded { transform: rotate(90deg); }
-    table.dataTable thead th { padding: 12px 8px; }
-    table.dataTable tbody td { padding: 8px; vertical-align: middle; }
-    .dataTables_wrapper .dataTables_filter input { border-radius: 4px; }
-
-    /* Professional toolbar styling */
-    .dt-buttons { margin-bottom: 0.75rem; }
-    .dt-button { border-radius: 4px !important; margin-right: 4px; }
-
-    /* Fixed columns styling */
-    table.dataTable.fixedColumns-left { border-right: 2px solid #dee2e6; }
-
-    /* Compact mode */
-    table.table-compact tbody td { padding: 4px 6px; font-size: 0.875rem; }
-    table.table-compact thead th { padding: 8px 6px; font-size: 0.875rem; }
-</style>
+{% load static %}
+<link rel="stylesheet" href="{% static 'production/css/bitdesign-hub-table.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -57,8 +38,10 @@
     </div>
     <div class="card-body p-0">
         {% if designs %}
-        <div class="table-responsive">
-            <table class="table table-sm table-hover" id="bitdesign-hub-table">
+        <div class="hub-table-wrapper">
+            <!-- Toolbar and filters will be inserted here by JavaScript -->
+            <div class="hub-table-scroll-container">
+                <table class="table table-sm" id="bitdesign-hub-table">
                 <thead class="table-light">
                     <tr>
                         <th style="width:30px;"></th>
@@ -91,7 +74,7 @@
                 <tbody>
                     {% for design in designs %}
                     <!-- Design Row (Level 1) -->
-                    <tr class="design-row table-primary" data-design-id="{{ design.pk }}" style="cursor: pointer;">
+                    <tr class="design-row" data-design-id="{{ design.pk }}">
                         <td>
                             <i class="bi bi-caret-right-fill toggle-icon"></i>
                         </td>
@@ -150,7 +133,7 @@
 
                     <!-- Level Rows (2-6) -->
                     {% for rev in design.hub_revisions %}
-                    <tr class="level-row level-row-{{ design.pk }}" style="display:none;">
+                    <tr class="level-row level-row-{{ design.pk }}">
                         <td></td>
                         <td>
                             <strong>L{{ rev.level }}</strong>
@@ -242,9 +225,10 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
         {% else %}
-        <p class="text-muted">No designs found matching your filters.</p>
+        <p class="text-muted p-4">No designs found matching your filters.</p>
         {% endif %}
     </div>
 </div>
@@ -252,33 +236,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- jQuery  -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-<script>
-$(document).ready(function() {
-    // Hide all level rows initially
-    $('.level-row').hide();
-
-    // Toggle design rows to show/hide levels
-    $('#bitdesign-hub-table tbody').on('click', 'tr.design-row', function(e) {
-        // Don't toggle if clicking on dropdown or links
-        if ($(e.target).closest('.dropdown, a, button').length) return;
-
-        const designId = $(this).data('design-id');
-        const levelRows = $('.level-row-' + designId);
-        const icon = $(this).find('.toggle-icon');
-
-        if (levelRows.first().is(':visible')) {
-            // Collapse
-            levelRows.hide();
-            icon.removeClass('bi-caret-down-fill expanded').addClass('bi-caret-right-fill');
-        } else {
-            // Expand
-            levelRows.show();
-            icon.removeClass('bi-caret-right-fill').addClass('bi-caret-down-fill expanded');
-        }
-    });
-});
-</script>
+{% load static %}
+<script src="{% static 'production/js/bitdesign-hub-table.js' %}"></script>
 {% endblock %}
