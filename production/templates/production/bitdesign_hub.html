@@ -3,9 +3,6 @@
 {% block title %}Bit Design Hub{% endblock %}
 
 {% block extra_css %}
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 <style>
     .design-row { background-color: #cfe2ff !important; cursor: pointer; }
     .design-row:hover { background-color: #b6d4fe !important; }
@@ -54,6 +51,10 @@
 
 <!-- Hub Table -->
 <div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-table"></i> Designs & MAT Levels ({{ designs|length }} designs)</h5>
+        <small class="text-white-50">Click any design row to expand/collapse levels</small>
+    </div>
     <div class="card-body p-0">
         {% if designs %}
         <div class="table-responsive">
@@ -251,96 +252,13 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- jQuery (required for DataTables) -->
+<!-- jQuery  -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    // Initialize DataTable with Excel-like features
-    var table = $('#bitdesign-hub-table').DataTable({
-        // Paging
-        paging: true,
-        pageLength: 25,
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-
-        // Searching
-        searching: true,
-        search: {
-            smart: true,
-            regex: false
-        },
-
-        // Ordering
-        ordering: true,
-        order: [[3, 'asc'], [4, 'asc']], // Type then Size
-
-        // Display
-        info: true,
-        autoWidth: false,
-
-        // REMOVED: fixedColumns, colReorder, select (don't work with colspan)
-        // These features conflict with the colspan structure in level rows
-
-        // Buttons toolbar
-        buttons: [
-            {
-                extend: 'excel',
-                text: '<i class="bi bi-file-earmark-excel"></i> Excel',
-                titleAttr: 'Export to Excel',
-                exportOptions: {
-                    columns: ':visible:not(:first-child):not(:last-child)'
-                }
-            },
-            {
-                extend: 'copy',
-                text: '<i class="bi bi-clipboard"></i> Copy',
-                titleAttr: 'Copy to clipboard',
-                exportOptions: {
-                    columns: ':visible:not(:first-child):not(:last-child)'
-                }
-            }
-        ],
-
-        // Layout with buttons
-        dom: '<"row mb-3"<"col-sm-12 col-md-4"l><"col-sm-12 col-md-4 text-center"B><"col-sm-12 col-md-4"f>>' +
-             '<"row"<"col-sm-12"tr>>' +
-             '<"row mt-2"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-
-        // Language
-        language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search all columns...",
-            lengthMenu: "Show _MENU_ rows",
-            info: "Showing _START_ to _END_ of _TOTAL_ entries",
-            infoEmpty: "No entries available",
-            infoFiltered: "(filtered from _TOTAL_ total entries)",
-            zeroRecords: "No matching designs found",
-            emptyTable: "No designs available"
-        },
-
-        // Column-specific settings
-        columnDefs: [
-            { orderable: false, targets: [0, -1] }, // Disable sorting on toggle icon and actions
-            { className: 'text-center', targets: [0, 2, 8, 9, 10, 15, 16, 22, 23] },
-            { width: '30px', targets: 0 },
-            { width: '80px', targets: 1 },
-            { width: '60px', targets: 4 },
-            { width: '120px', targets: -1 }
-        ],
-
-        // Initialize with all level rows hidden
-        initComplete: function() {
-            $('.level-row').hide();
-        }
-    });
+    // Hide all level rows initially
+    $('.level-row').hide();
 
     // Toggle design rows to show/hide levels
     $('#bitdesign-hub-table tbody').on('click', 'tr.design-row', function(e) {
