@@ -6,9 +6,6 @@
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.7.0/css/colReorder.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/select/1.7.0/css/select.bootstrap5.min.css">
 <style>
     .design-row { background-color: #cfe2ff !important; cursor: pointer; }
     .design-row:hover { background-color: #b6d4fe !important; }
@@ -263,13 +260,7 @@
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
-<script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
-<script src="https://cdn.datatables.net/colreorder/1.7.0/js/dataTables.colReorder.min.js"></script>
-<script src="https://cdn.datatables.net/select/1.7.0/js/dataTables.select.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
 <script>
 $(document).ready(function() {
@@ -294,39 +285,16 @@ $(document).ready(function() {
         // Display
         info: true,
         autoWidth: false,
-        responsive: false,
 
-        // Professional features
-        colReorder: true,  // Drag-drop column reordering
-        fixedColumns: {
-            leftColumns: 3  // Freeze toggle, level, and MAT columns
-        },
-        select: {
-            style: 'multi',
-            selector: 'td:not(:last-child)'  // Select rows (except actions column)
-        },
+        // REMOVED: fixedColumns, colReorder, select (don't work with colspan)
+        // These features conflict with the colspan structure in level rows
 
         // Buttons toolbar
         buttons: [
             {
-                extend: 'colvis',
-                text: '<i class="bi bi-layout-three-columns"></i> Columns',
-                titleAttr: 'Show/hide columns'
-            },
-            {
                 extend: 'excel',
                 text: '<i class="bi bi-file-earmark-excel"></i> Excel',
                 titleAttr: 'Export to Excel',
-                exportOptions: {
-                    columns: ':visible:not(:first-child):not(:last-child)'  // Exclude toggle icon and actions
-                }
-            },
-            {
-                extend: 'pdf',
-                text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-                titleAttr: 'Export to PDF',
-                orientation: 'landscape',
-                pageSize: 'A3',
                 exportOptions: {
                     columns: ':visible:not(:first-child):not(:last-child)'
                 }
@@ -355,26 +323,21 @@ $(document).ready(function() {
             infoEmpty: "No entries available",
             infoFiltered: "(filtered from _TOTAL_ total entries)",
             zeroRecords: "No matching designs found",
-            emptyTable: "No designs available",
-            buttons: {
-                colvis: 'Column Visibility',
-                colvisRestore: 'Restore columns'
-            }
+            emptyTable: "No designs available"
         },
 
         // Column-specific settings
         columnDefs: [
             { orderable: false, targets: [0, -1] }, // Disable sorting on toggle icon and actions
-            { className: 'text-center', targets: [0, 2, 8, 9, 10, 15, 16, 22, 23] }, // Center align specific columns
-            { width: '30px', targets: 0 }, // Toggle icon
-            { width: '80px', targets: 1 }, // Level
-            { width: '60px', targets: 4 }, // Size
-            { width: '120px', targets: -1 } // Actions
+            { className: 'text-center', targets: [0, 2, 8, 9, 10, 15, 16, 22, 23] },
+            { width: '30px', targets: 0 },
+            { width: '80px', targets: 1 },
+            { width: '60px', targets: 4 },
+            { width: '120px', targets: -1 }
         ],
 
         // Initialize with all level rows hidden
         initComplete: function() {
-            // Hide all level rows initially
             $('.level-row').hide();
         }
     });

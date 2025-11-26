@@ -1,0 +1,65 @@
+{% extends 'production/base.html' %}
+{% block title %}Delete MAT {{ object.mat_number }}{% endblock %}
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'production:dashboard' %}"><i class="bi bi-house"></i> Production</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-hub' %}">Bit Design Hub</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-detail' object.design.pk %}">{{ object.design }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-mat-levels' object.design.pk %}">MAT Levels</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Delete MAT</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4><i class="bi bi-exclamation-triangle"></i> Confirm Deletion</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <h5>Are you sure you want to delete this MAT?</h5>
+                    <p class="mb-0"><strong>This action cannot be undone!</strong></p>
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">MAT Number:</dt>
+                    <dd class="col-sm-8">{{ object.mat_number }}</dd>
+
+                    <dt class="col-sm-4">Level:</dt>
+                    <dd class="col-sm-8">{{ object.level }}</dd>
+
+                    <dt class="col-sm-4">Design:</dt>
+                    <dd class="col-sm-8">{{ object.design }}</dd>
+
+                    {% if object.variant_label %}
+                    <dt class="col-sm-4">Variant:</dt>
+                    <dd class="col-sm-8">{{ object.variant_label }}</dd>
+                    {% endif %}
+
+                    {% if object.previous_level %}
+                    <dt class="col-sm-4">Parent MAT:</dt>
+                    <dd class="col-sm-8">{{ object.previous_level.mat_number }} (L{{ object.previous_level.level }})</dd>
+                    {% endif %}
+                </dl>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Yes, Delete MAT
+                        </button>
+                        <a href="{% url 'production:bitdesign-mat-levels' object.design.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> No, Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

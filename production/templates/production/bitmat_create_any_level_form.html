@@ -1,0 +1,98 @@
+{% extends 'production/base.html' %}
+{% load bit_format %}
+{% block title %}Add New MAT{% endblock %}
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'production:dashboard' %}"><i class="bi bi-house"></i> Production</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-hub' %}">Bit Design Hub</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-detail' design.pk %}">{{ design }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'production:bitdesign-mat-levels' design.pk %}">MAT Levels</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add New MAT</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-md-10 offset-md-1">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4><i class="bi bi-plus-circle"></i> Add New MAT - Select Any Level</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Design:</strong> {{ design }}<br>
+                    <strong>Type:</strong> {{ design.get_bit_type_display }}<br>
+                    <strong>Size:</strong> {{ design.size_inch|bit_size_display }}
+                </div>
+
+                <div class="alert alert-success">
+                    <h5><i class="bi bi-info-circle"></i> Flexible Level Creation</h5>
+                    <p class="mb-0">
+                        <strong>You can create a MAT at ANY level (2-6)</strong> without requiring all previous levels to exist.
+                        For example, you can create a Level 4 MAT directly, even if Level 2 or 3 don't exist yet.
+                    </p>
+                    <p class="mb-0 mt-2">
+                        <strong>Optional Parent:</strong> You can optionally select a parent MAT from a previous level,
+                        or leave it blank if this MAT doesn't have a direct parent relationship.
+                    </p>
+                </div>
+
+                {% if existing_mats %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">📋 Existing MATs for This Design</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Level</th>
+                                        <th>MAT Number</th>
+                                        <th>Variant</th>
+                                        <th>Active</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mat in existing_mats %}
+                                    <tr>
+                                        <td><span class="badge bg-info">L{{ mat.level }}</span></td>
+                                        <td>{{ mat.mat_number }}</td>
+                                        <td>{{ mat.variant_label|default:"—" }}</td>
+                                        <td>
+                                            {% if mat.active %}
+                                                <span class="badge bg-success">Yes</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Create MAT
+                        </button>
+                        <a href="{% url 'production:bitdesign-mat-levels' design.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

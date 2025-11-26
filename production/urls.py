@@ -22,6 +22,9 @@ urlpatterns = [
 
     # MAT Level Operations
     path('designs/<int:pk>/create-level2/', views.BitMatCreateLevel2FromDesignView.as_view(), name='design-create-level2'),
+    path('designs/<int:pk>/create-any-level/', views.BitMatCreateAnyLevelView.as_view(), name='design-create-any-level'),
+    path('mats/<int:pk>/edit/', views.BitMatEditView.as_view(), name='mat-edit'),
+    path('mats/<int:pk>/delete/', views.BitMatDeleteView.as_view(), name='mat-delete'),
     path('mats/<int:pk>/clone-branch/', views.BitMatCloneAsBranchView.as_view(), name='mat-clone-branch'),
     path('mats/<int:pk>/create-next-level/', views.BitMatCreateNextLevelView.as_view(), name='mat-create-next-level'),
 

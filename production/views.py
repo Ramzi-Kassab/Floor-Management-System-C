@@ -375,6 +375,86 @@ class BitMatCreateNextLevelView(LoginRequiredMixin, CreateView):
         return reverse_lazy('production:bitdesign-mat-levels', kwargs={'pk': self.object.design.pk})
 
 
+class BitMatEditView(LoginRequiredMixin, UpdateView):
+    """Edit an existing MAT revision"""
+    model = models.BitDesignRevision
+    template_name = 'production/bitmat_edit_form.html'
+    fields = ['mat_number', 'level', 'previous_level', 'variant_label', 'variant_notes',
+              'upper_welded', 'effective_from', 'effective_to', 'active', 'remarks']
+
+    def get_success_url(self):
+        return reverse_lazy('production:bitdesign-mat-levels', kwargs={'pk': self.object.design.pk})
+
+    def form_valid(self, form):
+        messages.success(self.request, f'MAT {form.instance.mat_number} updated successfully')
+        return super().form_valid(form)
+
+
+class BitMatDeleteView(LoginRequiredMixin, DeleteView):
+    """Delete a MAT revision"""
+    model = models.BitDesignRevision
+    template_name = 'production/bitmat_confirm_delete.html'
+
+    def get_success_url(self):
+        return reverse_lazy('production:bitdesign-mat-levels', kwargs={'pk': self.object.design.pk})
+
+    def delete(self, request, *args, **kwargs):
+        mat_number = self.get_object().mat_number
+        result = super().delete(request, *args, **kwargs)
+        messages.success(request, f'MAT {mat_number} deleted successfully')
+        return result
+
+
+class BitMatCreateAnyLevelView(LoginRequiredMixin, CreateView):
+    """
+    Create a MAT at any level (2-6) for a design
+    User can select which level and optionally which parent MAT
+    """
+    model = models.BitDesignRevision
+    template_name = 'production/bitmat_create_any_level_form.html'
+    fields = ['mat_number', 'level', 'previous_level', 'variant_label', 'variant_notes',
+              'upper_welded', 'effective_from', 'effective_to', 'active', 'remarks']
+
+    def get_initial(self):
+        return {'active': True}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
+        context['design'] = design
+        # Get all existing MATs for this design for parent selection
+        context['existing_mats'] = models.BitDesignRevision.objects.filter(design=design).order_by('level', 'mat_number')
+        return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
+
+        # Customize level field to show levels 2-6
+        form.fields['level'].widget.attrs.update({'class': 'form-select'})
+        form.fields['level'].choices = [(i, f'Level {i}') for i in range(2, 7)]
+
+        # Customize previous_level to only show MATs from this design
+        form.fields['previous_level'].queryset = models.BitDesignRevision.objects.filter(design=design).order_by('level', 'mat_number')
+        form.fields['previous_level'].required = False
+        form.fields['previous_level'].help_text = "Optional: Select parent MAT from a previous level"
+
+        return form
+
+    def form_valid(self, form):
+        design = get_object_or_404(models.BitDesign, pk=self.kwargs['pk'])
+        form.instance.design = design
+
+        messages.success(
+            self.request,
+            f'Level {form.instance.level} MAT {form.instance.mat_number} created successfully'
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('production:bitdesign-mat-levels', kwargs={'pk': self.object.design.pk})
+
+
 class BitDesignHubView(LoginRequiredMixin, TemplateView):
     """
     Bit Design Hub - Central junction for all bit designs
