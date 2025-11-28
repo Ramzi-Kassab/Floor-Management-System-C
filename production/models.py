@@ -494,6 +494,51 @@ class BitDesign(models.Model):
         help_text="Nozzle bore sleeve used (Yes/No). Null/N/A if nozzle_count=0"
     )
 
+    # ===== FLEXIBLE ENTRY LEVEL FIELDS =====
+
+    # Entry Level - which level this design enters our system at
+    ENTRY_LEVEL_CHOICES = [
+        (1, 'L1 - Full Design (design specs only)'),
+        (2, 'L2 - Tooling (molds, inserts, patterns)'),
+        (3, 'L3 - Head + Upper Kit (unwelded, no cutters)'),
+        (4, 'L4 - Welded Assembly (no cutters)'),
+        (5, 'L5 - With Cutters (brazed, may need finishing)'),
+        (6, 'L6 - Ready-to-Run (field-ready bit)'),
+    ]
+
+    entry_level = models.PositiveSmallIntegerField(
+        choices=ENTRY_LEVEL_CHOICES,
+        default=1,
+        help_text="The level at which this design enters our manufacturing system"
+    )
+
+    ENTRY_SOURCE_CHOICES = [
+        ('INHOUSE', 'In-House Manufacturing'),
+        ('PURCHASED', 'Purchased/Acquired'),
+        ('CUSTOMER', 'Customer Supplied'),
+        ('REFURB', 'Refurbishment'),
+        ('JV', 'Joint Venture'),
+    ]
+
+    entry_source = models.CharField(
+        max_length=20,
+        choices=ENTRY_SOURCE_CHOICES,
+        default='INHOUSE',
+        help_text="How this design enters our system"
+    )
+
+    entry_supplier = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Supplier name if entry_source is PURCHASED or JV"
+    )
+
+    entry_notes = models.TextField(
+        blank=True,
+        help_text="Notes about the entry point (e.g., why starting at this level, supplier details)"
+    )
+
     # Metadata
     active = models.BooleanField(
         default=True,

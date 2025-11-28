@@ -15,10 +15,10 @@ from . import models
 @admin.register(models.BitDesign)
 class BitDesignAdmin(admin.ModelAdmin):
     list_display = ['bit_type', 'size_inch', 'current_smi_name', 'hdbs_name', 'iadc_code',
-                    'body_material', 'blade_count', 'active', 'created_at']
-    list_filter = ['bit_type', 'body_material', 'connection_type', 'active', 'created_at']
+                    'body_material', 'blade_count', 'entry_level', 'entry_source', 'active', 'created_at']
+    list_filter = ['bit_type', 'body_material', 'connection_type', 'entry_level', 'entry_source', 'active', 'created_at']
     search_fields = ['design_code', 'current_smi_name', 'hdbs_name', 'iadc_code',
-                     'description', 'remarks']
+                     'description', 'remarks', 'entry_supplier']
     date_hierarchy = 'created_at'
     list_per_page = 50
 
@@ -31,6 +31,11 @@ class BitDesignAdmin(admin.ModelAdmin):
         ('Design Names & Codes', {
             'fields': ('current_smi_name', 'hdbs_name', 'iadc_code'),
             'description': 'ARDT/SMI name, Halliburton name, and IADC code'
+        }),
+        ('Entry Point', {
+            'fields': ('entry_level', 'entry_source', 'entry_supplier', 'entry_notes'),
+            'classes': ('collapse',),
+            'description': 'Specify where this design enters the manufacturing system'
         }),
         ('Fixed Cutter (PDC) Specifications', {
             'fields': ('body_material', 'blade_count', 'cutter_size_category',

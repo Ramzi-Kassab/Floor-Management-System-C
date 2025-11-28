@@ -23,6 +23,17 @@ class BitDesignForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'remarks': forms.Textarea(attrs={'rows': 4}),
+            'entry_level': forms.Select(attrs={'class': 'form-select'}),
+            'entry_source': forms.Select(attrs={'class': 'form-select'}),
+            'entry_supplier': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Supplier name (if purchased or JV)'
+            }),
+            'entry_notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Notes about entry point...'
+            }),
         }
 
     def clean_size_inch(self):

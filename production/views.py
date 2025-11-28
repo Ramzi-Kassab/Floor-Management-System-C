@@ -477,6 +477,8 @@ class BitDesignHubView(LoginRequiredMixin, TemplateView):
         cutter_cat = self.request.GET.get('cutter_size_category')
         connection_type = self.request.GET.get('connection_type')
         active_design = self.request.GET.get('active_design')
+        entry_level = self.request.GET.get('entry_level')
+        entry_source = self.request.GET.get('entry_source')
 
         if search:
             qs = qs.filter(
@@ -486,7 +488,8 @@ class BitDesignHubView(LoginRequiredMixin, TemplateView):
                 Q(design_code__icontains=search) |
                 Q(design_mat_number__icontains=search) |
                 Q(description__icontains=search) |
-                Q(remarks__icontains=search)
+                Q(remarks__icontains=search) |
+                Q(entry_supplier__icontains=search)
             )
 
         if bit_type:
@@ -512,6 +515,12 @@ class BitDesignHubView(LoginRequiredMixin, TemplateView):
 
         if active_design in ['true', 'false']:
             qs = qs.filter(active=(active_design == 'true'))
+
+        if entry_level:
+            qs = qs.filter(entry_level=entry_level)
+
+        if entry_source:
+            qs = qs.filter(entry_source=entry_source)
 
         # ---- Filters involving BitDesignRevision (levels) ----
         level_param = self.request.GET.get('level')

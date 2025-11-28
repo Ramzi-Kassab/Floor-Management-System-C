@@ -46,6 +46,7 @@
                     <tr>
                         <th style="width:30px;"></th>
                         <th>Level</th>
+                        <th>Entry</th>
                         <th>MAT</th>
                         <th>Type</th>
                         <th>Size</th>
@@ -73,12 +74,50 @@
                 </thead>
                 <tbody>
                     {% for design in designs %}
-                    <!-- Design Row (Level 1) -->
-                    <tr class="design-row" data-design-id="{{ design.pk }}">
+                    <!-- Design Row (Level 1 or Entry Level) -->
+                    <tr class="design-row" data-design-id="{{ design.pk }}" data-entry-level="{{ design.entry_level }}">
                         <td>
                             <i class="bi bi-caret-right-fill toggle-icon"></i>
                         </td>
-                        <td><strong>L1</strong> <small class="text-muted">Design root</small></td>
+                        <td>
+                            <strong>L{{ design.entry_level }}</strong>
+                            <small class="text-muted d-block">
+                                {% if design.entry_level == 1 %}Design root
+                                {% elif design.entry_level == 2 %}Tooling Entry
+                                {% elif design.entry_level == 3 %}Kit Entry
+                                {% elif design.entry_level == 4 %}Welded Entry
+                                {% elif design.entry_level == 5 %}Cutters Entry
+                                {% elif design.entry_level == 6 %}Ready Entry
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <!-- Entry Source Badge -->
+                            {% if design.entry_source == 'INHOUSE' %}
+                                <span class="badge bg-primary" title="In-House Manufacturing">
+                                    <i class="bi bi-building"></i> In-House
+                                </span>
+                            {% elif design.entry_source == 'PURCHASED' %}
+                                <span class="badge bg-warning text-dark" title="Purchased: {{ design.entry_supplier }}">
+                                    <i class="bi bi-cart"></i> Purchased
+                                </span>
+                            {% elif design.entry_source == 'CUSTOMER' %}
+                                <span class="badge bg-info" title="Customer Supplied">
+                                    <i class="bi bi-person"></i> Customer
+                                </span>
+                            {% elif design.entry_source == 'REFURB' %}
+                                <span class="badge bg-secondary" title="Refurbishment">
+                                    <i class="bi bi-arrow-repeat"></i> Refurb
+                                </span>
+                            {% elif design.entry_source == 'JV' %}
+                                <span class="badge bg-success" title="Joint Venture: {{ design.entry_supplier }}">
+                                    <i class="bi bi-people"></i> JV
+                                </span>
+                            {% endif %}
+                            {% if design.entry_supplier %}
+                                <small class="d-block text-muted mt-1">{{ design.entry_supplier|truncatechars:20 }}</small>
+                            {% endif %}
+                        </td>
                         <td>{{ design.design_mat_number|default:"—" }}</td>
                         <td>{{ design.get_bit_type_display }}</td>
                         <td>{{ design.size_inch|bit_size_display }}</td>
@@ -149,6 +188,7 @@
                                 <small class="text-muted d-block">Ready to Run</small>
                             {% endif %}
                         </td>
+                        <td></td>  <!-- Empty Entry column for level rows -->
                         <td>
                             {{ rev.mat_number }}
                             {% if rev.child_count >= 2 %}
