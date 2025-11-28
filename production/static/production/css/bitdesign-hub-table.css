@@ -49,9 +49,17 @@
 
 #bitdesign-hub-table {
     margin-bottom: 0;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse; /* Collapse for seamless borders */
     width: 100%;
+    border: none;
+}
+
+/* Data cells - professional styling */
+#bitdesign-hub-table tbody td {
+    padding: 10px 8px;
+    border: 1px solid #e9ecef; /* Subtle borders */
+    font-size: 0.875rem;
+    vertical-align: middle;
 }
 
 /* Zebra striping for design rows */
@@ -87,18 +95,27 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    background: linear-gradient(to bottom, #0d6efd 0%, #0b5ed7 100%);
+    background: #0d6efd; /* Solid color, no gradient for seamless appearance */
     color: white;
     font-weight: 600;
-    padding: 12px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 0.813rem; /* Professional sizing */
+    padding: 10px 8px;
+    border: none; /* Remove all borders for seamless look */
+    border-bottom: 2px solid #0b5ed7; /* Only bottom border */
+    box-shadow: none; /* Remove shadow between cells */
     white-space: nowrap;
+    text-align: left;
+    vertical-align: middle;
 }
 
 /* Header hover effect */
 #bitdesign-hub-table thead th:hover {
-    background: linear-gradient(to bottom, #0b5ed7 0%, #0a58ca 100%);
+    background: #0b5ed7; /* Subtle hover */
+}
+
+/* Seamless header row */
+#bitdesign-hub-table thead tr {
+    background: #0d6efd;
 }
 
 /* ==============================================
@@ -312,11 +329,12 @@
 .sortable-header {
     cursor: pointer;
     user-select: none;
-    padding-right: 24px !important;
+    padding-right: 28px !important;
+    position: relative; /* For absolute positioning of sort indicator */
 }
 
 .sortable-header:hover {
-    background: linear-gradient(to bottom, #0b5ed7 0%, #0a58ca 100%);
+    background: #0b5ed7; /* Solid color to match header */
 }
 
 .sort-indicator {
@@ -377,18 +395,22 @@
 
 .filter-icon {
     cursor: pointer;
-    margin-left: 8px;
-    opacity: 0.7;
-    transition: opacity 150ms ease;
+    margin-left: 6px;
+    opacity: 0.6;
+    transition: all 150ms ease;
+    font-size: 0.75rem;
+    padding: 2px;
 }
 
 .filter-icon:hover {
     opacity: 1;
+    transform: scale(1.1);
 }
 
 .filter-icon.active {
     color: #ffc107;
     opacity: 1;
+    font-weight: bold;
 }
 
 .filter-dropdown {
@@ -605,18 +627,30 @@
 
 .column-visibility-menu {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     right: 0;
     background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 12px;
-    min-width: 220px;
-    max-height: 400px;
+    border: 2px solid #6c757d; /* Different color from filter dropdowns */
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    min-width: 250px;
+    max-width: 300px;
+    max-height: 500px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 1002; /* Higher than filter dropdowns */
     display: none;
+}
+
+.column-visibility-menu::before {
+    content: 'Show/Hide Columns';
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #495057;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #dee2e6;
 }
 
 .column-visibility-menu.show {
@@ -626,17 +660,30 @@
 .column-visibility-item {
     display: flex;
     align-items: center;
-    padding: 6px 8px;
+    padding: 8px 10px;
     cursor: pointer;
     border-radius: 4px;
+    margin-bottom: 4px;
+    transition: background-color 150ms ease;
 }
 
 .column-visibility-item:hover {
-    background: #f8f9fa;
+    background: #e9ecef;
 }
 
 .column-visibility-item input[type="checkbox"] {
-    margin-right: 8px;
+    margin-right: 10px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.column-visibility-item label {
+    cursor: pointer;
+    margin: 0;
+    font-size: 0.875rem;
+    color: #212529;
+    user-select: none;
 }
 
 /* ==============================================
