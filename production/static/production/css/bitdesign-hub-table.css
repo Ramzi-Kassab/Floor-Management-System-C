@@ -56,10 +56,17 @@
 
 /* Data cells - professional styling */
 #bitdesign-hub-table tbody td {
-    padding: 10px 8px;
-    border: 1px solid #e9ecef; /* Subtle borders */
+    padding: 10px 12px;
+    border: 1px solid #dee2e6; /* MUST match header borders */
     font-size: 0.875rem;
     vertical-align: middle;
+    line-height: 1.4;
+    height: auto;
+}
+
+/* Ensure consistent row heights */
+#bitdesign-hub-table tbody tr {
+    height: auto;
 }
 
 /* Zebra striping for design rows */
@@ -95,22 +102,23 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    background: #0d6efd; /* Solid color, no gradient for seamless appearance */
+    background: #0d6efd;
     color: white;
     font-weight: 600;
-    font-size: 0.813rem; /* Professional sizing */
+    font-size: 0.875rem;
     padding: 10px 8px;
-    border: none; /* Remove all borders for seamless look */
-    border-bottom: 2px solid #0b5ed7; /* Only bottom border */
-    box-shadow: none; /* Remove shadow between cells */
+    border: 1px solid #dee2e6; /* MUST match data cell borders for alignment */
+    border-top: 2px solid #0b5ed7;
     white-space: nowrap;
     text-align: left;
     vertical-align: middle;
+    overflow: visible; /* Allow dropdowns to show */
+    min-width: 80px; /* Prevent content cut off */
 }
 
 /* Header hover effect */
 #bitdesign-hub-table thead th:hover {
-    background: #0b5ed7; /* Subtle hover */
+    background: #0b5ed7;
 }
 
 /* Seamless header row */
@@ -643,14 +651,16 @@
 }
 
 .column-visibility-menu::before {
-    content: 'Show/Hide Columns';
+    content: '👁 Show/Hide Columns';
     display: block;
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: #495057;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #212529;
     margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .column-visibility-menu.show {
@@ -684,6 +694,44 @@
     font-size: 0.875rem;
     color: #212529;
     user-select: none;
+}
+
+/* Show All / Hide All buttons */
+.column-visibility-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 2px solid #dee2e6;
+}
+
+.column-visibility-buttons button {
+    flex: 1;
+    padding: 6px 12px;
+    font-size: 0.813rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 150ms ease;
+}
+
+.column-visibility-buttons .btn-primary {
+    background: #0d6efd;
+    color: white;
+}
+
+.column-visibility-buttons .btn-primary:hover {
+    background: #0b5ed7;
+}
+
+.column-visibility-buttons .btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.column-visibility-buttons .btn-secondary:hover {
+    background: #5c636a;
 }
 
 /* ==============================================

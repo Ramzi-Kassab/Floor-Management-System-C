@@ -718,6 +718,7 @@ class BitDesignHubTable {
         const headers = this.thead.querySelectorAll('th');
         menu.innerHTML = '';
 
+        // Add column checkboxes
         headers.forEach((header, index) => {
             // Skip first column (toggle icon) - always visible
             if (index === 0) return;
@@ -737,6 +738,41 @@ class BitDesignHubTable {
             });
 
             menu.appendChild(item);
+        });
+
+        // Add Show All / Hide All buttons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'column-visibility-buttons';
+        buttonContainer.innerHTML = `
+            <button class="btn btn-sm btn-primary show-all-cols">Show All</button>
+            <button class="btn btn-sm btn-secondary hide-all-cols">Hide All</button>
+        `;
+        menu.appendChild(buttonContainer);
+
+        // Show All button
+        buttonContainer.querySelector('.show-all-cols').addEventListener('click', () => {
+            const checkboxes = menu.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach((cb, idx) => {
+                // Always keep Level (index 1) and MAT (index 2) visible
+                cb.checked = true;
+                const colIndex = parseInt(cb.id.replace('col-vis-', ''));
+                this.toggleColumnVisibility(colIndex, true);
+            });
+        });
+
+        // Hide All button
+        buttonContainer.querySelector('.hide-all-cols').addEventListener('click', () => {
+            const checkboxes = menu.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach((cb) => {
+                const colIndex = parseInt(cb.id.replace('col-vis-', ''));
+                // Always keep Level (index 1) and MAT (index 2) visible
+                if (colIndex === 1 || colIndex === 2) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = false;
+                    this.toggleColumnVisibility(colIndex, false);
+                }
+            });
         });
     }
 
