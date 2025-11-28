@@ -68,7 +68,36 @@
                         </div>
                     </div>
 
-                    <!-- Section 3: Fixed Cutter (PDC) Specifications -->
+                    <!-- Section 3: Entry Point -->
+                    <div class="mb-4">
+                        <h5 class="text-info border-bottom pb-2">
+                            <i class="bi bi-door-open"></i> Entry Point
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Entry Level *</label>
+                                {{ form.entry_level|add_class:"form-select" }}
+                                <small class="form-text text-muted">At which manufacturing stage does this design enter our system?</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Entry Source *</label>
+                                {{ form.entry_source|add_class:"form-select" }}
+                                <small class="form-text text-muted">How is this design acquired?</small>
+                            </div>
+                        </div>
+                        <div class="row" id="supplier-row" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Supplier</label>
+                                {{ form.entry_supplier|add_class:"form-control" }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Entry Notes</label>
+                                {{ form.entry_notes|add_class:"form-control" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Fixed Cutter (PDC) Specifications -->
                     <div class="mb-4">
                         <h5 class="text-primary border-bottom pb-2">
                             <i class="bi bi-gear"></i> Fixed Cutter (PDC) Specifications
@@ -233,4 +262,24 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const entrySource = document.getElementById('id_entry_source');
+    const supplierRow = document.getElementById('supplier-row');
+
+    function updateSupplierVisibility() {
+        const value = entrySource.value;
+        if (value === 'PURCHASED' || value === 'JV' || value === 'CUSTOMER') {
+            supplierRow.style.display = 'flex';
+        } else {
+            supplierRow.style.display = 'none';
+        }
+    }
+
+    entrySource.addEventListener('change', updateSupplierVisibility);
+    updateSupplierVisibility(); // Initial state
+});
+</script>
 {% endblock %}
